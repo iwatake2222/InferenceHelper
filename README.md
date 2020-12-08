@@ -9,7 +9,7 @@
 	- OpenCV(dnn)
 	- ncnn
 	- MNN
-
+- This class provides an interface to use various deep learnig frameworks, so that you can use the same code
 
 - todo: class diagram comes here
 
@@ -36,7 +36,12 @@ todo
 todo
 
 # License
-todo
+
+- InferenceHelper
+-  https://github.com/iwatake2222/InferenceHelper
+-  Copyright 2020 iwatake2222
+- Licensed under the Apache License, Version 2.0
 
 # Acknowledgements
-todo
+- This project utilizes OSS (Open Source Software)
+	- [NOTICE.md](NOTICE.md)
