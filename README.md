@@ -1,6 +1,6 @@
 # InferenceHelper
 - This is a helper class for deep learning frameworks especially for inference
-- This class provides an interface to use various deep learnig frameworks, so that you can use the same code
+- This class provides an interface to use various deep learnig frameworks, so that you can use the same application code
 
 ![Class Diagram](00_doc/class_diagram.png) 
 
@@ -14,6 +14,12 @@
 
 ## Sample project
 https://github.com/iwatake2222/InferenceHelper_Sample
+
+## Related projects
+- https://github.com/iwatake2222/play_with_tflite
+- https://github.com/iwatake2222/play_with_tensorrt
+- https://github.com/iwatake2222/play_with_ncnn
+- https://github.com/iwatake2222/play_with_mnn
 
 ## Tested Environment
 - Windows 10 (Visual Studio 2017 x64)
@@ -98,6 +104,7 @@ std::unique_ptr<InferenceHelper> inferenceHelper(InferenceHelper::create(Inferen
 
 ### static void preProcessByOpenCV(const InputTensorInfo& inputTensorInfo, bool isNCHW, cv::Mat& imgBlob)
 - Run preprocess (convert image to blob(NCHW or NHWC))
+- This is just a helper function. You may not use this function.
 	- Available when `INFERENCE_HELPER_ENABLE_PRE_PROCESS_BY_OPENCV=on`
 
 ```c++
@@ -161,7 +168,7 @@ outputTensorInfo.name = "MobilenetV2/Predictions/Reshape_1";
 outputTensorInfo.tensorType = TensorInfo::TENSOR_TYPE_FP32;
 outputTensorList.push_back(outputTensorInfo);
 
-inferenceHelper->initialize("mobilenet_v2_1.0_224.tflite", inputTensorList, outputTensorList)
+inferenceHelper->initialize("mobilenet_v2_1.0_224.tflite", inputTensorList, outputTensorList);
 ```
 
 ### int32_t finalize(void)
@@ -175,9 +182,10 @@ inferenceHelper->finalize();
 - Run preprocess
 - Call this function before invoke
 - Call this function even if the input data is already pre-processed in order to copy data to memory
+- **Note** : Some frameworks don't support crop, resize. So, it's better to resize image before calling preProcess.
 
 ```c++
-inferenceHelper->preProcess(m_inputTensorList);
+inferenceHelper->preProcess(inputTensorList);
 ```
 
 ### int32_t invoke(std::vector<OutputTensorInfo>& outputTensorInfoList)
@@ -199,7 +207,7 @@ enum {
 };
 ```
 
-### properties
+### Properties
 ```c++
 std::string name;			// [In] Set the name of tensor
 int32_t     id;				// [Out] Do not modify (Used in InferenceHelper)
