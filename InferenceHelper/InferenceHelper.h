@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <memory>
 
 class TensorInfo {
 public:
@@ -100,12 +101,12 @@ public:
 		data = nullptr;
 		quant.scale = 0;
 		quant.zeroPoint = 0;
-		m_dataFp32 = nullptr;
+		m_dataFp32.reset();
 	}
 
 	~OutputTensorInfo() {
-		if (m_dataFp32 != nullptr) {
-			delete[] m_dataFp32;
+		if (m_dataFp32) {
+			m_dataFp32.reset();
 		}
 	}
 
@@ -113,8 +114,8 @@ public:
 		if (tensorType == TENSOR_TYPE_UINT8) {
 			int32_t dataNum = 1;
 			dataNum = tensorDims.batch * tensorDims.channel * tensorDims.height * tensorDims.width;
-			if (m_dataFp32 == nullptr) {
-				m_dataFp32 = new float[dataNum];
+			if (!m_dataFp32) {
+				m_dataFp32.reset(new float[dataNum]);
 			}
 #pragma omp parallel
 			for (int32_t i = 0; i < dataNum; i++) {
@@ -122,7 +123,7 @@ public:
 				float valFloat = (valUint8[i] - quant.zeroPoint) * quant.scale;
 				m_dataFp32[i] = valFloat;
 			}
-			return m_dataFp32;
+			return m_dataFp32.get();
 		} else if (tensorType == TENSOR_TYPE_FP32) {
 			return static_cast<float*>(data);
 		} else {
@@ -138,7 +139,7 @@ public:
 	} quant;				// [Out] Parameters for dequantization (convert uint8 to float)
 
 private:
-	float* m_dataFp32;
+	std::shared_ptr<float[]> m_dataFp32;
 };
 
 
@@ -154,15 +155,15 @@ public:
 	};
 
 	typedef enum {
-		TENSOR_RT,
-		TENSORFLOW_LITE,
-		TENSORFLOW_LITE_EDGETPU,
-		TENSORFLOW_LITE_GPU,
-		TENSORFLOW_LITE_XNNPACK,
-		NCNN,
-		MNN,
 		OPEN_CV,
 		OPEN_CV_GPU,
+		TENSORFLOW_LITE,
+		TENSORFLOW_LITE_XNNPACK,
+		TENSORFLOW_LITE_GPU,
+		TENSORFLOW_LITE_EDGETPU,
+		TENSOR_RT,
+		NCNN,
+		MNN,
 	} HELPER_TYPE;
 
 public:
