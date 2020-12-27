@@ -17,11 +17,11 @@
 #ifdef INFERENCE_HELPER_ENABLE_OPENCV
 #include "InferenceHelperOpenCV.h"
 #endif
+#if defined(INFERENCE_HELPER_ENABLE_TFLITE) || defined(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK) || defined(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU) || defined(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU)
+#include "InferenceHelperTensorflowLite.h"
+#endif
 #ifdef INFERENCE_HELPER_ENABLE_TENSORRT
 #include "InferenceHelperTensorRt.h"
-#endif
-#ifdef INFERENCE_HELPER_ENABLE_TFLITE
-#include "InferenceHelperTensorflowLite.h"
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_NCNN
 #include "InferenceHelperNcnn.h"
@@ -47,26 +47,9 @@ InferenceHelper* InferenceHelper::create(const InferenceHelper::HELPER_TYPE type
 		p = new InferenceHelperOpenCV();
 		break;
 #endif
-#ifdef INFERENCE_HELPER_ENABLE_TENSORRT
-	case TENSOR_RT:
-		PRINT("Use TensorRT \n");
-		p = new InferenceHelperTensorRt();
-		break;
-#endif
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE
 	case TENSORFLOW_LITE:
 		PRINT("Use TensorflowLite\n");
-		p = new InferenceHelperTensorflowLite();
-		break;
-#ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU
-	case TENSORFLOW_LITE_EDGETPU:
-		PRINT("Use TensorflowLite EdgeTPU Delegate\n");
-		p = new InferenceHelperTensorflowLite();
-		break;
-#endif
-#ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU
-	case TENSORFLOW_LITE_GPU:
-		PRINT("Use TensorflowLite GPU Delegate\n");
 		p = new InferenceHelperTensorflowLite();
 		break;
 #endif
@@ -76,6 +59,23 @@ InferenceHelper* InferenceHelper::create(const InferenceHelper::HELPER_TYPE type
 		p = new InferenceHelperTensorflowLite();
 		break;
 #endif
+#ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU
+	case TENSORFLOW_LITE_GPU:
+		PRINT("Use TensorflowLite GPU Delegate\n");
+		p = new InferenceHelperTensorflowLite();
+		break;
+#endif
+#ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU
+	case TENSORFLOW_LITE_EDGETPU:
+		PRINT("Use TensorflowLite EdgeTPU Delegate\n");
+		p = new InferenceHelperTensorflowLite();
+		break;
+#endif
+#ifdef INFERENCE_HELPER_ENABLE_TENSORRT
+	case TENSOR_RT:
+		PRINT("Use TensorRT \n");
+		p = new InferenceHelperTensorRt();
+		break;
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_NCNN
 	case NCNN:
@@ -174,5 +174,7 @@ void InferenceHelper::preProcessByOpenCV(const InputTensorInfo& inputTensorInfo,
 /* For the environment where OpenCV is not supported */
 void InferenceHelper::preProcessByOpenCV(const InputTensorInfo& inputTensorInfo, bool isNCHW, cv::Mat& imgBlob)
 {
+	PRINT_E("[preProcessByOpenCV] Unsupported function called\n");
+	exit(-1);
 }
 #endif
