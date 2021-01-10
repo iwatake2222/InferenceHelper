@@ -1,4 +1,5 @@
 .vscode/
 build/
+ThirdParty/
 third_party/
 resource/

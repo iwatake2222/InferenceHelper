@@ -6,11 +6,30 @@
 
 ## Supported frameworks
 - TensorFlow Lite
-- TensorFlow Lite with delegate (GPU, XNNPACK, EdgeTPU)
+- TensorFlow Lite with delegate (XNNPACK, GPU, EdgeTPU)
 - TensorRT
 - OpenCV(dnn)
 - ncnn
 - MNN
+
+## Supported targets
+- Windows 10 (Visual Studio 2017 x64, Visual Studio 2019 x64)
+- Linux (x64, armv7, aarch64)
+- Android (armv7, aarch64)
+
+## Tested Environment
+| Framework                 | Windows (x64)            | Linux (x64)   | Linux (armv7) | Linux (aarch64)  | Android (aarch64) |
+|---------------------------|--------------------------|---------------|---------------|------------------|-------------------|
+| OpenCV(dnn)               | OK                       | OK            | OK            | OK               | not tested        |
+| TensorFlow Lite           | OK                       | OK            | OK            | OK               | OK                |
+| TensorFlow Lite + XNNPACK | OK                       | OK            | OK            | OK               | OK                |
+| TensorFlow Lite + GPU     | not supported            | OK            | not tested    | OK               | OK                |
+| TensorFlow Lite + EdgeTPU | OK                       | not tested    | OK            | OK               | OK                |
+| TensorRT                  | not tested               | not tested    | not tested    | OK               | not supported     |
+| ncnn                      | OK                       | OK            | OK            | OK               | OK                |
+| MNN                       | OK                       | OK            | OK            | OK               | OK                |
+| Note                      | Visual Studio 2017, 2019 | Xubuntu 18.04 | Raspberry Pi  | Jetson Xavier NX | Pixel 4a          |
+
 
 ## Sample project
 https://github.com/iwatake2222/InferenceHelper_Sample
@@ -21,24 +40,26 @@ https://github.com/iwatake2222/InferenceHelper_Sample
 - https://github.com/iwatake2222/play_with_ncnn
 - https://github.com/iwatake2222/play_with_mnn
 
-## Tested Environment
-- Windows 10 (Visual Studio 2017 x64)
-- Linux (Xubuntu 18.04 x64)
-- Linux (Jetson Xavier NX)
-
 # Usage
 ## Installation
 - Add this repository into your project (Using `git submodule` is recommended)
-- This class requires pre-built deep learning framework library and appropreate cmake variables need to be set
-- Please see the sample project
+- Download prebuilt libraries
+	- Download prebuilt libraries (ThirdParty.zip) from https://github.com/iwatake2222/InferenceHelper/releases/ 
+	- Extract it to `ThirdParty`
+
+### (For Tensorflow Lite)
+- After adding or cloning this repository, you need to download header files
+	```
+	git submodule init
+	git submodule update
+	cd ThirdParty/tensorflow
+	chmod +x tensorflow/lite/tools/make/download_dependencies.sh
+	tensorflow/lite/tools/make/download_dependencies.sh
+	```
 
 ## Project settings in CMake
-- CMake variables
-	- `THIRD_PARTY_DIR` : set the directory containing pre-built deep learning framework libraries
-
 - Add InferenceHelper and CommonHelper to your project
 	```cmake
-	set(THIRD_PARTY_DIR ${CMAKE_CURRENT_LIST_DIR}/../../third_party/)
 	set(INFERENCE_HELPER_DIR ${CMAKE_CURRENT_LIST_DIR}/../../InferenceHelper/)
 	add_subdirectory(${INFERENCE_HELPER_DIR}/CommonHelper CommonHelper)
 	target_include_directories(${LibraryName} PUBLIC ${INFERENCE_HELPER_DIR}/CommonHelper)
