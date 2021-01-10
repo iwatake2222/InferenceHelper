@@ -1,4 +1,4 @@
-<mxfile host="65bd71144e" modified="2020-12-27T09:02:34.596Z" agent="5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.46.1 Chrome/78.0.3904.130 Electron/7.3.1 Safari/537.36" etag="Ge7SQ_ebyERRGwPVspIJ" version="13.10.0" type="embed">
+<mxfile host="65bd71144e" modified="2021-01-10T01:48:26.266Z" agent="5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.46.1 Chrome/78.0.3904.130 Electron/7.3.1 Safari/537.36" etag="uZrn58mdqdMWxrp378wF" version="13.10.0" type="embed">
     <diagram id="2nVCpC3mRS13LhFPs2z5" name="Page-1">
         <mxGraphModel dx="1877" dy="1993" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
@@ -119,7 +119,7 @@
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="52" value="&lt;p style=&quot;margin: 4px 0px 0px ; text-align: center&quot;&gt;&lt;b&gt;&lt;u&gt;HELPER_TYPE&lt;/u&gt;&lt;/b&gt;&lt;br&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;TENSOR_RT,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;TENSORFLOW_LITE,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;TENSORFLOW_LITE_EDGETPU,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;TENSORFLOW_LITE_GPU,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;TENSORFLOW_LITE_XNNPACK,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;NCNN,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;MNN,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;OPEN_CV,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;OPEN_CV_GPU,&lt;/p&gt;" style="verticalAlign=top;align=left;overflow=fill;fontSize=12;fontFamily=Helvetica;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="-110" y="100" width="210" height="170" as="geometry"/>
+                    <mxGeometry x="-110" y="59" width="210" height="170" as="geometry"/>
                 </mxCell>
                 <mxCell id="54" value="&lt;p style=&quot;margin: 4px 0px 0px ; text-align: center&quot;&gt;&lt;b&gt;&lt;u&gt;DATA_TYPE&lt;/u&gt;&lt;/b&gt;&lt;br&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;DATA_TYPE_IMAGE,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;DATA_TYPE_BLOB_NHWC,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;DATA_TYPE_BLOB_NCHW,&lt;/p&gt;" style="verticalAlign=top;align=left;overflow=fill;fontSize=12;fontFamily=Helvetica;html=1;" parent="1" vertex="1">
                     <mxGeometry x="470" y="448" width="210" height="80" as="geometry"/>
@@ -156,6 +156,19 @@
                     <mxGeometry width="160" relative="1" as="geometry">
                         <mxPoint x="110" y="-130" as="sourcePoint"/>
                         <mxPoint x="270" y="-130" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="73" value="ThirdParty/&lt;br&gt;pre-built library" style="html=1;" vertex="1" parent="1">
+                    <mxGeometry x="100" y="448" width="110" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="74" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;dashed=1;dashPattern=1 2;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="250" width="660" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="76" value="link" style="endArrow=open;endFill=1;endSize=12;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.25;exitY=1;exitDx=0;exitDy=0;dashed=1;" edge="1" parent="1" source="74" target="73">
+                    <mxGeometry x="-0.4963" y="11" width="160" relative="1" as="geometry">
+                        <mxPoint x="660" y="144" as="sourcePoint"/>
+                        <mxPoint x="790" y="163" as="targetPoint"/>
+                        <mxPoint as="offset"/>
                     </mxGeometry>
                 </mxCell>
             </root>
