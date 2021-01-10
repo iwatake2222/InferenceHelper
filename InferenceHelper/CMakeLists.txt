@@ -1,14 +1,15 @@
 cmake_minimum_required(VERSION 3.0)
 
 set(LibraryName "InferenceHelper")
+set(THIRD_PARTY_DIR ${CMAKE_CURRENT_LIST_DIR}/../ThirdParty/)
 
 set(INFERENCE_HELPER_ENABLE_PRE_PROCESS_BY_OPENCV on CACHE BOOL "Enable PreProcess by OpenCV? [on/off]")
 set(INFERENCE_HELPER_ENABLE_OPENCV on CACHE BOOL "With OpenCV? [on/off]")
-set(INFERENCE_HELPER_ENABLE_TENSORRT off CACHE BOOL "With TensorRT? [on/off]")
 set(INFERENCE_HELPER_ENABLE_TFLITE off CACHE BOOL "With Tflite? [on/off]")
-set(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU off CACHE BOOL "With Tflite Delegate EdgeTPU? [on/off]")
-set(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU off CACHE BOOL "With Tflite Delegate GPU? [on/off]")
 set(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK off CACHE BOOL "With Tflite Delegate XNNPACK? [on/off]")
+set(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU off CACHE BOOL "With Tflite Delegate GPU? [on/off]")
+set(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU off CACHE BOOL "With Tflite Delegate EdgeTPU? [on/off]")
+set(INFERENCE_HELPER_ENABLE_TENSORRT off CACHE BOOL "With TensorRT? [on/off]")
 set(INFERENCE_HELPER_ENABLE_NCNN off CACHE BOOL "With Ncnn? [on/off]")
 set(INFERENCE_HELPER_ENABLE_MNN off CACHE BOOL "With Mnn? [on/off]")
 
@@ -18,13 +19,16 @@ set(SRC InferenceHelper.h InferenceHelper.cpp)
 if(INFERENCE_HELPER_ENABLE_OPENCV)
 	set(SRC ${SRC} InferenceHelperOpenCV.h InferenceHelperOpenCV.cpp)
 endif()
+
+if(INFERENCE_HELPER_ENABLE_TFLITE OR INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK OR INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU OR INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU)
+	set(SRC ${SRC} InferenceHelperTensorflowLite.h InferenceHelperTensorflowLite.cpp)
+endif()
+
 if(INFERENCE_HELPER_ENABLE_TENSORRT)
 	set(SRC ${SRC} InferenceHelperTensorRt.h InferenceHelperTensorRt.cpp)
 	set(SRC ${SRC} TensorRT/logger.cpp TensorRT/BatchStream.h TensorRT/common.h TensorRT/EntropyCalibrator.h TensorRT/logger.h TensorRT/logging.h)
 endif()
-if(INFERENCE_HELPER_ENABLE_TFLITE OR INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK OR INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU OR INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU)
-	set(SRC ${SRC} InferenceHelperTensorflowLite.h InferenceHelperTensorflowLite.cpp)
-endif()
+
 if(INFERENCE_HELPER_ENABLE_NCNN)
 	set(SRC ${SRC} InferenceHelperNcnn.h InferenceHelperNcnn.cpp)
 endif()
@@ -50,28 +54,6 @@ if(INFERENCE_HELPER_ENABLE_OPENCV)
 	target_include_directories(${LibraryName} PUBLIC ${OpenCV_INCLUDE_DIRS})
 	target_link_libraries(${LibraryName} ${OpenCV_LIBS})
 	add_definitions(-DINFERENCE_HELPER_ENABLE_OPENCV)
-endif()
-
-# For TensorRT
-if(INFERENCE_HELPER_ENABLE_TENSORRT)
-	find_package(CUDA)
-	if(CUDA_FOUND)
-		target_link_libraries(${LibraryName}
-			${CUDA_LIBRARIES}
-			nvinfer
-			nvonnxparser
-			nvinfer_plugin
-			cudnn
-		)
-		target_include_directories(${LibraryName} PUBLIC
-			${CUDA_INCLUDE_DIRS}
-			TensorRT
-		)
-		add_definitions(-DINFERENCE_HELPER_ENABLE_TENSORRT)
-		message("CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}")
-	else()
-		message(WARNING, "Cannot find CUDA")
-	endif()
 endif()
 
 # For Tensorflow Lite
@@ -108,6 +90,28 @@ if(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU)
 	add_definitions(-DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU)
 endif()
 
+# For TensorRT
+if(INFERENCE_HELPER_ENABLE_TENSORRT)
+	find_package(CUDA)
+	if(CUDA_FOUND)
+		target_link_libraries(${LibraryName}
+			${CUDA_LIBRARIES}
+			nvinfer
+			nvonnxparser
+			nvinfer_plugin
+			cudnn
+		)
+		target_include_directories(${LibraryName} PUBLIC
+			${CUDA_INCLUDE_DIRS}
+			TensorRT
+		)
+		add_definitions(-DINFERENCE_HELPER_ENABLE_TENSORRT)
+		message("CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}")
+	else()
+		message(WARNING, "Cannot find CUDA")
+	endif()
+endif()
+
 # For NCNN
 if(INFERENCE_HELPER_ENABLE_NCNN)
 	include(${THIRD_PARTY_DIR}/cmakes/ncnn.cmake)
@@ -115,7 +119,6 @@ if(INFERENCE_HELPER_ENABLE_NCNN)
 	target_link_libraries(${LibraryName} ${NCNN_LIB})
 	add_definitions(-DINFERENCE_HELPER_ENABLE_NCNN)
 endif()
-
 
 # For MNN
 if(INFERENCE_HELPER_ENABLE_MNN)

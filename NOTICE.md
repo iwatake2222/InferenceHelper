@@ -11,7 +11,7 @@ This project utilizes the following OSS (Open Source Software):
 	- https://github.com/google-coral/libedgetpu
 	- Copyright 2019 Google LLC
 	- Licensed under the Apache License, Version 2.0
-	- Modification: no
+	- Modification: yes
 	- Pre-built binary file is generated from this project
 
 - TensorRT

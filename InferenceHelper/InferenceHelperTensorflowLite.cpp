@@ -85,7 +85,11 @@ int32_t InferenceHelperTensorflowLite::initialize(const std::string& modelFilena
 		if (num_devices > 0) {
 			const auto& device = devices.get()[0];
 			m_delegate = edgetpu_create_delegate(device.type, device.path, nullptr, 0);
-			m_interpreter->ModifyGraphWithDelegate(m_delegate);
+			if (m_delegate) {
+				m_interpreter->ModifyGraphWithDelegate(m_delegate);
+			} else {
+				PRINT_E("[WARNING] Failed to create Edge TPU delegate\n");
+			}
 		} else {
 			PRINT_E("[WARNING] Edge TPU is not found\n");
 		}
