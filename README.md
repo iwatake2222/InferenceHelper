@@ -23,8 +23,8 @@
 | OpenCV(dnn)               | OK                       | OK            | OK            | OK               | not tested        |
 | TensorFlow Lite           | OK                       | OK            | OK            | OK               | OK                |
 | TensorFlow Lite + XNNPACK | OK                       | OK            | OK            | OK               | OK                |
-| TensorFlow Lite + GPU     | not supported            | OK            | not tested    | OK               | OK                |
-| TensorFlow Lite + EdgeTPU | OK                       | not tested    | OK            | OK               | OK                |
+| TensorFlow Lite + GPU     | not supported            | OK            | OK            | OK               | OK                |
+| TensorFlow Lite + EdgeTPU | OK                       | not tested    | OK            | OK               | not supported     |
 | TensorRT                  | not tested               | not tested    | not tested    | OK               | not supported     |
 | ncnn                      | OK                       | OK            | OK            | OK               | OK                |
 | MNN                       | OK                       | OK            | OK            | OK               | OK                |
