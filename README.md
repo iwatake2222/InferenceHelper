@@ -6,7 +6,7 @@
 
 ## Supported frameworks
 - TensorFlow Lite
-- TensorFlow Lite with delegate (XNNPACK, GPU, EdgeTPU)
+- TensorFlow Lite with delegate (XNNPACK, GPU, EdgeTPU, NNAPI)
 - TensorRT
 - OpenCV(dnn)
 - ncnn
@@ -25,6 +25,7 @@
 | TensorFlow Lite + XNNPACK | OK                       | OK            | OK            | OK               | OK                |
 | TensorFlow Lite + GPU     | not supported            | OK            | not tested    | OK               | OK                |
 | TensorFlow Lite + EdgeTPU | OK                       | not tested    | OK            | OK               | OK                |
+| TensorFlow Lite + NNAPI   | not supported            | not supported | not supported | not supported    | OK                |
 | TensorRT                  | not tested               | not tested    | not tested    | OK               | not supported     |
 | ncnn                      | OK                       | OK            | OK            | OK               | OK                |
 | MNN                       | OK                       | OK            | OK            | OK               | OK                |
@@ -85,6 +86,8 @@ https://github.com/iwatake2222/InferenceHelper_Sample
 	cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU=on
 	# Tensorflow Lite (EdgeTPU)
 	cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU=on
+	# Tensorflow Lite (NNAPI)
+	cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI=on
 	# TensorRT
 	cmake .. -DINFERENCE_HELPER_ENABLE_TENSORRT=on
 	# ncnn
@@ -110,6 +113,7 @@ typedef enum {
 	TENSORFLOW_LITE_XNNPACK,
 	TENSORFLOW_LITE_GPU,
 	TENSORFLOW_LITE_EDGETPU,
+	TENSORFLOW_LITE_NNAPI,
 	TENSOR_RT,
 	NCNN,
 	MNN,

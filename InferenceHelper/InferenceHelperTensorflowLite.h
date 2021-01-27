@@ -38,6 +38,7 @@ private:
 
 
 private:
+	std::vector<char> m_modelBuffer;
 	std::unique_ptr<tflite::FlatBufferModel> m_model;
 	std::unique_ptr<tflite::ops::builtin::BuiltinOpResolver> m_resolver;
 	std::unique_ptr<tflite::Interpreter> m_interpreter;

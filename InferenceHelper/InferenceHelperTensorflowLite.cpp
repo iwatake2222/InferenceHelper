@@ -9,6 +9,8 @@
 #include <array>
 #include <algorithm>
 #include <chrono>
+#include <fstream>
+#include <iostream>
 
 /* for Tensorflow Lite */
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU
@@ -63,7 +65,21 @@ int32_t InferenceHelperTensorflowLite::setCustomOps(const std::vector<std::pair<
 int32_t InferenceHelperTensorflowLite::initialize(const std::string& modelFilename, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList)
 {
 	/*** Create network ***/
+#if 0
 	m_model = tflite::FlatBufferModel::BuildFromFile(modelFilename.c_str());
+#else
+	std::ifstream ifs(modelFilename, std::ios::binary);
+	if (ifs) {
+		ifs >> std::noskipws;
+		(void)std::copy(std::istream_iterator<char>(ifs), std::istream_iterator<char>(), back_inserter(m_modelBuffer));
+	} else {
+		PRINT_E("Failed to read model (%s)\n", modelFilename.c_str());
+		return RET_ERR;
+	}
+	ifs.close();
+	m_model = tflite::FlatBufferModel::BuildFromBuffer(m_modelBuffer.data(), m_modelBuffer.size());
+#endif
+
 	if (m_model == nullptr) {
 		PRINT_E("Failed to build model (%s)\n", modelFilename.c_str());
 		return RET_ERR;
@@ -78,6 +94,23 @@ int32_t InferenceHelperTensorflowLite::initialize(const std::string& modelFilena
 
 	m_interpreter->SetNumThreads(m_numThread);
 
+#ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK
+	if (m_helperType == TENSORFLOW_LITE_XNNPACK) {
+		auto options = TfLiteXNNPackDelegateOptionsDefault();
+		options.num_threads = m_numThread;
+		m_delegate = TfLiteXNNPackDelegateCreate(&options);
+		m_interpreter->ModifyGraphWithDelegate(m_delegate);
+	}
+#endif
+#ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU
+	if (m_helperType == TENSORFLOW_LITE_GPU) {
+		auto options = TfLiteGpuDelegateOptionsV2Default();
+		options.inference_preference = TFLITE_GPU_INFERENCE_PREFERENCE_SUSTAINED_SPEED;
+		options.inference_priority1 = TFLITE_GPU_INFERENCE_PRIORITY_MIN_LATENCY;
+		m_delegate = TfLiteGpuDelegateV2Create(&options);
+		m_interpreter->ModifyGraphWithDelegate(m_delegate);
+	}
+#endif
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU
 	if (m_helperType == TENSORFLOW_LITE_EDGETPU) {
 		size_t num_devices;
@@ -95,24 +128,28 @@ int32_t InferenceHelperTensorflowLite::initialize(const std::string& modelFilena
 		}
 	}
 #endif
-#ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU
-	if (m_helperType == TENSORFLOW_LITE_GPU) {
-		auto options = TfLiteGpuDelegateOptionsV2Default();
-		options.inference_preference = TFLITE_GPU_INFERENCE_PREFERENCE_SUSTAINED_SPEED;
-		options.inference_priority1 = TFLITE_GPU_INFERENCE_PRIORITY_MIN_LATENCY;
-		m_delegate = TfLiteGpuDelegateV2Create(&options);
-		m_interpreter->ModifyGraphWithDelegate(m_delegate);
+#ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI
+	if (m_helperType == TENSORFLOW_LITE_NNAPI) {
+		m_interpreter->SetNumThreads(1);
+		tflite::StatefulNnApiDelegate::Options options;
+		//options.execution_preference = tflite::StatefulNnApiDelegate::Options::kSustainedSpeed;
+		//options.disallow_nnapi_cpu = true;
+		//options.allow_fp16 = true;
+		//options.accelerator_name = "qti-default";
+		//options.accelerator_name = "qti-dsp";
+		//options.accelerator_name = "qti-gpu";
+		//options.accelerator_name = "nnapi-reference";
+		m_delegate = new tflite::StatefulNnApiDelegate(options);
+		if (m_delegate) {
+			m_interpreter->ModifyGraphWithDelegate(m_delegate);
+			//m_interpreter->SetAllowFp16PrecisionForFp32(true);
+			auto actualOptions = tflite::StatefulNnApiDelegate::GetOptions(m_delegate);
+			PRINT("[INFO] NNAPI options.accelerator_name = %s\n", actualOptions.accelerator_name);
+		} else {
+			PRINT_E("[WARNING] Failed to create NNAPI delegate\n");
+		}
 	}
 #endif
-#ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK
-	if (m_helperType == TENSORFLOW_LITE_XNNPACK) {
-		auto options = TfLiteXNNPackDelegateOptionsDefault();
-		options.num_threads = m_numThread;
-		m_delegate = TfLiteXNNPackDelegateCreate(&options);
-		m_interpreter->ModifyGraphWithDelegate(m_delegate);
-	}
-#endif
-
 	/* Memo: If you get error around here in Visual Studio, please make sure you don't use Debug */
 	if (m_interpreter->AllocateTensors() != kTfLiteOk) {
 		PRINT_E("Failed to allocate tensors (%s)\n", modelFilename.c_str());
@@ -166,6 +203,11 @@ int32_t InferenceHelperTensorflowLite::finalize(void)
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK
 	if (m_helperType == TENSORFLOW_LITE_XNNPACK) {
 		TfLiteXNNPackDelegateDelete(m_delegate);
+	}
+#endif
+#ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI
+	if (m_helperType == TENSORFLOW_LITE_NNAPI) {
+		delete reinterpret_cast<tflite::StatefulNnApiDelegate*>(m_delegate);
 	}
 #endif
 	return RET_OK;
