@@ -71,6 +71,12 @@ InferenceHelper* InferenceHelper::create(const InferenceHelper::HELPER_TYPE type
 		p = new InferenceHelperTensorflowLite();
 		break;
 #endif
+#ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI
+	case TENSORFLOW_LITE_NNAPI:
+		PRINT("Use TensorflowLite NNAPI Delegate\n");
+		p = new InferenceHelperTensorflowLite();
+		break;
+#endif
 #ifdef INFERENCE_HELPER_ENABLE_TENSORRT
 	case TENSOR_RT:
 		PRINT("Use TensorRT \n");
