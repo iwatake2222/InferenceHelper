@@ -165,6 +165,7 @@ public:
 		TENSOR_RT,
 		NCNN,
 		MNN,
+		SNPE,
 	} HELPER_TYPE;
 
 public:

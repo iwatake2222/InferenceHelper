@@ -13,6 +13,7 @@ set(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI off CACHE BOOL "With Tflite De
 set(INFERENCE_HELPER_ENABLE_TENSORRT off CACHE BOOL "With TensorRT? [on/off]")
 set(INFERENCE_HELPER_ENABLE_NCNN off CACHE BOOL "With Ncnn? [on/off]")
 set(INFERENCE_HELPER_ENABLE_MNN off CACHE BOOL "With Mnn? [on/off]")
+set(INFERENCE_HELPER_ENABLE_SNPE off CACHE BOOL "With SNPE? [on/off]")
 
 # Create library
 set(SRC InferenceHelper.h InferenceHelper.cpp)
@@ -33,9 +34,16 @@ endif()
 if(INFERENCE_HELPER_ENABLE_NCNN)
 	set(SRC ${SRC} InferenceHelperNcnn.h InferenceHelperNcnn.cpp)
 endif()
+
 if(INFERENCE_HELPER_ENABLE_MNN)
 	set(SRC ${SRC} InferenceHelperMnn.h InferenceHelperMnn.cpp)
 endif()
+
+if(INFERENCE_HELPER_ENABLE_SNPE)
+	set(SRC ${SRC} InferenceHelperSnpe.h InferenceHelperSnpe.cpp)
+	set(SRC ${SRC} SNPE/CreateUserBuffer.cpp SNPE/CreateUserBuffer.hpp SNPE/Util.cpp SNPE/Util.hpp SNPE/udlExample.cpp SNPE/udlExample.hpp)
+endif()
+
 add_library(${LibraryName} ${SRC})
 
 target_include_directories(${LibraryName} PUBLIC ../CommonHelper)
@@ -134,3 +142,12 @@ if(INFERENCE_HELPER_ENABLE_MNN)
 	target_link_libraries(${LibraryName} ${MNN_LIB})
 	add_definitions(-DINFERENCE_HELPER_ENABLE_MNN)
 endif()
+
+# For SNPE
+if(INFERENCE_HELPER_ENABLE_SNPE)
+	include(${THIRD_PARTY_DIR}/cmakes/SNPE.cmake)
+	target_include_directories(${LibraryName} PUBLIC ${SNPE_INC} ./SNPE)
+	target_link_libraries(${LibraryName} ${SNPE_LIB})
+	add_definitions(-DINFERENCE_HELPER_ENABLE_SNPE)
+endif()
+

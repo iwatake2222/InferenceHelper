@@ -29,6 +29,9 @@
 #ifdef INFERENCE_HELPER_ENABLE_MNN
 #include "InferenceHelperMnn.h"
 #endif
+#ifdef INFERENCE_HELPER_ENABLE_SNPE
+#include "InferenceHelperSnpe.h"
+#endif
 
 /*** Macro ***/
 #define TAG "InferenceHelper"
@@ -95,6 +98,13 @@ InferenceHelper* InferenceHelper::create(const InferenceHelper::HELPER_TYPE type
 		p = new InferenceHelperMnn();
 		break;
 #endif
+#ifdef INFERENCE_HELPER_ENABLE_SNPE
+	case SNPE:
+		PRINT("Use SNPE\n");
+		p = new InferenceHelperSnpe();
+		break;
+#endif
+
 	default:
 		PRINT_E("Unsupported inference helper type (%d)\n", type);
 		break;

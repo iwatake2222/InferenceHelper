@@ -1,0 +1,1 @@
+The source code files in this directory are retrieved from snpe-1.50.0.2622\examples\NativeCpp\SampleCode\jni
