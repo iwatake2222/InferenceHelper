@@ -11,6 +11,7 @@
 - OpenCV(dnn)
 - ncnn
 - MNN
+- SNPE (Snapdragon Neural Processing Engine SDK (Qualcomm Neural Processing SDK for AI v1.51.0))
 
 ## Supported targets
 - Windows 10 (Visual Studio 2017 x64, Visual Studio 2019 x64)
@@ -29,6 +30,7 @@
 | TensorRT                  | not tested               | not tested    | not tested    | OK               | not supported     |
 | ncnn                      | OK                       | OK            | OK            | OK               | OK                |
 | MNN                       | OK                       | OK            | OK            | OK               | OK                |
+| SNPE                      | not supported            | not supported | not tested    | OK               | OK                |
 | Note                      | Visual Studio 2017, 2019 | Xubuntu 18.04 | Raspberry Pi  | Jetson Xavier NX | Pixel 4a          |
 
 
@@ -40,260 +42,262 @@ https://github.com/iwatake2222/InferenceHelper_Sample
 - https://github.com/iwatake2222/play_with_tensorrt
 - https://github.com/iwatake2222/play_with_ncnn
 - https://github.com/iwatake2222/play_with_mnn
+- https://github.com/iwatake2222/play_with_snpe
 
 # Usage
 ## Installation
 - Add this repository into your project (Using `git submodule` is recommended)
 - Download prebuilt libraries
-	- Download prebuilt libraries (ThirdParty.zip) from https://github.com/iwatake2222/InferenceHelper/releases/ 
-	- Extract it to `ThirdParty`
+    - Download prebuilt libraries (ThirdParty.zip) from https://github.com/iwatake2222/InferenceHelper/releases/ 
+    - Extract it to `third_party`
 
-### (For Tensorflow Lite)
+### For Tensorflow Lite
 - After adding or cloning this repository, you need to download header files
-	```
-	git submodule init
-	git submodule update
-	cd ThirdParty/tensorflow
-	chmod +x tensorflow/lite/tools/make/download_dependencies.sh
-	tensorflow/lite/tools/make/download_dependencies.sh
-	```
+    ```
+    git submodule init
+    git submodule update
+    cd third_party/tensorflow
+    chmod +x tensorflow/lite/tools/make/download_dependencies.sh
+    tensorflow/lite/tools/make/download_dependencies.sh
+    ```
+
+### For SNPE
+- After adding or cloning this repository, you need to download library from https://developer.qualcomm.com/software/qualcomm-neural-processing-sdk/tools
+- Extract `snpe-1.51.0.zip` , then place `lib` and `include` folders to `third_party/snpe`
 
 ## Project settings in CMake
 - Add InferenceHelper and CommonHelper to your project
-	```cmake
-	set(INFERENCE_HELPER_DIR ${CMAKE_CURRENT_LIST_DIR}/../../InferenceHelper/)
-	add_subdirectory(${INFERENCE_HELPER_DIR}/CommonHelper CommonHelper)
-	target_include_directories(${LibraryName} PUBLIC ${INFERENCE_HELPER_DIR}/CommonHelper)
-	target_link_libraries(${LibraryName} CommonHelper)
+    ```cmake
+    set(INFERENCE_HELPER_DIR ${CMAKE_CURRENT_LIST_DIR}/../../InferenceHelper/)
+    # add_subdirectory(${INFERENCE_HELPER_DIR}/common_helper common_helper)
+    target_include_directories(${LibraryName} PUBLIC ${INFERENCE_HELPER_DIR}/common_helper)
+    target_link_libraries(${LibraryName} CommonHelper)
 
-	add_subdirectory(${INFERENCE_HELPER_DIR}/InferenceHelper InferenceHelper)
-	target_include_directories(${LibraryName} PUBLIC ${INFERENCE_HELPER_DIR}/InferenceHelper)
-	target_link_libraries(${LibraryName} InferenceHelper)
-	```
+    add_subdirectory(${INFERENCE_HELPER_DIR}/inference_helper inference_helper)
+    target_include_directories(${LibraryName} PUBLIC ${INFERENCE_HELPER_DIR}/inference_helper)
+    target_link_libraries(${LibraryName} InferenceHelper)
+    ```
 
 ## CMake options
 - Deep learning framework:
-	- You can enable multiple options althoguh the following example enables just one option
+    - You can enable multiple options althoguh the following example enables just one option
 
-	```sh
-	# OpenCV (dnn)
-	cmake .. -DINFERENCE_HELPER_ENABLE_OPENCV=on
-	# Tensorflow Lite
-	cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE=on
-	# Tensorflow Lite (XNNPACK)
-	cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK=on
-	# Tensorflow Lite (GPU)
-	cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU=on
-	# Tensorflow Lite (EdgeTPU)
-	cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU=on
-	# Tensorflow Lite (NNAPI)
-	cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI=on
-	# TensorRT
-	cmake .. -DINFERENCE_HELPER_ENABLE_TENSORRT=on
-	# ncnn
-	cmake .. -DINFERENCE_HELPER_ENABLE_NCNN=on
-	# MNN
-	cmake .. -DINFERENCE_HELPER_ENABLE_MNN=on
-	```
+    ```sh
+    # OpenCV (dnn)
+    cmake .. -DINFERENCE_HELPER_ENABLE_OPENCV=on
+    # Tensorflow Lite
+    cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE=on
+    # Tensorflow Lite (XNNPACK)
+    cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK=on
+    # Tensorflow Lite (GPU)
+    cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU=on
+    # Tensorflow Lite (EdgeTPU)
+    cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU=on
+    # Tensorflow Lite (NNAPI)
+    cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI=on
+    # TensorRT
+    cmake .. -DINFERENCE_HELPER_ENABLE_TENSORRT=on
+    # ncnn
+    cmake .. -DINFERENCE_HELPER_ENABLE_NCNN=on
+    # MNN
+    cmake .. -DINFERENCE_HELPER_ENABLE_MNN=on
+    # SNPE
+    cmake .. -DINFERENCE_HELPER_ENABLE_SNPE=on
+    ```
 
 - Enable/Disable preprocess using OpenCV:
-	- By disabling this option, InferenceHelper is not dependent on OpenCV
-	```sh
-	cmake .. -INFERENCE_HELPER_ENABLE_PRE_PROCESS_BY_OPENCV=off
-	```
+    - By disabling this option, InferenceHelper is not dependent on OpenCV
+    ```sh
+    cmake .. -INFERENCE_HELPER_ENABLE_PRE_PROCESS_BY_OPENCV=off
+    ```
 
 # APIs
 ## InferenceHelper
 ### Enumeration
 ```c++
 typedef enum {
-	OPEN_CV,
-	OPEN_CV_GPU,
-	TENSORFLOW_LITE,
-	TENSORFLOW_LITE_XNNPACK,
-	TENSORFLOW_LITE_GPU,
-	TENSORFLOW_LITE_EDGETPU,
-	TENSORFLOW_LITE_NNAPI,
-	TENSOR_RT,
-	NCNN,
-	MNN,
-} HELPER_TYPE;
+    kOpencv,
+    kOpencvGpu,
+    kTensorflowLite,
+    kTensorflowLiteXnnpack,
+    kTensorflowLiteGpu,
+    kTensorflowLiteEdgetpu,
+    kTensorflowLiteNnapi,
+    kTensorrt,
+    kNcnn,
+    kMnn,
+    kSnpe,
+} HelperType;
 ```
 
-### static InferenceHelper* create(const HELPER_TYPE typeFw)
+### static InferenceHelper* Create(const HelperType helper_type)
 - Create InferenceHelper instance for the selected framework
 
 ```c++
-std::unique_ptr<InferenceHelper> inferenceHelper(InferenceHelper::create(InferenceHelper::TENSORFLOW_LITE));
+std::unique_ptr<InferenceHelper> inference_helper(InferenceHelper::Create(InferenceHelper::kTensorflowLite));
 ```
 
-### static void preProcessByOpenCV(const InputTensorInfo& inputTensorInfo, bool isNCHW, cv::Mat& imgBlob)
+### static void PreProcessByOpenCV(const InputTensorInfo& input_tensor_info, bool is_nchw, cv::Mat& img_blob)
 - Run preprocess (convert image to blob(NCHW or NHWC))
 - This is just a helper function. You may not use this function.
-	- Available when `INFERENCE_HELPER_ENABLE_PRE_PROCESS_BY_OPENCV=on`
+    - Available when `INFERENCE_HELPER_ENABLE_PRE_PROCESS_BY_OPENCV=on`
 
 ```c++
-InferenceHelper::preProcessByOpenCV(inputTensorInfo, false, imgSrc);
+InferenceHelper::PreProcessByOpenCV(input_tensor_info, false, img_blob);
 ```
 
-### int32_t setNumThread(const int32_t numThread)
+### int32_t SetNumThreads(const int32_t num_threads)
 - Set the number of threads to be used
 - This function needs to be called before initialize
 
 ```c++
-inferenceHelper->setNumThread(4);
+inference_helper->SetNumThreads(4);
 ```
 
-### int32_t setCustomOps(const std::vector<std::pair<const char*, const void*>>& customOps)
+### int32_t SetCustomOps(const std::vector<std::pair<const char*, const void*>>& custom_ops)
 - Set custom ops
 - This function needs to be called before initialize
 
 ```c++
-std::vector<std::pair<const char*, const void*>> customOps;
-customOps.push_back(std::pair<const char*, const void*>("Convolution2DTransposeBias", (const void*)mediapipe::tflite_operations::RegisterConvolution2DTransposeBias()));
-inferenceHelper->setCustomOps(customOps);
+std::vector<std::pair<const char*, const void*>> custom_ops;
+custom_ops.push_back(std::pair<const char*, const void*>("Convolution2DTransposeBias", (const void*)mediapipe::tflite_operations::RegisterConvolution2DTransposeBias()));
+inference_helper->SetCustomOps(custom_ops);
 ```
 
-### int32_t initialize(const std::string& modelFilename, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList)
+### int32_t Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 - Initialize inference helper
-	- Load model
-	- Set tensor information
+    - Load model
+    - Set tensor information
 
 ```c++
-std::vector<InputTensorInfo> inputTensorList;
-InputTensorInfo inputTensorInfo;
-inputTensorInfo.name = "input";
-inputTensorInfo.tensorType = TensorInfo::TENSOR_TYPE_FP32;
-inputTensorInfo.tensorDims.batch = 1;
-inputTensorInfo.tensorDims.width = 224;
-inputTensorInfo.tensorDims.height = 224;
-inputTensorInfo.tensorDims.channel = 3;
-inputTensorInfo.data = imgSrc.data;
-inputTensorInfo.dataType = InputTensorInfo::DATA_TYPE_IMAGE;
-inputTensorInfo.imageInfo.width = imgSrc.cols;
-inputTensorInfo.imageInfo.height = imgSrc.rows;
-inputTensorInfo.imageInfo.channel = imgSrc.channels();
-inputTensorInfo.imageInfo.cropX = 0;
-inputTensorInfo.imageInfo.cropY = 0;
-inputTensorInfo.imageInfo.cropWidth = imgSrc.cols;
-inputTensorInfo.imageInfo.cropHeight = imgSrc.rows;
-inputTensorInfo.imageInfo.isBGR = false;
-inputTensorInfo.imageInfo.swapColor = false;
-inputTensorInfo.normalize.mean[0] = 0.485f;
-inputTensorInfo.normalize.mean[1] = 0.456f;
-inputTensorInfo.normalize.mean[2] = 0.406f;
-inputTensorInfo.normalize.norm[0] = 0.229f;
-inputTensorInfo.normalize.norm[1] = 0.224f;
-inputTensorInfo.normalize.norm[2] = 0.225f;
-inputTensorList.push_back(inputTensorInfo);
+std::vector<InputTensorInfo> input_tensor_list;
+InputTensorInfo input_tensor_info("input", TensorInfo::TENSOR_TYPE_FP32);
+input_tensor_info.tensor_dims = { 1, 224, 224, 3 };
+input_tensor_info.data_type = InputTensorInfo::kDataTypeImage;
+input_tensor_info.data = img_src.data;
+input_tensor_info.imageInfo.width = img_src.cols;
+input_tensor_info.imageInfo.height = img_src.rows;
+input_tensor_info.imageInfo.channel = img_src.channels();
+input_tensor_info.imageInfo.cropX = 0;
+input_tensor_info.imageInfo.cropY = 0;
+input_tensor_info.imageInfo.cropWidth = img_src.cols;
+input_tensor_info.imageInfo.cropHeight = img_src.rows;
+input_tensor_info.imageInfo.isBGR = false;
+input_tensor_info.imageInfo.swapColor = false;
+input_tensor_info.normalize.mean[0] = 0.485f;   /* https://github.com/onnx/models/tree/master/vision/classification/mobilenet#preprocessing */
+input_tensor_info.normalize.mean[1] = 0.456f;
+input_tensor_info.normalize.mean[2] = 0.406f;
+input_tensor_info.normalize.norm[0] = 0.229f;
+input_tensor_info.normalize.norm[1] = 0.224f;
+input_tensor_info.normalize.norm[2] = 0.225f;
+input_tensor_list.push_back(input_tensor_info);
 
-std::vector<OutputTensorInfo> outputTensorList;
-OutputTensorInfo outputTensorInfo;
-outputTensorInfo.name = "MobilenetV2/Predictions/Reshape_1";
-outputTensorInfo.tensorType = TensorInfo::TENSOR_TYPE_FP32;
-outputTensorList.push_back(outputTensorInfo);
+std::vector<OutputTensorInfo> output_tensor_list;
+output_tensor_list.push_back(OutputTensorInfo("MobilenetV2/Predictions/Reshape_1", TensorInfo::TENSOR_TYPE_FP32));
 
-inferenceHelper->initialize("mobilenet_v2_1.0_224.tflite", inputTensorList, outputTensorList);
+inference_helper->initialize("mobilenet_v2_1.0_224.tflite", input_tensor_list, output_tensor_list);
 ```
 
-### int32_t finalize(void)
+### int32_t Finalize(void)
 - Finalize inference helper
 
 ```c++
-inferenceHelper->finalize();
+inference_helper->Finalize();
 ```
 
-### int32_t preProcess(const std::vector<InputTensorInfo>& inputTensorInfoList)
+### int32_t PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list)
 - Run preprocess
 - Call this function before invoke
 - Call this function even if the input data is already pre-processed in order to copy data to memory
 - **Note** : Some frameworks don't support crop, resize. So, it's better to resize image before calling preProcess.
 
 ```c++
-inferenceHelper->preProcess(inputTensorList);
+inference_helper->PreProcess(input_tensor_list);
 ```
 
-### int32_t invoke(std::vector<OutputTensorInfo>& outputTensorInfoList)
+### int32_t Process(std::vector<OutputTensorInfo>& output_tensor_info_list)
 - Run inference
 
 ```c++
-inferenceHelper->invoke(outputTensorList)
+inference_helper->Process(output_tensor_info_list)
 ```
 
 ## TensorInfo (InputTensorInfo, OutputTensorInfo)
 ### Enumeration
 ```c++
 enum {
-	TENSOR_TYPE_NONE,
-	TENSOR_TYPE_UINT8,
-	TENSOR_TYPE_FP32,
-	TENSOR_TYPE_INT32,
-	TENSOR_TYPE_INT64,
+    kTensorTypeNone,
+    kTensorTypeUint8,
+    kTensorTypeFp32,
+    kTensorTypeInt32,
+    kTensorTypeInt64,
 };
 ```
 
 ### Properties
 ```c++
-std::string name;			// [In] Set the name of tensor
-int32_t     id;				// [Out] Do not modify (Used in InferenceHelper)
-int32_t     tensorType;		// [In] The type of tensor (e.g. TENSOR_TYPE_FP32)
+std::string name;           // [In] Set the name_ of tensor
+int32_t     id;             // [Out] Do not modify (Used in InferenceHelper)
+int32_t     tensor_type;    // [In] The type of tensor (e.g. kTensorTypeFp32)
 struct {
-	int32_t batch;   // 0
-	int32_t width;   // 1
-	int32_t height;  // 2
-	int32_t channel; // 3
-} tensorDims;				// InputTensorInfo: [In] The dimentions of tensor. (If -1 is set at initialize, the size is updated from model info.)
-								// OutputTensorInfo: [Out] The dimentions of tensor is set from model information
+    int32_t batch;  // 0
+    int32_t width;  // 1
+    int32_t height; // 2
+    int32_t channel; // 3
+} tensor_dims;              // InputTensorInfo: [In] The dimentions of tensor. (If -1 is set at initialize, the size is updated from model info.)
+                            // OutputTensorInfo: [Out] The dimentions of tensor is set from model information
 ```
 
 ## InputTensorInfo
 ### Enumeration
 ```c++
 enum {
-	DATA_TYPE_IMAGE,
-	DATA_TYPE_BLOB_NHWC,	// data which already finished preprocess(color conversion, resize, normalize, etc.)
-	DATA_TYPE_BLOB_NCHW,
+    kDataTypeImage,
+    kDataTypeBlobNhwc,  // data_ which already finished preprocess(color conversion, resize, normalize_, etc.)
+    kDataTypeBlobNchw,
 };
 ```
 
 ### Properties
 ```c++
-void*   data;		// [In] Set the pointer to image/blob
-int32_t dataType;	// [In] Set the type of data (e.g. DATA_TYPE_IMAGE)
+void*   data;      // [In] Set the pointer to image/blob
+int32_t data_type; // [In] Set the type of data_ (e.g. kDataTypeImage)
+
 struct {
-	int32_t width;
-	int32_t height;
-	int32_t channel;
-	int32_t cropX;
-	int32_t cropY;
-	int32_t cropWidth;
-	int32_t cropHeight;
-	bool    isBGR;        // used when channel == 3 (true: BGR, false: RGB)
-	bool    swapColor;
-} imageInfo;              // [In] used when dataType == DATA_TYPE_IMAGE
+    int32_t width;
+    int32_t height;
+    int32_t channel;
+    int32_t crop_x;
+    int32_t crop_y;
+    int32_t crop_width;
+    int32_t crop_height;
+    bool    is_bgr;        // used when channel == 3 (true: BGR, false: RGB)
+    bool    swap_color;
+} image_info;              // [In] used when data_type_ == kDataTypeImage
+
 struct {
-	float mean[3];
-	float norm[3];
-} normalize;              // [In] used when dataType == DATA_TYPE_IMAGE
+    float mean[3];
+    float norm[3];
+} normalize;              // [In] used when data_type_ == kDataTypeImage
 ```
 
 
 ## OutputTensorInfo
 ### Properties
 ```c++
-void* data;				// [Out] Pointer to the output data
+void* data;     // [Out] Pointer to the output data_
 struct {
-	float   scale;
-	uint8_t zeroPoint;
-} quant;				// [Out] Parameters for dequantization (convert uint8 to float)
+    float   scale;
+    uint8_t zeroPoint;
+} quant;        // [Out] Parameters for dequantization (convert uint8 to float)
 ```
 
-### float* getDataAsFloat()
+### float* GetDataAsFloat()
 - Get output data in the form of FP32
 - When tensor type is INT8 (quantized), the data is converted to FP32 (dequantized)
 
 ```c++
-const float* valFloat = outputTensorList[0].getDataAsFloat();
+const float* val_float = output_tensor_list[0].GetDataAsFloat();
 ```
 
 # License
@@ -304,4 +308,4 @@ const float* valFloat = outputTensorList[0].getDataAsFloat();
 
 # Acknowledgements
 - This project utilizes OSS (Open Source Software)
-	- [NOTICE.md](NOTICE.md)
+    - [NOTICE.md](NOTICE.md)

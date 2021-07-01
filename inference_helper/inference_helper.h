@@ -59,7 +59,7 @@ class InputTensorInfo : public TensorInfo {
 public:
     enum {
         kDataTypeImage,
-        kDataTypeBlobNhwc,	// data_ which already finished preprocess(color conversion, resize, normalize_, etc.)
+        kDataTypeBlobNhwc,  // data_ which already finished preprocess(color conversion, resize, normalize_, etc.)
         kDataTypeBlobNchw,
     };
 

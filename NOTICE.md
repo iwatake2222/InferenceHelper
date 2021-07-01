@@ -1,40 +1,44 @@
 This project utilizes the following OSS (Open Source Software):
 
 - tensorflow
-	- https://github.com/tensorflow/tensorflow
-	- Copyright 2019 The TensorFlow Authors
-	- Licensed under the Apache License, Version 2.0
-	- Modification: no
-	- Pre-built binary file is generated from this project
+   - https://github.com/tensorflow/tensorflow
+   - Copyright 2019 The TensorFlow Authors
+   - Licensed under the Apache License, Version 2.0
+   - Modification: no
+   - Pre-built binary file is generated from this project
 
 - libedgetpu
-	- https://github.com/google-coral/libedgetpu
-	- Copyright 2019 Google LLC
-	- Licensed under the Apache License, Version 2.0
-	- Modification: yes
-	- Pre-built binary file is generated from this project
+   - https://github.com/google-coral/libedgetpu
+   - Copyright 2019 Google LLC
+   - Licensed under the Apache License, Version 2.0
+   - Modification: yes
+   - Pre-built binary file is generated from this project
 
 - TensorRT
-	- https://github.com/nvidia/TensorRT
-	- Copyright 2020 NVIDIA Corporation
-	- Licensed under the Apache License, Version 2.0
-	- Modification: yes
-	- Some code are retrieved from this repository
+   - https://github.com/nvidia/TensorRT
+   - Copyright 2020 NVIDIA Corporation
+   - Licensed under the Apache License, Version 2.0
+   - Modification: yes
+   - Some code are retrieved from this repository
 
 - ncnn
-	- https://github.com/Tencent/ncnn
-	- Copyright (C) 2017 THL A29 Limited, a Tencent company.  All rights reserved.
-	- Licensed under the BSD 3-Clause License
-	- https://github.com/Tencent/ncnn/blob/master/LICENSE.txt
-	- Modification: no
-	- Pre-built binary file is generated from this project
+   - https://github.com/Tencent/ncnn
+   - Copyright (C) 2017 THL A29 Limited, a Tencent company.  All rights reserved.
+   - Licensed under the BSD 3-Clause License
+   - https://github.com/Tencent/ncnn/blob/master/LICENSE.txt
+   - Modification: no
+   - Pre-built binary file is generated from this project
 
 - MNN
-	- https://github.com/alibaba/MNN
-	- Copyright (C) 2018 Alibaba Group Holding Limited
-	- Licensed under the Apache License, Version 2.0
-	- Modification: no
-	- Pre-built binary file is generated from this project
+   - https://github.com/alibaba/MNN
+   - Copyright (C) 2018 Alibaba Group Holding Limited
+   - Licensed under the Apache License, Version 2.0
+   - Modification: no
+   - Pre-built binary file is generated from this project
+
+- SNPE
+   - https://developer.qualcomm.com/software/qualcomm-neural-processing-sdk
+   - Copyright (c) 2017-2020 Qualcomm Technologies, Inc.
 
 --------------------------------------------------------------------
 Terms of the Apache License, Version 2.0:
