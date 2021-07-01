@@ -17,22 +17,22 @@
 
 class InferenceHelperOpenCV : public InferenceHelper {
 public:
-	InferenceHelperOpenCV();
-	~InferenceHelperOpenCV() override;
-	int32_t setNumThread(const int32_t numThread) override;
-	int32_t setCustomOps(const std::vector<std::pair<const char*, const void*>>& customOps) override;
-	int32_t initialize(const std::string& modelFilename, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList) override;
-	int32_t finalize(void) override;
-	int32_t preProcess(const std::vector<InputTensorInfo>& inputTensorInfoList) override;
-	int32_t invoke(std::vector<OutputTensorInfo>& outputTensorInfoList) override;
+    InferenceHelperOpenCV();
+    ~InferenceHelperOpenCV() override;
+    int32_t setNumThread(const int32_t numThread) override;
+    int32_t setCustomOps(const std::vector<std::pair<const char*, const void*>>& customOps) override;
+    int32_t initialize(const std::string& modelFilename, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList) override;
+    int32_t finalize(void) override;
+    int32_t preProcess(const std::vector<InputTensorInfo>& inputTensorInfoList) override;
+    int32_t invoke(std::vector<OutputTensorInfo>& outputTensorInfoList) override;
 
 private:
-	void convertNormalizeParameters(InputTensorInfo& inputTensorInfo);
+    void convertNormalizeParameters(InputTensorInfo& inputTensorInfo);
 
 private:
-	cv::dnn::Net m_net;
-	std::vector<cv::Mat> m_inMatList;
-	std::vector<cv::Mat> m_outMatList;	// store data as member variable so that an user can refer the results
+    cv::dnn::Net m_net;
+    std::vector<cv::Mat> m_inMatList;
+    std::vector<cv::Mat> m_outMatList;	// store data as member variable so that an user can refer the results
 };
 
 #endif

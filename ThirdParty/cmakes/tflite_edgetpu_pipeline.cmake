@@ -1,19 +1,19 @@
 # Create sub library for Edge TPU Pipiline
 set(TFLITE_EDGETPU_PIPELINE "TFLITE_EDGETPU_PIPELINE")
 add_library(${TFLITE_EDGETPU_PIPELINE} SHARED
-	${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/allocator.h
-	${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/common.h
-	${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/utils.cc
-	${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/utils.h
-	${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/pipelined_model_runner.cc
-	${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/pipelined_model_runner.h
-	${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/internal/aligned_alloc.h
-	${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/internal/default_allocator.h
-	${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/internal/memory_pool_allocator.cc
-	${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/internal/memory_pool_allocator.h
-	${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/internal/segment_runner.cc
-	${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/internal/segment_runner.h
-	${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/internal/thread_safe_queue.h
+    ${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/allocator.h
+    ${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/common.h
+    ${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/utils.cc
+    ${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/utils.h
+    ${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/pipelined_model_runner.cc
+    ${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/pipelined_model_runner.h
+    ${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/internal/aligned_alloc.h
+    ${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/internal/default_allocator.h
+    ${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/internal/memory_pool_allocator.cc
+    ${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/internal/memory_pool_allocator.h
+    ${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/internal/segment_runner.cc
+    ${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/internal/segment_runner.h
+    ${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline/internal/thread_safe_queue.h
 )
 
 target_include_directories(${TFLITE_EDGETPU_PIPELINE} PUBLIC ${CMAKE_CURRENT_LIST_DIR}/../edgetpu)
@@ -35,12 +35,12 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../abseil-cpp absl)
 set(ABSL_LIBS absl_synchronization absl_stacktrace absl_symbolize absl_demangle_internal absl_debugging_internal absl_dynamic_annotations absl_time absl_time_zone absl_graphcycles_internal absl_failure_signal_handler absl_malloc_internal absl_base absl_spinlock_wait)
 target_link_libraries(${TFLITE_EDGETPU_PIPELINE} ${ABSL_LIBS})
 if(NOT WIN32)
-	target_link_libraries(${TFLITE_EDGETPU_PIPELINE} atomic)
+    target_link_libraries(${TFLITE_EDGETPU_PIPELINE} atomic)
 endif()
 
 set(TFLITE_EDGETPU_PIPELINE_INC
-	${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline
+    ${CMAKE_CURRENT_LIST_DIR}/../edgetpu/src/cpp/pipeline
 )
 set(TFLITE_EDGETPU_PIPELINE_LIB
-	${TFLITE_EDGETPU_PIPELINE}
+    ${TFLITE_EDGETPU_PIPELINE}
 )
