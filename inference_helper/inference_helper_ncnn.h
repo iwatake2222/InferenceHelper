@@ -13,7 +13,7 @@
 #include "net.h"
 
 /* for My modules */
-#include "InferenceHelper.h"
+#include "inference_helper.h"
 
 class InferenceHelperNcnn : public InferenceHelper {
 public:

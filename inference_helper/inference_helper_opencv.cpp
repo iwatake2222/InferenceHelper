@@ -15,8 +15,8 @@
 #include <opencv2/dnn.hpp>
 
 /* for My modules */
-#include "CommonHelper.h"
-#include "InferenceHelperOpenCV.h"
+#include "common_helper.h"
+#include "inference_helper_opencv.h"
 
 /*** Macro ***/
 #define TAG "InferenceHelperOpenCV"

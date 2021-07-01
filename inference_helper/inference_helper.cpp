@@ -11,26 +11,26 @@
 #include <chrono>
 
 /* for My modules */
-#include "CommonHelper.h"
-#include "InferenceHelper.h"
+#include "common_helper.h"
+#include "inference_helper.h"
 
 #ifdef INFERENCE_HELPER_ENABLE_OPENCV
-#include "InferenceHelperOpenCV.h"
+#include "inference_helper_opencV.h"
 #endif
 #if defined(INFERENCE_HELPER_ENABLE_TFLITE) || defined(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK) || defined(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU) || defined(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU)
-#include "InferenceHelperTensorflowLite.h"
+#include "inference_helper_tensorflow_lite.h"
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_TENSORRT
-#include "InferenceHelperTensorRt.h"
+#include "inference_helper_tensorrt.h"
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_NCNN
-#include "InferenceHelperNcnn.h"
+#include "inference_helper_ncnn.h"
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_MNN
-#include "InferenceHelperMnn.h"
+#include "inference_helper_mnn.h"
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_SNPE
-#include "InferenceHelperSnpe.h"
+#include "inference_helper_snpe.h"
 #endif
 
 /*** Macro ***/

@@ -26,11 +26,9 @@
 #include "tensorflow/lite/delegates/xnnpack/xnnpack_delegate.h"
 #endif
 
-#include "InferenceHelperTensorflowLite.h"
-
 /* for My modules */
-#include "CommonHelper.h"
-#include "InferenceHelperTensorflowLite.h"
+#include "common_helper.h"
+#include "inference_helper_tensorflow_lite.h"
 
 /*** Macro ***/
 #define TAG "InferenceHelperTensorflowLite"

@@ -1,5 +1,5 @@
-#ifndef INFERENCE_HELPER_OPENCV_
-#define INFERENCE_HELPER_OPENCV_
+#ifndef INFERENCE_HELPER_MNN_
+#define INFERENCE_HELPER_MNN_
 
 /* for general */
 #include <cstdint>
@@ -7,18 +7,20 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <memory>
 
-/* for OpenCV */
-#include <opencv2/opencv.hpp>
-#include <opencv2/dnn.hpp>
+/* for MNN */
+#include <MNN/ImageProcess.hpp>
+#include <MNN/Interpreter.hpp>
+#include <MNN/AutoTime.hpp>
 
 /* for My modules */
-#include "InferenceHelper.h"
+#include "inference_helper.h"
 
-class InferenceHelperOpenCV : public InferenceHelper {
+class InferenceHelperMnn : public InferenceHelper {
 public:
-    InferenceHelperOpenCV();
-    ~InferenceHelperOpenCV() override;
+    InferenceHelperMnn();
+    ~InferenceHelperMnn() override;
     int32_t setNumThread(const int32_t numThread) override;
     int32_t setCustomOps(const std::vector<std::pair<const char*, const void*>>& customOps) override;
     int32_t initialize(const std::string& modelFilename, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList) override;
@@ -30,9 +32,10 @@ private:
     void convertNormalizeParameters(InputTensorInfo& inputTensorInfo);
 
 private:
-    cv::dnn::Net m_net;
-    std::vector<cv::Mat> m_inMatList;
-    std::vector<cv::Mat> m_outMatList;	// store data as member variable so that an user can refer the results
+    std::unique_ptr<MNN::Interpreter> m_net;
+    MNN::Session* m_session;
+    std::vector<std::unique_ptr<MNN::Tensor>> m_outMatList;
+    int32_t m_numThread;
 };
 
 #endif

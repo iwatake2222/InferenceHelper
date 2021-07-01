@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.0)
 
 set(LibraryName "InferenceHelper")
-set(THIRD_PARTY_DIR ${CMAKE_CURRENT_LIST_DIR}/../ThirdParty/)
+set(THIRD_PARTY_DIR ${CMAKE_CURRENT_LIST_DIR}/../third_party/)
 
-set(INFERENCE_HELPER_ENABLE_PRE_PROCESS_BY_OPENCV on CACHE BOOL "Enable PreProcess by OpenCV? [on/off]")
-set(INFERENCE_HELPER_ENABLE_OPENCV on CACHE BOOL "With OpenCV? [on/off]")
+set(INFERENCE_HELPER_ENABLE_PRE_PROCESS_BY_OPENCV off CACHE BOOL "Enable PreProcess by OpenCV? [on/off]")
+set(INFERENCE_HELPER_ENABLE_OPENCV off CACHE BOOL "With OpenCV? [on/off]")
 set(INFERENCE_HELPER_ENABLE_TFLITE off CACHE BOOL "With Tflite? [on/off]")
 set(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK off CACHE BOOL "With Tflite Delegate XNNPACK? [on/off]")
 set(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU off CACHE BOOL "With Tflite Delegate GPU? [on/off]")
@@ -16,37 +16,38 @@ set(INFERENCE_HELPER_ENABLE_MNN off CACHE BOOL "With Mnn? [on/off]")
 set(INFERENCE_HELPER_ENABLE_SNPE off CACHE BOOL "With SNPE? [on/off]")
 
 # Create library
-set(SRC InferenceHelper.h InferenceHelper.cpp)
+set(SRC inference_helper.h inference_helper.cpp)
 
 if(INFERENCE_HELPER_ENABLE_OPENCV)
-    set(SRC ${SRC} InferenceHelperOpenCV.h InferenceHelperOpenCV.cpp)
+    set(SRC ${SRC} inference_helper_opencv.h inference_helper_opencv.cpp)
 endif()
 
 if(INFERENCE_HELPER_ENABLE_TFLITE OR INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK OR INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU OR INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU OR INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI)
-    set(SRC ${SRC} InferenceHelperTensorflowLite.h InferenceHelperTensorflowLite.cpp)
+    set(SRC ${SRC} inference_helper_tensorflow_lite.h inference_helper_tensorflow_lite.cpp)
 endif()
 
 if(INFERENCE_HELPER_ENABLE_TENSORRT)
-    set(SRC ${SRC} InferenceHelperTensorRt.h InferenceHelperTensorRt.cpp)
-    set(SRC ${SRC} TensorRT/logger.cpp TensorRT/BatchStream.h TensorRT/common.h TensorRT/EntropyCalibrator.h TensorRT/logger.h TensorRT/logging.h)
+    set(SRC ${SRC} inference_helper_tensorrt.h inference_helper_tensorrt.cpp)
+    set(SRC ${SRC} tensorrt/logger.cpp tensorrt/BatchStream.h tensorrt/common.h tensorrt/EntropyCalibrator.h tensorrt/logger.h tensorrt/logging.h)
 endif()
 
 if(INFERENCE_HELPER_ENABLE_NCNN)
-    set(SRC ${SRC} InferenceHelperNcnn.h InferenceHelperNcnn.cpp)
+    set(SRC ${SRC} inference_helper_ncnn.h inference_helper_ncnn.cpp)
 endif()
 
 if(INFERENCE_HELPER_ENABLE_MNN)
-    set(SRC ${SRC} InferenceHelperMnn.h InferenceHelperMnn.cpp)
+    set(SRC ${SRC} inference_helper_mnn.h inference_helper_mnn.cpp)
 endif()
 
 if(INFERENCE_HELPER_ENABLE_SNPE)
-	set(SRC ${SRC} InferenceHelperSnpe.h InferenceHelperSnpe.cpp)
+	set(SRC ${SRC} inference_helper_snpe.h inference_helper_snpe.cpp)
 	set(SRC ${SRC} SNPE/CreateUserBuffer.cpp SNPE/CreateUserBuffer.hpp SNPE/Util.cpp SNPE/Util.hpp SNPE/udlExample.cpp SNPE/udlExample.hpp)
 endif()
 
 add_library(${LibraryName} ${SRC})
 
-target_include_directories(${LibraryName} PUBLIC ../CommonHelper)
+add_subdirectory(../common_helper common_helper)
+target_include_directories(${LibraryName} PUBLIC ../common_helper)
 target_link_libraries(${LibraryName} CommonHelper)
 
 # For TensorInfo (Pre process calculation)
@@ -118,7 +119,7 @@ if(INFERENCE_HELPER_ENABLE_TENSORRT)
         )
         target_include_directories(${LibraryName} PUBLIC
             ${CUDA_INCLUDE_DIRS}
-            TensorRT
+            tensorrt
         )
         add_definitions(-DINFERENCE_HELPER_ENABLE_TENSORRT)
         message("CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}")
@@ -137,7 +138,7 @@ endif()
 
 # For MNN
 if(INFERENCE_HELPER_ENABLE_MNN)
-    include(${THIRD_PARTY_DIR}/cmakes/MNN.cmake)
+    include(${THIRD_PARTY_DIR}/cmakes/mnn.cmake)
     target_include_directories(${LibraryName} PUBLIC ${MNN_INC})
     target_link_libraries(${LibraryName} ${MNN_LIB})
     add_definitions(-DINFERENCE_HELPER_ENABLE_MNN)
@@ -145,8 +146,8 @@ endif()
 
 # For SNPE
 if(INFERENCE_HELPER_ENABLE_SNPE)
-	include(${THIRD_PARTY_DIR}/cmakes/SNPE.cmake)
-	target_include_directories(${LibraryName} PUBLIC ${SNPE_INC} ./SNPE)
+	include(${THIRD_PARTY_DIR}/cmakes/snpe.cmake)
+	target_include_directories(${LibraryName} PUBLIC ${SNPE_INC} ./snpe)
 	target_link_libraries(${LibraryName} ${SNPE_LIB})
 	add_definitions(-DINFERENCE_HELPER_ENABLE_SNPE)
 endif()

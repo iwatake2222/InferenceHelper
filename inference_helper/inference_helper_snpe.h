@@ -13,7 +13,7 @@
 /* for SNPE */
 
 /* for My modules */
-#include "InferenceHelper.h"
+#include "inference_helper.h"
 
 namespace zdl { namespace SNPE { class SNPE; } }
 namespace zdl { namespace DlSystem { class IUserBuffer; } }

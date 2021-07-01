@@ -15,7 +15,7 @@
 #include <tensorflow/lite/kernels/register.h>
 
 /* for My modules */
-#include "InferenceHelper.h"
+#include "inference_helper.h"
 
 class InferenceHelperTensorflowLite : public InferenceHelper {
 public:

@@ -10,7 +10,7 @@
 #include <memory>
 
 /* for My modules */
-#include "InferenceHelper.h"
+#include "inference_helper.h"
 
 namespace nvinfer1 {
     class IRuntime;

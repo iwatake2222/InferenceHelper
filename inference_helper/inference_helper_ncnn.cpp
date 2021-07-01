@@ -14,8 +14,8 @@
 #include "net.h"
 
 /* for My modules */
-#include "CommonHelper.h"
-#include "InferenceHelperNcnn.h"
+#include "common_helper.h"
+#include "inference_helper_ncnn.h"
 
 /*** Macro ***/
 #define TAG "InferenceHelperNcnn"

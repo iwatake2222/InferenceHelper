@@ -16,8 +16,8 @@
 #include <MNN/AutoTime.hpp>
 
 /* for My modules */
-#include "CommonHelper.h"
-#include "InferenceHelperMnn.h"
+#include "common_helper.h"
+#include "inference_helper_mnn.h"
 
 /*** Macro ***/
 #define TAG "InferenceHelperMnn"

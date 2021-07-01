@@ -15,11 +15,11 @@
 #include <cuda_runtime_api.h>
 #include <NvInfer.h>
 #include <NvOnnxParser.h>
-#include "TensorRT/common.h"
+#include "tensorrt/common.h"
 
 /* for My modules */
-#include "CommonHelper.h"
-#include "InferenceHelperTensorRt.h"
+#include "common_helper.h"
+#include "inference_helper_tensorrt.h"
 
 /*** Macro ***/
 #define TAG "InferenceHelperTensorRt"
@@ -52,8 +52,8 @@
 #define CAL_BIAS       (0.45 / 0.225)
 
 /* include BatchStream.h after defining parameters */
-#include "TensorRT/BatchStream.h"
-#include "TensorRT/EntropyCalibrator.h"
+#include "tensorrt/BatchStream.h"
+#include "tensorrt/EntropyCalibrator.h"
 #endif
 
 /*** Function ***/

@@ -12,9 +12,9 @@
 #include <unordered_map>
 
 /* for SNPE */
-#include "SNPE/SNPE.hpp"
-#include "SNPE/SNPEFactory.hpp"
-#include "SNPE/SNPEBuilder.hpp"
+#include "snpe/SNPE.hpp"
+#include "snpe/SNPEFactory.hpp"
+#include "snpe/SNPEBuilder.hpp"
 #include "DlSystem/DlError.hpp"
 #include "DlSystem/RuntimeList.hpp"
 #include "DlSystem/UserBufferMap.hpp"
@@ -31,8 +31,8 @@
 #include "CreateUserBuffer.hpp"
 
 /* for My modules */
-#include "CommonHelper.h"
-#include "InferenceHelperSnpe.h"
+#include "common_helper.h"
+#include "inference_helper_snpe.h"
 
 /*** Macro ***/
 #define TAG "InferenceHelperSnpe"
