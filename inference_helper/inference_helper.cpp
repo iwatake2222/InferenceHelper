@@ -29,7 +29,7 @@ limitations under the License.
 #include "inference_helper.h"
 
 #ifdef INFERENCE_HELPER_ENABLE_OPENCV
-#include "inference_helper_opencV.h"
+#include "inference_helper_opencv.h"
 #endif
 #if defined(INFERENCE_HELPER_ENABLE_TFLITE) || defined(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK) || defined(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU) || defined(INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU)
 #include "inference_helper_tensorflow_lite.h"
@@ -53,157 +53,157 @@ limitations under the License.
 #define PRINT_E(...) COMMON_HELPER_PRINT_E(TAG, __VA_ARGS__)
 
 
-InferenceHelper* InferenceHelper::create(const InferenceHelper::HELPER_TYPE type)
+InferenceHelper* InferenceHelper::Create(const InferenceHelper::HelperType helper_type)
 {
     InferenceHelper* p = nullptr;
-    switch (type) {
+    switch (helper_type) {
 #ifdef INFERENCE_HELPER_ENABLE_OPENCV
-    case OPEN_CV:
-    case OPEN_CV_GPU:
+    case kOpencv:
+    case kOpencvGpu:
         PRINT("Use OpenCV \n");
         p = new InferenceHelperOpenCV();
         break;
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE
-    case TENSORFLOW_LITE:
+    case kTensorflowLite:
         PRINT("Use TensorflowLite\n");
         p = new InferenceHelperTensorflowLite();
         break;
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK
-    case TENSORFLOW_LITE_XNNPACK:
+    case kTensorflowLiteXnnpack:
         PRINT("Use TensorflowLite XNNPACK Delegate\n");
         p = new InferenceHelperTensorflowLite();
         break;
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU
-    case TENSORFLOW_LITE_GPU:
+    case kTensorflowLiteGpu:
         PRINT("Use TensorflowLite GPU Delegate\n");
         p = new InferenceHelperTensorflowLite();
         break;
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU
-    case TENSORFLOW_LITE_EDGETPU:
+    case kTensorflowLiteEdgetpu:
         PRINT("Use TensorflowLite EdgeTPU Delegate\n");
         p = new InferenceHelperTensorflowLite();
         break;
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI
-    case TENSORFLOW_LITE_NNAPI:
+    case kTensorflowLiteNnapi:
         PRINT("Use TensorflowLite NNAPI Delegate\n");
         p = new InferenceHelperTensorflowLite();
         break;
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_TENSORRT
-    case TENSOR_RT:
+    case kTensorrt:
         PRINT("Use TensorRT \n");
         p = new InferenceHelperTensorRt();
         break;
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_NCNN
-    case NCNN:
+    case kNcnn:
         PRINT("Use NCNN\n");
         p = new InferenceHelperNcnn();
         break;
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_MNN
-    case MNN:
+    case kMnn:
         PRINT("Use MNN\n");
         p = new InferenceHelperMnn();
         break;
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_SNPE
-    case SNPE:
+    case kSnpe:
         PRINT("Use SNPE\n");
         p = new InferenceHelperSnpe();
         break;
 #endif
     default:
-        PRINT_E("Unsupported inference helper type (%d)\n", type);
+        PRINT_E("Unsupported inference helper type (%d)\n", helper_type);
         break;
     }
     if (p == nullptr) {
         PRINT_E("Failed to create inference helper\n");
     } else {
-        p->m_helperType = type;
+        p->helper_type_ = helper_type;
     }
     return p;
 }
 
 #ifdef INFERENCE_HELPER_ENABLE_PRE_PROCESS_BY_OPENCV
 #include <opencv2/opencv.hpp>
-void InferenceHelper::preProcessByOpenCV(const InputTensorInfo& inputTensorInfo, bool isNCHW, cv::Mat& imgBlob)
+void InferenceHelper::PreProcessByOpenCV(const InputTensorInfo& input_tensor_info, bool is_nchw, cv::Mat& img_blob)
 {
     /* Generate mat from original data */
-    cv::Mat imgSrc = cv::Mat(cv::Size(inputTensorInfo.imageInfo.width, inputTensorInfo.imageInfo.height), (inputTensorInfo.imageInfo.channel == 3) ? CV_8UC3 : CV_8UC1, inputTensorInfo.data);
+    cv::Mat img_src = cv::Mat(cv::Size(input_tensor_info.image_info.width, input_tensor_info.image_info.height), (input_tensor_info.image_info.channel == 3) ? CV_8UC3 : CV_8UC1, input_tensor_info.data);
 
     /* Crop image */
-    if (inputTensorInfo.imageInfo.width == inputTensorInfo.imageInfo.cropWidth && inputTensorInfo.imageInfo.height == inputTensorInfo.imageInfo.cropHeight) {
+    if (input_tensor_info.image_info.width == input_tensor_info.image_info.crop_width && input_tensor_info.image_info.height == input_tensor_info.image_info.crop_height) {
         /* do nothing */
     } else {
-        imgSrc = imgSrc(cv::Rect(inputTensorInfo.imageInfo.cropX, inputTensorInfo.imageInfo.cropY, inputTensorInfo.imageInfo.cropWidth, inputTensorInfo.imageInfo.cropHeight));
+        img_src = img_src(cv::Rect(input_tensor_info.image_info.crop_x, input_tensor_info.image_info.crop_y, input_tensor_info.image_info.crop_width, input_tensor_info.image_info.crop_height));
     }
 
     /* Resize image */
-    if (inputTensorInfo.imageInfo.cropWidth == inputTensorInfo.tensorDims.width && inputTensorInfo.imageInfo.cropHeight == inputTensorInfo.tensorDims.height) {
+    if (input_tensor_info.image_info.crop_width == input_tensor_info.tensor_dims.width && input_tensor_info.image_info.crop_height == input_tensor_info.tensor_dims.height) {
         /* do nothing */
     } else {
-        cv::resize(imgSrc, imgSrc, cv::Size(inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height));
+        cv::resize(img_src, img_src, cv::Size(input_tensor_info.tensor_dims.width, input_tensor_info.tensor_dims.height));
     }
 
     /* Convert color type */
-    if (inputTensorInfo.imageInfo.channel == inputTensorInfo.tensorDims.channel) {
-        if (inputTensorInfo.imageInfo.channel == 3 && inputTensorInfo.imageInfo.swapColor) {
-            cv::cvtColor(imgSrc, imgSrc, cv::COLOR_BGR2RGB);
+    if (input_tensor_info.image_info.channel == input_tensor_info.tensor_dims.channel) {
+        if (input_tensor_info.image_info.channel == 3 && input_tensor_info.image_info.swap_color) {
+            cv::cvtColor(img_src, img_src, cv::COLOR_BGR2RGB);
         }
-    } else if (inputTensorInfo.imageInfo.channel == 3 && inputTensorInfo.tensorDims.channel == 1) {
-        cv::cvtColor(imgSrc, imgSrc, (inputTensorInfo.imageInfo.isBGR) ? cv::COLOR_BGR2GRAY : cv::COLOR_RGB2GRAY);
-    } else if (inputTensorInfo.imageInfo.channel == 1 && inputTensorInfo.tensorDims.channel == 3) {
-        cv::cvtColor(imgSrc, imgSrc, cv::COLOR_GRAY2BGR);
+    } else if (input_tensor_info.image_info.channel == 3 && input_tensor_info.tensor_dims.channel == 1) {
+        cv::cvtColor(img_src, img_src, (input_tensor_info.image_info.is_bgr) ? cv::COLOR_BGR2GRAY : cv::COLOR_RGB2GRAY);
+    } else if (input_tensor_info.image_info.channel == 1 && input_tensor_info.tensor_dims.channel == 3) {
+        cv::cvtColor(img_src, img_src, cv::COLOR_GRAY2BGR);
     }
 
-    if (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_FP32) {
+    if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
         /* Normalize image */
-        if (inputTensorInfo.tensorDims.channel == 3) {
+        if (input_tensor_info.tensor_dims.channel == 3) {
 #if 1
-            imgSrc.convertTo(imgSrc, CV_32FC3);
-            cv::subtract(imgSrc, cv::Scalar(cv::Vec<float, 3>(inputTensorInfo.normalize.mean)), imgSrc);
-            cv::multiply(imgSrc, cv::Scalar(cv::Vec<float, 3>(inputTensorInfo.normalize.norm)), imgSrc);
+            img_src.convertTo(img_src, CV_32FC3);
+            cv::subtract(img_src, cv::Scalar(cv::Vec<float, 3>(input_tensor_info.normalize.mean)), img_src);
+            cv::multiply(img_src, cv::Scalar(cv::Vec<float, 3>(input_tensor_info.normalize.norm)), img_src);
 #else
-            imgSrc.convertTo(imgSrc, CV_32FC3, 1.0 / 255);
-            cv::subtract(imgSrc, cv::Scalar(cv::Vec<float, 3>(inputTensorInfo.normalize.mean)), imgSrc);
-            cv::divide(imgSrc, cv::Scalar(cv::Vec<float, 3>(inputTensorInfo.normalize.norm)), imgSrc);
+            img_src.convertTo(img_src, CV_32FC3, 1.0 / 255);
+            cv::subtract(img_src, cv::Scalar(cv::Vec<float, 3>(input_tensor_info.normalize.mean)), img_src);
+            cv::divide(img_src, cv::Scalar(cv::Vec<float, 3>(input_tensor_info.normalize.norm)), img_src);
 #endif
         } else {
 #if 1
-            imgSrc.convertTo(imgSrc, CV_32FC1);
-            cv::subtract(imgSrc, cv::Scalar(cv::Vec<float, 1>(inputTensorInfo.normalize.mean)), imgSrc);
-            cv::multiply(imgSrc, cv::Scalar(cv::Vec<float, 1>(inputTensorInfo.normalize.norm)), imgSrc);
+            img_src.convertTo(img_src, CV_32FC1);
+            cv::subtract(img_src, cv::Scalar(cv::Vec<float, 1>(input_tensor_info.normalize.mean)), img_src);
+            cv::multiply(img_src, cv::Scalar(cv::Vec<float, 1>(input_tensor_info.normalize.norm)), img_src);
 #else
-            imgSrc.convertTo(imgSrc, CV_32FC1, 1.0 / 255);
-            cv::subtract(imgSrc, cv::Scalar(cv::Vec<float, 1>(inputTensorInfo.normalize.mean)), imgSrc);
-            cv::divide(imgSrc, cv::Scalar(cv::Vec<float, 1>(inputTensorInfo.normalize.norm)), imgSrc);
+            img_src.convertTo(img_src, CV_32FC1, 1.0 / 255);
+            cv::subtract(img_src, cv::Scalar(cv::Vec<float, 1>(input_tensor_info.normalize.mean)), img_src);
+            cv::divide(img_src, cv::Scalar(cv::Vec<float, 1>(input_tensor_info.normalize.norm)), img_src);
 #endif
         }
     } else {
         /* do nothing */
     }
 
-    if (isNCHW) {
+    if (is_nchw) {
         /* Convert to 4-dimensional Mat in NCHW */
-        imgSrc = cv::dnn::blobFromImage(imgSrc);
+        img_src = cv::dnn::blobFromImage(img_src);
     }
 
-    imgBlob = imgSrc;
-    //memcpy(blobData, imgSrc.data, imgSrc.cols * imgSrc.rows * imgSrc.channels());
+    img_blob = img_src;
+    //memcpy(blobData, img_src.data, img_src.cols * img_src.rows * img_src.channels());
 
 }
 
 #else 
 /* For the environment where OpenCV is not supported */
-void InferenceHelper::preProcessByOpenCV(const InputTensorInfo& inputTensorInfo, bool isNCHW, cv::Mat& imgBlob)
+void InferenceHelper::PreProcessByOpenCV(const InputTensorInfo& input_tensor_info, bool is_nchw, cv::Mat& img_blob)
 {
-    PRINT_E("[preProcessByOpenCV] Unsupported function called\n");
+    PRINT_E("[PreProcessByOpenCV] Unsupported function called\n");
     exit(-1);
 }
 #endif

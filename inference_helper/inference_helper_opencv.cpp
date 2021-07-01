@@ -46,226 +46,226 @@ InferenceHelperOpenCV::~InferenceHelperOpenCV()
 {
 }
 
-int32_t InferenceHelperOpenCV::setNumThread(const int32_t numThread)
+int32_t InferenceHelperOpenCV::SetNumThreads(const int32_t num_threads)
 {
-    cv::setNumThreads(numThread);
-    return RET_OK;
+    cv::setNumThreads(num_threads);
+    return kRetOk;
 }
 
-int32_t InferenceHelperOpenCV::setCustomOps(const std::vector<std::pair<const char*, const void*>>& customOps)
+int32_t InferenceHelperOpenCV::SetCustomOps(const std::vector<std::pair<const char*, const void*>>& custom_ops)
 {
     PRINT("[WARNING] This method is not supported\n");
-    return RET_OK;
+    return kRetOk;
 }
 
-int32_t InferenceHelperOpenCV::initialize(const std::string& modelFilename, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList)
+int32_t InferenceHelperOpenCV::Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
     /*** Create network ***/
-    m_net = cv::dnn::readNetFromONNX(modelFilename);
-    if (m_net.empty() == true) {
-        PRINT_E("Failed to create inference engine (%s)\n", modelFilename.c_str());
-        return RET_ERR;
+    net_ = cv::dnn::readNetFromONNX(model_filename);
+    if (net_.empty() == true) {
+        PRINT_E("Failed to create inference engine (%s)\n", model_filename.c_str());
+        return kRetErr;
     }
     
-    if (m_helperType == OPEN_CV) {
-        m_net.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
-        m_net.setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
-    } else if (m_helperType == OPEN_CV_GPU) {
-        m_net.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
-        m_net.setPreferableTarget(cv::dnn::DNN_TARGET_OPENCL);
-        // m_net.setPreferableTarget(cv::dnn::DNN_TARGET_VULKAN);
+    if (helper_type_ == kOpencv) {
+        net_.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
+        net_.setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
+    } else if (helper_type_ == kOpencvGpu) {
+        net_.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
+        net_.setPreferableTarget(cv::dnn::DNN_TARGET_OPENCL);
+        // net_.setPreferableTarget(cv::dnn::DNN_TARGET_VULKAN);
     } else {
-        PRINT_E("Invalid helper type (%d)\n", m_helperType);
-        return RET_ERR;
+        PRINT_E("Invalid helper type (%d)\n", helper_type_);
+        return kRetErr;
     }
 
     /*** Check tensor information  ***/
     /* Only one input tensor is supported. The input tensor name changes for some reasons. */
-    if (inputTensorInfoList.size() == 1) {
-        const auto& inputTensor = m_net.getLayer(0);
-        inputTensorInfoList[0].name = inputTensor->name;
-        inputTensorInfoList[0].id = m_net.getLayerId(inputTensor->name);
+    if (input_tensor_info_list.size() == 1) {
+        const auto& input_tensor = net_.getLayer(0);
+        input_tensor_info_list[0].name = input_tensor->name;
+        input_tensor_info_list[0].id = net_.getLayerId(input_tensor->name);
     } else {
-        PRINT_E("Invalid input tensor num (%zu)\n", inputTensorInfoList.size());
+        PRINT_E("Invalid input tensor num (%zu)\n", input_tensor_info_list.size());
     }
 
     /* Check output tensor name */
-    for (auto& outputTensorInfo : outputTensorInfoList) {
-        bool isFound = false;
-        for (const auto& layerName : m_net.getLayerNames()) {
-            if (outputTensorInfo.name == layerName) {
-                isFound = true;
-                outputTensorInfo.id = m_net.getLayerId(layerName);
+    for (auto& output_tensor_info : output_tensor_info_list) {
+        bool is_found = false;
+        for (const auto& layerName : net_.getLayerNames()) {
+            if (output_tensor_info.name == layerName) {
+                is_found = true;
+                output_tensor_info.id = net_.getLayerId(layerName);
                 break;
             }
         }
-        if (isFound == false) {
-            PRINT_E("Output name (%s) not found\n", outputTensorInfo.name.c_str());
-            return RET_ERR;
+        if (is_found == false) {
+            PRINT_E("Output name (%s) not found\n", output_tensor_info.name.c_str());
+            return kRetErr;
         }
     }
 
     /* Convert normalize parameter to speed up */
-    for (auto& inputTensorInfo : inputTensorInfoList) {
-        convertNormalizeParameters(inputTensorInfo);
+    for (auto& input_tensor_info : input_tensor_info_list) {
+        ConvertNormalizeParameters(input_tensor_info);
     }
 
-    return RET_OK;
+    return kRetOk;
 };
 
 
-int32_t InferenceHelperOpenCV::finalize(void)
+int32_t InferenceHelperOpenCV::Finalize(void)
 {
-    return RET_ERR;
+    return kRetErr;
 }
 
-int32_t InferenceHelperOpenCV::preProcess(const std::vector<InputTensorInfo>& inputTensorInfoList)
+int32_t InferenceHelperOpenCV::PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list)
 {
-    m_inMatList.clear();
-    for (const auto& inputTensorInfo : inputTensorInfoList) {
-        cv::Mat imgBlob;
-        if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_IMAGE) {
+    in_mat_list_.clear();
+    for (const auto& input_tensor_info : input_tensor_info_list) {
+        cv::Mat img_blob;
+        if (input_tensor_info.data_type == InputTensorInfo::kDataTypeImage) {
             /* Generate mat from original data */
-            cv::Mat imgSrc = cv::Mat(cv::Size(inputTensorInfo.imageInfo.width, inputTensorInfo.imageInfo.height), (inputTensorInfo.imageInfo.channel == 3) ? CV_8UC3 : CV_8UC1, inputTensorInfo.data);
+            cv::Mat img_src = cv::Mat(cv::Size(input_tensor_info.image_info.width, input_tensor_info.image_info.height), (input_tensor_info.image_info.channel == 3) ? CV_8UC3 : CV_8UC1, input_tensor_info.data);
 
             /* Crop image */
-            if (inputTensorInfo.imageInfo.width == inputTensorInfo.imageInfo.cropWidth && inputTensorInfo.imageInfo.height == inputTensorInfo.imageInfo.cropHeight) {
+            if (input_tensor_info.image_info.width == input_tensor_info.image_info.crop_width && input_tensor_info.image_info.height == input_tensor_info.image_info.crop_height) {
                 /* do nothing */
             } else {
-                imgSrc = imgSrc(cv::Rect(inputTensorInfo.imageInfo.cropX, inputTensorInfo.imageInfo.cropY, inputTensorInfo.imageInfo.cropWidth, inputTensorInfo.imageInfo.cropHeight));
+                img_src = img_src(cv::Rect(input_tensor_info.image_info.crop_x, input_tensor_info.image_info.crop_y, input_tensor_info.image_info.crop_width, input_tensor_info.image_info.crop_height));
             }
 
             /* Resize image */
-            if (inputTensorInfo.imageInfo.cropWidth == inputTensorInfo.tensorDims.width && inputTensorInfo.imageInfo.cropHeight == inputTensorInfo.tensorDims.height) {
+            if (input_tensor_info.image_info.crop_width == input_tensor_info.tensor_dims.width && input_tensor_info.image_info.crop_height == input_tensor_info.tensor_dims.height) {
                 /* do nothing */
             } else {
-                cv::resize(imgSrc, imgSrc, cv::Size(inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height));
+                cv::resize(img_src, img_src, cv::Size(input_tensor_info.tensor_dims.width, input_tensor_info.tensor_dims.height));
             }
 
             /* Convert color type */
-            if (inputTensorInfo.imageInfo.channel == inputTensorInfo.tensorDims.channel) {
-                if (inputTensorInfo.imageInfo.channel == 3 && inputTensorInfo.imageInfo.swapColor) {
-                    cv::cvtColor(imgSrc, imgSrc, cv::COLOR_BGR2RGB);
+            if (input_tensor_info.image_info.channel == input_tensor_info.tensor_dims.channel) {
+                if (input_tensor_info.image_info.channel == 3 && input_tensor_info.image_info.swap_color) {
+                    cv::cvtColor(img_src, img_src, cv::COLOR_BGR2RGB);
                 }
-            } else if (inputTensorInfo.imageInfo.channel == 3 && inputTensorInfo.tensorDims.channel == 1) {
-                cv::cvtColor(imgSrc, imgSrc, (inputTensorInfo.imageInfo.isBGR) ? cv::COLOR_BGR2GRAY : cv::COLOR_RGB2GRAY);
-            } else if (inputTensorInfo.imageInfo.channel == 1 && inputTensorInfo.tensorDims.channel == 3) {
-                cv::cvtColor(imgSrc, imgSrc, cv::COLOR_GRAY2BGR);
+            } else if (input_tensor_info.image_info.channel == 3 && input_tensor_info.tensor_dims.channel == 1) {
+                cv::cvtColor(img_src, img_src, (input_tensor_info.image_info.is_bgr) ? cv::COLOR_BGR2GRAY : cv::COLOR_RGB2GRAY);
+            } else if (input_tensor_info.image_info.channel == 1 && input_tensor_info.tensor_dims.channel == 3) {
+                cv::cvtColor(img_src, img_src, cv::COLOR_GRAY2BGR);
             } else {
-                PRINT_E("Unsupported color conversion (%d, %d)\n", inputTensorInfo.imageInfo.channel, inputTensorInfo.tensorDims.channel);
-                return RET_ERR;
+                PRINT_E("Unsupported color conversion (%d, %d)\n", input_tensor_info.image_info.channel, input_tensor_info.tensor_dims.channel);
+                return kRetErr;
             }
 
-            if (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_FP32) {
+            if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
                 /* Normalize image */
-                if (inputTensorInfo.tensorDims.channel == 3) {
+                if (input_tensor_info.tensor_dims.channel == 3) {
 #if 1
-                    imgSrc.convertTo(imgSrc, CV_32FC3);
-                    cv::subtract(imgSrc, cv::Scalar(cv::Vec<float, 3>(inputTensorInfo.normalize.mean)), imgSrc);
-                    cv::multiply(imgSrc, cv::Scalar(cv::Vec<float, 3>(inputTensorInfo.normalize.norm)), imgSrc);
+                    img_src.convertTo(img_src, CV_32FC3);
+                    cv::subtract(img_src, cv::Scalar(cv::Vec<float, 3>(input_tensor_info.normalize.mean)), img_src);
+                    cv::multiply(img_src, cv::Scalar(cv::Vec<float, 3>(input_tensor_info.normalize.norm)), img_src);
                     
 #else
-                    imgSrc.convertTo(imgSrc, CV_32FC3, 1.0 / 255);
-                    cv::subtract(imgSrc, cv::Scalar(cv::Vec<float, 3>(inputTensorInfo.normalize.mean)), imgSrc);
-                    cv::divide(imgSrc, cv::Scalar(cv::Vec<float, 3>(inputTensorInfo.normalize.norm)), imgSrc);
+                    img_src.convertTo(img_src, CV_32FC3, 1.0 / 255);
+                    cv::subtract(img_src, cv::Scalar(cv::Vec<float, 3>(input_tensor_info.normalize.mean)), img_src);
+                    cv::divide(img_src, cv::Scalar(cv::Vec<float, 3>(input_tensor_info.normalize.norm)), img_src);
 #endif
-                } else if (inputTensorInfo.tensorDims.channel == 1) {
+                } else if (input_tensor_info.tensor_dims.channel == 1) {
 #if 1
-                    imgSrc.convertTo(imgSrc, CV_32FC1);
-                    cv::subtract(imgSrc, cv::Scalar(cv::Vec<float, 1>(inputTensorInfo.normalize.mean)), imgSrc);
-                    cv::multiply(imgSrc, cv::Scalar(cv::Vec<float, 1>(inputTensorInfo.normalize.norm)), imgSrc);
+                    img_src.convertTo(img_src, CV_32FC1);
+                    cv::subtract(img_src, cv::Scalar(cv::Vec<float, 1>(input_tensor_info.normalize.mean)), img_src);
+                    cv::multiply(img_src, cv::Scalar(cv::Vec<float, 1>(input_tensor_info.normalize.norm)), img_src);
 #else
-                    imgSrc.convertTo(imgSrc, CV_32FC1, 1.0 / 255);
-                    cv::subtract(imgSrc, cv::Scalar(cv::Vec<float, 1>(inputTensorInfo.normalize.mean)), imgSrc);
-                    cv::divide(imgSrc, cv::Scalar(cv::Vec<float, 1>(inputTensorInfo.normalize.norm)), imgSrc);
+                    img_src.convertTo(img_src, CV_32FC1, 1.0 / 255);
+                    cv::subtract(img_src, cv::Scalar(cv::Vec<float, 1>(input_tensor_info.normalize.mean)), img_src);
+                    cv::divide(img_src, cv::Scalar(cv::Vec<float, 1>(input_tensor_info.normalize.norm)), img_src);
 #endif
                 } else {
-                    PRINT_E("Unsupported channel num (%d)\n", inputTensorInfo.tensorDims.channel);
-                    return RET_ERR;
+                    PRINT_E("Unsupported channel num (%d)\n", input_tensor_info.tensor_dims.channel);
+                    return kRetErr;
                 }
                 /* Convert to 4-dimensional Mat in NCHW */
-                imgBlob = cv::dnn::blobFromImage(imgSrc);
-            } else if (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_UINT8) {
+                img_blob = cv::dnn::blobFromImage(img_src);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
                 /* Convert to 4-dimensional Mat in NCHW */
-                imgBlob = cv::dnn::blobFromImage(imgSrc);
+                img_blob = cv::dnn::blobFromImage(img_src);
             } else {
-                PRINT_E("Unsupported tensorType (%d)\n", inputTensorInfo.tensorType);
-                return RET_ERR;
+                PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
+                return kRetErr;
             }
 
-        } else if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NHWC) {
-            cv::Mat imgSrc;
-            if (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_FP32) {
-                imgSrc = cv::Mat(cv::Size(inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height), (inputTensorInfo.tensorDims.channel == 3) ? CV_32FC3 : CV_32FC1, inputTensorInfo.data);
-            } else if (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_UINT8) {
-                imgSrc = cv::Mat(cv::Size(inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height), (inputTensorInfo.tensorDims.channel == 3) ? CV_8UC3 : CV_8UC1, inputTensorInfo.data);
+        } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {
+            cv::Mat img_src;
+            if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
+                img_src = cv::Mat(cv::Size(input_tensor_info.tensor_dims.width, input_tensor_info.tensor_dims.height), (input_tensor_info.tensor_dims.channel == 3) ? CV_32FC3 : CV_32FC1, input_tensor_info.data);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
+                img_src = cv::Mat(cv::Size(input_tensor_info.tensor_dims.width, input_tensor_info.tensor_dims.height), (input_tensor_info.tensor_dims.channel == 3) ? CV_8UC3 : CV_8UC1, input_tensor_info.data);
             } else {
-                PRINT_E("Unsupported tensorType (%d)\n", inputTensorInfo.tensorType);
-                return RET_ERR;
+                PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
+                return kRetErr;
             }
-            imgBlob = cv::dnn::blobFromImage(imgSrc);
-        } else if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NCHW) {
-            PRINT_E("Unsupported dataType (%d)\n", inputTensorInfo.dataType);
-            return RET_ERR;
+            img_blob = cv::dnn::blobFromImage(img_src);
+        } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) {
+            PRINT_E("Unsupported data_type (%d)\n", input_tensor_info.data_type);
+            return kRetErr;
         } else {
-            PRINT_E("Unsupported data type (%d)\n", inputTensorInfo.dataType);
-            return RET_ERR;
+            PRINT_E("Unsupported data type (%d)\n", input_tensor_info.data_type);
+            return kRetErr;
         }
-        m_inMatList.push_back(imgBlob);
+        in_mat_list_.push_back(img_blob);
     }
-    return RET_OK;
+    return kRetOk;
 }
 
-int32_t InferenceHelperOpenCV::invoke(std::vector<OutputTensorInfo>& outputTensorInfoList)
+int32_t InferenceHelperOpenCV::Process(std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
-    if (m_inMatList.size() != 1) {
+    if (in_mat_list_.size() != 1) {
         PRINT_E("Input tensor is not set\n");
-        return RET_ERR;
+        return kRetErr;
     }
-    m_net.setInput(m_inMatList[0]);
+    net_.setInput(in_mat_list_[0]);
 
     /*** Run inference ***/
     std::vector<cv::String> outNameList;
-    for (const auto& outputTensorInfo : outputTensorInfoList) {
-        outNameList.push_back(outputTensorInfo.name);
+    for (const auto& output_tensor_info : output_tensor_info_list) {
+        outNameList.push_back(output_tensor_info.name);
     }
-    m_outMatList.clear();
-    m_net.forward(m_outMatList, outNameList);
+    out_mat_list_.clear();
+    net_.forward(out_mat_list_, outNameList);
 
     /*** Retrieve the results ***/
-    if (m_outMatList.size() != outputTensorInfoList.size()) {
-        PRINT_E("Unexpected output tensor num (%zu)\n", m_outMatList.size());
-        return RET_ERR;
+    if (out_mat_list_.size() != output_tensor_info_list.size()) {
+        PRINT_E("Unexpected output tensor num (%zu)\n", out_mat_list_.size());
+        return kRetErr;
     }
-    for (int32_t i = 0; i < static_cast<int32_t>(m_outMatList.size()); i++) {
-        outputTensorInfoList[i].data = m_outMatList[i].data;
-        outputTensorInfoList[i].tensorDims.batch = 1;
-        outputTensorInfoList[i].tensorDims.width = m_outMatList[i].cols;
-        outputTensorInfoList[i].tensorDims.height = m_outMatList[i].rows;
-        outputTensorInfoList[i].tensorDims.channel = m_outMatList[i].channels();
+    for (int32_t i = 0; i < static_cast<int32_t>(out_mat_list_.size()); i++) {
+        output_tensor_info_list[i].data = out_mat_list_[i].data;
+        output_tensor_info_list[i].tensor_dims.batch = 1;
+        output_tensor_info_list[i].tensor_dims.width = out_mat_list_[i].cols;
+        output_tensor_info_list[i].tensor_dims.height = out_mat_list_[i].rows;
+        output_tensor_info_list[i].tensor_dims.channel = out_mat_list_[i].channels();
     }
 
-    return RET_OK;
+    return kRetOk;
 }
 
-void InferenceHelperOpenCV::convertNormalizeParameters(InputTensorInfo& inputTensorInfo)
+void InferenceHelperOpenCV::ConvertNormalizeParameters(InputTensorInfo& input_tensor_info)
 {
-    if (inputTensorInfo.dataType != InputTensorInfo::DATA_TYPE_IMAGE) return;
+    if (input_tensor_info.data_type != InputTensorInfo::kDataTypeImage) return;
 
 #if 0
     /* Convert to speeden up normalization:  ((src / 255) - mean) / norm  = src * 1 / (255 * norm) - (mean / norm) */
     for (int32_t i = 0; i < 3; i++) {
-        inputTensorInfo.normalize.mean[i] /= inputTensorInfo.normalize.norm[i];
-        inputTensorInfo.normalize.norm[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] = 1.0f / inputTensorInfo.normalize.norm[i];
+        input_tensor_info.normalize.mean[i] /= input_tensor_info.normalize.norm[i];
+        input_tensor_info.normalize.norm[i] *= 255.0f;
+        input_tensor_info.normalize.norm[i] = 1.0f / input_tensor_info.normalize.norm[i];
     }
 #endif
 #if 1
     /* Convert to speeden up normalization:  ((src / 255) - mean) / norm = (src  - (mean * 255))  * (1 / (255 * norm)) */
     for (int32_t i = 0; i < 3; i++) {
-        inputTensorInfo.normalize.mean[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] = 1.0f / inputTensorInfo.normalize.norm[i];
+        input_tensor_info.normalize.mean[i] *= 255.0f;
+        input_tensor_info.normalize.norm[i] *= 255.0f;
+        input_tensor_info.normalize.norm[i] = 1.0f / input_tensor_info.normalize.norm[i];
     }
 #endif
 }
