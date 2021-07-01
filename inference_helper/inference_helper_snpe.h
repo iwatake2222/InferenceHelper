@@ -35,33 +35,34 @@ namespace zdl { namespace DlSystem { class UserBufferMap; } }
 
 class InferenceHelperSnpe : public InferenceHelper {
 private:
-	enum {UNKNOWN, USERBUFFER_FLOAT, USERBUFFER_TF8, ITENSOR, USERBUFFER_TF16};
-	enum {CPUBUFFER, GLBUFFER};
+    enum { UNKNOWN, USERBUFFER_FLOAT, USERBUFFER_TF8, ITENSOR, USERBUFFER_TF16 };
+    enum { CPUBUFFER, GLBUFFER };
+
 public:
-	InferenceHelperSnpe();
-	~InferenceHelperSnpe() override;
-	int32_t setNumThread(const int32_t numThread) override;
-	int32_t setCustomOps(const std::vector<std::pair<const char*, const void*>>& customOps) override;
-	int32_t initialize(const std::string& modelFilename, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList) override;
-	int32_t finalize(void) override;
-	int32_t preProcess(const std::vector<InputTensorInfo>& inputTensorInfoList) override;
-	int32_t invoke(std::vector<OutputTensorInfo>& outputTensorInfoList) override;
+    InferenceHelperSnpe();
+    ~InferenceHelperSnpe() override;
+    int32_t SetNumThreads(const int32_t num_threads) override;
+    int32_t SetCustomOps(const std::vector<std::pair<const char*, const void*>>& custom_ops) override;
+    int32_t Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list) override;
+    int32_t Finalize(void) override;
+    int32_t PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list) override;
+    int32_t Process(std::vector<OutputTensorInfo>& output_tensor_info_list) override;
 
 private:
-	std::unique_ptr<zdl::SNPE::SNPE> createSnpe(const std::string& modelFilename, bool useUserSuppliedBuffers);
-	int32_t getTensorInfo(std::unique_ptr<zdl::SNPE::SNPE> const& snpe, const std::string& name, int32_t& batch, int32_t& height, int32_t& width, int32_t& channel);
-	int32_t getAllTensorInfo(std::unique_ptr<zdl::SNPE::SNPE> const& snpe, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList);
-	void convertNormalizeParameters(InputTensorInfo& tensorInfo);
+    std::unique_ptr<zdl::SNPE::SNPE> CreateSnpe(const std::string& model_filename, bool use_user_supplied_buffers);
+    int32_t GetTensorInfo(std::unique_ptr<zdl::SNPE::SNPE> const& snpe, const std::string& name, int32_t& batch, int32_t& height, int32_t& width, int32_t& channel);
+    int32_t GetAllTensorInfo(std::unique_ptr<zdl::SNPE::SNPE> const& snpe, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list);
+    void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
 
 private:
-	int32_t m_numThread;
-	std::unique_ptr<zdl::SNPE::SNPE> m_snpe;
-	std::unique_ptr<zdl::DlSystem::UserBufferMap> m_inputMap;
-	std::unique_ptr<zdl::DlSystem::UserBufferMap> m_outputMap;
-	std::vector <std::unique_ptr<zdl::DlSystem::IUserBuffer>> m_snpeUserBackedInputBuffers;
-	std::vector <std::unique_ptr<zdl::DlSystem::IUserBuffer>> m_snpeUserBackedOutputBuffers;
-	std::unordered_map <std::string, std::vector<uint8_t>> m_applicationOutputBuffers;
-	std::unordered_map <std::string, std::vector<uint8_t>> m_applicationInputBuffers;
+    int32_t num_threads_;
+    std::unique_ptr<zdl::SNPE::SNPE> snpe_;
+    std::unique_ptr<zdl::DlSystem::UserBufferMap> input_map_;
+    std::unique_ptr<zdl::DlSystem::UserBufferMap> output_map_;
+    std::vector <std::unique_ptr<zdl::DlSystem::IUserBuffer>> snpe_user_input_buffers_;
+    std::vector <std::unique_ptr<zdl::DlSystem::IUserBuffer>> snpe_user_output_buffers_;
+    std::unordered_map <std::string, std::vector<uint8_t>> application_input_buffers_;
+    std::unordered_map <std::string, std::vector<uint8_t>> application_output_buffers_;
 };
 
 #endif

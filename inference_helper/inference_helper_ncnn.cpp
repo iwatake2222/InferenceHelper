@@ -39,165 +39,165 @@ limitations under the License.
 /*** Function ***/
 InferenceHelperNcnn::InferenceHelperNcnn()
 {
-    m_numThread = 1;
+    num_threads_ = 1;
 }
 
 InferenceHelperNcnn::~InferenceHelperNcnn()
 {
 }
 
-int32_t InferenceHelperNcnn::setNumThread(const int32_t numThread)
+int32_t InferenceHelperNcnn::SetNumThreads(const int32_t num_threads)
 {
-    m_numThread = numThread;
-    return RET_OK;
+    num_threads_ = num_threads;
+    return kRetOk;
 }
 
-int32_t InferenceHelperNcnn::setCustomOps(const std::vector<std::pair<const char*, const void*>>& customOps)
+int32_t InferenceHelperNcnn::SetCustomOps(const std::vector<std::pair<const char*, const void*>>& custom_ops)
 {
     PRINT("[WARNING] This method is not supported\n");
-    return RET_OK;
+    return kRetOk;
 }
 
-int32_t InferenceHelperNcnn::initialize(const std::string& modelFilename, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList)
+int32_t InferenceHelperNcnn::Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
     /*** Create network ***/
-    m_net.reset(new ncnn::Net());
-    m_net->opt.use_fp16_arithmetic = true;
-    m_net->opt.use_fp16_packed = true;
-    m_net->opt.use_fp16_storage = true;
+    net_.reset(new ncnn::Net());
+    net_->opt.use_fp16_arithmetic = true;
+    net_->opt.use_fp16_packed = true;
+    net_->opt.use_fp16_storage = true;
 
-    std::string binFilename = modelFilename;
-    if (modelFilename.find(".param") == std::string::npos) {
-        PRINT_E("Invalid model param filename (%s)\n", modelFilename.c_str());
-        return RET_ERR;
+    std::string bin_filename = model_filename;
+    if (model_filename.find(".param") == std::string::npos) {
+        PRINT_E("Invalid model param filename (%s)\n", model_filename.c_str());
+        return kRetErr;
     }
-    binFilename = binFilename.replace(binFilename.find(".param"), std::string(".param").length(), ".bin\0");
-    if (m_net->load_param(modelFilename.c_str()) != 0) {
-        PRINT_E("Failed to load model param file (%s)\n", modelFilename.c_str());
-        return RET_ERR;
+    bin_filename = bin_filename.replace(bin_filename.find(".param"), std::string(".param").length(), ".bin\0");
+    if (net_->load_param(model_filename.c_str()) != 0) {
+        PRINT_E("Failed to load model param file (%s)\n", model_filename.c_str());
+        return kRetErr;
     }
-    if (m_net->load_model(binFilename.c_str()) != 0) {
-        PRINT_E("Failed to load model bin file (%s)\n", binFilename.c_str());
-        return RET_ERR;
+    if (net_->load_model(bin_filename.c_str()) != 0) {
+        PRINT_E("Failed to load model bin file (%s)\n", bin_filename.c_str());
+        return kRetErr;
     }
 
     /* Convert normalize parameter to speed up */
-    for (auto& inputTensorInfo : inputTensorInfoList) {
-        convertNormalizeParameters(inputTensorInfo);
+    for (auto& input_tensor_info : input_tensor_info_list) {
+        ConvertNormalizeParameters(input_tensor_info);
     }
 
-    return RET_OK;
+    return kRetOk;
 };
 
 
-int32_t InferenceHelperNcnn::finalize(void)
+int32_t InferenceHelperNcnn::Finalize(void)
 {
-    m_net.reset();
-    m_inMatList.clear();
-    m_outMatList.clear();
-    return RET_ERR;
+    net_.reset();
+    in_mat_list_.clear();
+    out_mat_list_.clear();
+    return kRetErr;
 }
 
-int32_t InferenceHelperNcnn::preProcess(const std::vector<InputTensorInfo>& inputTensorInfoList)
+int32_t InferenceHelperNcnn::PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list)
 {
-    m_inMatList.clear();
-    for (const auto& inputTensorInfo : inputTensorInfoList) {
-        ncnn::Mat ncnnMat;
-        if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_IMAGE) {
+    in_mat_list_.clear();
+    for (const auto& input_tensor_info : input_tensor_info_list) {
+        ncnn::Mat ncnn_mat;
+        if (input_tensor_info.data_type == InputTensorInfo::kDataTypeImage) {
             /* Crop */
-            if ((inputTensorInfo.imageInfo.width != inputTensorInfo.imageInfo.cropWidth) || (inputTensorInfo.imageInfo.height != inputTensorInfo.imageInfo.cropHeight)) {
+            if ((input_tensor_info.image_info.width != input_tensor_info.image_info.crop_width) || (input_tensor_info.image_info.height != input_tensor_info.image_info.crop_height)) {
                 PRINT_E("Crop is not supported\n");
-                return RET_ERR;
+                return kRetErr;
             }
             /* Convert color type */
-            int32_t pixelType = 0;
-            if ((inputTensorInfo.imageInfo.channel == 3) && (inputTensorInfo.tensorDims.channel == 3)) {
-                pixelType = (inputTensorInfo.imageInfo.isBGR) ? ncnn::Mat::PIXEL_BGR : ncnn::Mat::PIXEL_RGB;
-                if (inputTensorInfo.imageInfo.swapColor) {
-                    pixelType = (inputTensorInfo.imageInfo.isBGR) ? ncnn::Mat::PIXEL_BGR2RGB : ncnn::Mat::PIXEL_RGB2BGR;
+            int32_t pixel_type = 0;
+            if ((input_tensor_info.image_info.channel == 3) && (input_tensor_info.tensor_dims.channel == 3)) {
+                pixel_type = (input_tensor_info.image_info.is_bgr) ? ncnn::Mat::PIXEL_BGR : ncnn::Mat::PIXEL_RGB;
+                if (input_tensor_info.image_info.swap_color) {
+                    pixel_type = (input_tensor_info.image_info.is_bgr) ? ncnn::Mat::PIXEL_BGR2RGB : ncnn::Mat::PIXEL_RGB2BGR;
                 }
-            } else if ((inputTensorInfo.imageInfo.channel == 1) && (inputTensorInfo.tensorDims.channel == 1)) {
-                pixelType = ncnn::Mat::PIXEL_GRAY;
-            } else if ((inputTensorInfo.imageInfo.channel == 3) && (inputTensorInfo.tensorDims.channel == 1)) {
-                pixelType = (inputTensorInfo.imageInfo.isBGR) ? ncnn::Mat::PIXEL_BGR2GRAY : ncnn::Mat::PIXEL_RGB2GRAY;
-            } else if ((inputTensorInfo.imageInfo.channel == 1) && (inputTensorInfo.tensorDims.channel == 3)) {
-                pixelType = ncnn::Mat::PIXEL_GRAY2RGB;
+            } else if ((input_tensor_info.image_info.channel == 1) && (input_tensor_info.tensor_dims.channel == 1)) {
+                pixel_type = ncnn::Mat::PIXEL_GRAY;
+            } else if ((input_tensor_info.image_info.channel == 3) && (input_tensor_info.tensor_dims.channel == 1)) {
+                pixel_type = (input_tensor_info.image_info.is_bgr) ? ncnn::Mat::PIXEL_BGR2GRAY : ncnn::Mat::PIXEL_RGB2GRAY;
+            } else if ((input_tensor_info.image_info.channel == 1) && (input_tensor_info.tensor_dims.channel == 3)) {
+                pixel_type = ncnn::Mat::PIXEL_GRAY2RGB;
             } else {
-                PRINT_E("Unsupported color conversion (%d, %d)\n", inputTensorInfo.imageInfo.channel, inputTensorInfo.tensorDims.channel);
-                return RET_ERR;
+                PRINT_E("Unsupported color conversion (%d, %d)\n", input_tensor_info.image_info.channel, input_tensor_info.tensor_dims.channel);
+                return kRetErr;
             }
             
-            if (inputTensorInfo.imageInfo.cropWidth == inputTensorInfo.tensorDims.width && inputTensorInfo.imageInfo.cropHeight == inputTensorInfo.tensorDims.height) {
+            if (input_tensor_info.image_info.crop_width == input_tensor_info.tensor_dims.width && input_tensor_info.image_info.crop_height == input_tensor_info.tensor_dims.height) {
                 /* Convert to blob */
-                ncnnMat = ncnn::Mat::from_pixels((uint8_t*)inputTensorInfo.data, pixelType, inputTensorInfo.imageInfo.width, inputTensorInfo.imageInfo.height);
+                ncnn_mat = ncnn::Mat::from_pixels((uint8_t*)input_tensor_info.data, pixel_type, input_tensor_info.image_info.width, input_tensor_info.image_info.height);
             } else {
                 /* Convert to blob with resize */
-                ncnnMat = ncnn::Mat::from_pixels_resize((uint8_t*)inputTensorInfo.data, pixelType, inputTensorInfo.imageInfo.width, inputTensorInfo.imageInfo.height, inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height);
+                ncnn_mat = ncnn::Mat::from_pixels_resize((uint8_t*)input_tensor_info.data, pixel_type, input_tensor_info.image_info.width, input_tensor_info.image_info.height, input_tensor_info.tensor_dims.width, input_tensor_info.tensor_dims.height);
             }
             /* Normalize image */
-            ncnnMat.substract_mean_normalize(inputTensorInfo.normalize.mean, inputTensorInfo.normalize.norm);
-        } else if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NHWC) {
-            PRINT_E("[ToDo] Unsupported data type (%d)\n", inputTensorInfo.dataType);
-            ncnnMat = ncnn::Mat::from_pixels((uint8_t*)inputTensorInfo.data, inputTensorInfo.tensorDims.channel == 3 ? ncnn::Mat::PIXEL_RGB : ncnn::Mat::PIXEL_GRAY, inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height);
-        } else if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NCHW) {
-            ncnnMat = ncnn::Mat(inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height, inputTensorInfo.tensorDims.channel, inputTensorInfo.data);
+            ncnn_mat.substract_mean_normalize(input_tensor_info.normalize.mean, input_tensor_info.normalize.norm);
+        } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {
+            PRINT_E("[ToDo] Unsupported data type (%d)\n", input_tensor_info.data_type);
+            ncnn_mat = ncnn::Mat::from_pixels((uint8_t*)input_tensor_info.data, input_tensor_info.tensor_dims.channel == 3 ? ncnn::Mat::PIXEL_RGB : ncnn::Mat::PIXEL_GRAY, input_tensor_info.tensor_dims.width, input_tensor_info.tensor_dims.height);
+        } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) {
+            ncnn_mat = ncnn::Mat(input_tensor_info.tensor_dims.width, input_tensor_info.tensor_dims.height, input_tensor_info.tensor_dims.channel, input_tensor_info.data);
         } else {
-            PRINT_E("Unsupported data type (%d)\n", inputTensorInfo.dataType);
-            return RET_ERR;
+            PRINT_E("Unsupported data type (%d)\n", input_tensor_info.data_type);
+            return kRetErr;
         }
-        m_inMatList.push_back(std::pair<std::string, ncnn::Mat>(inputTensorInfo.name, ncnnMat));
+        in_mat_list_.push_back(std::pair<std::string, ncnn::Mat>(input_tensor_info.name, ncnn_mat));
     }
-    return RET_OK;
+    return kRetOk;
 }
 
-int32_t InferenceHelperNcnn::invoke(std::vector<OutputTensorInfo>& outputTensorInfoList)
+int32_t InferenceHelperNcnn::Process(std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
-    ncnn::Extractor ex = m_net->create_extractor();
+    ncnn::Extractor ex = net_->create_extractor();
     ex.set_light_mode(true);
-    ex.set_num_threads(m_numThread);
-    for (const auto& inputMat : m_inMatList) {
+    ex.set_num_threads(num_threads_);
+    for (const auto& inputMat : in_mat_list_) {
         if (ex.input(inputMat.first.c_str(), inputMat.second) != 0) {
             PRINT_E("Input mat error (%s)\n", inputMat.first.c_str());
-            return RET_ERR;
+            return kRetErr;
         }
     }
 
-    m_outMatList.clear();
-    for (auto& outputTensorInfo : outputTensorInfoList) {
-        ncnn::Mat ncnnOut;
-        if (ex.extract(outputTensorInfo.name.c_str(), ncnnOut) != 0) {
-            PRINT_E("Output mat error (%s)\n", outputTensorInfo.name.c_str());
-            return RET_ERR;
+    out_mat_list_.clear();
+    for (auto& output_tensor_info : output_tensor_info_list) {
+        ncnn::Mat ncnn_out;
+        if (ex.extract(output_tensor_info.name.c_str(), ncnn_out) != 0) {
+            PRINT_E("Output mat error (%s)\n", output_tensor_info.name.c_str());
+            return kRetErr;
         }
-        m_outMatList.push_back(ncnnOut);	// store ncnn mat in member variable so that data keep exist
-        outputTensorInfo.data = ncnnOut.data;
-        outputTensorInfo.tensorDims.batch = 1;
-        outputTensorInfo.tensorDims.channel = ncnnOut.c;
-        outputTensorInfo.tensorDims.height = ncnnOut.h;
-        outputTensorInfo.tensorDims.width = ncnnOut.w;
+        out_mat_list_.push_back(ncnn_out);	// store ncnn mat in member variable so that data keep exist
+        output_tensor_info.data = ncnn_out.data;
+        output_tensor_info.tensor_dims.batch = 1;
+        output_tensor_info.tensor_dims.channel = ncnn_out.c;
+        output_tensor_info.tensor_dims.height = ncnn_out.h;
+        output_tensor_info.tensor_dims.width = ncnn_out.w;
     }
 
-    return RET_OK;
+    return kRetOk;
 }
 
-void InferenceHelperNcnn::convertNormalizeParameters(InputTensorInfo& inputTensorInfo)
+void InferenceHelperNcnn::ConvertNormalizeParameters(InputTensorInfo& tensor_info)
 {
-    if (inputTensorInfo.dataType != InputTensorInfo::DATA_TYPE_IMAGE) return;
+    if (tensor_info.data_type != InputTensorInfo::kDataTypeImage) return;
 
 #if 0
     /* Convert to speeden up normalization:  ((src / 255) - mean) / norm  = src * 1 / (255 * norm) - (mean / norm) */
     for (int32_t i = 0; i < 3; i++) {
-        inputTensorInfo.normalize.mean[i] /= inputTensorInfo.normalize.norm[i];
-        inputTensorInfo.normalize.norm[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] = 1.0f / inputTensorInfo.normalize.norm[i];
+        tensor_info.normalize.mean[i] /= tensor_info.normalize.norm[i];
+        tensor_info.normalize.norm[i] *= 255.0f;
+        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
     }
 #endif
 #if 1
     /* Convert to speeden up normalization:  ((src / 255) - mean) / norm = (src  - (mean * 255))  * (1 / (255 * norm)) */
     for (int32_t i = 0; i < 3; i++) {
-        inputTensorInfo.normalize.mean[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] = 1.0f / inputTensorInfo.normalize.norm[i];
+        tensor_info.normalize.mean[i] *= 255.0f;
+        tensor_info.normalize.norm[i] *= 255.0f;
+        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
     }
 #endif
 }

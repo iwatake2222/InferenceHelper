@@ -52,86 +52,86 @@ limitations under the License.
 /*** Function ***/
 InferenceHelperTensorflowLite::InferenceHelperTensorflowLite()
 {
-    m_numThread = 1;
-    m_resolver.reset(new tflite::ops::builtin::BuiltinOpResolver());
+    num_threads_ = 1;
+    resolver_.reset(new tflite::ops::builtin::BuiltinOpResolver());
 }
 
 InferenceHelperTensorflowLite::~InferenceHelperTensorflowLite()
 {
 }
 
-int32_t InferenceHelperTensorflowLite::setNumThread(const int32_t numThread)
+int32_t InferenceHelperTensorflowLite::SetNumThreads(const int32_t num_threads)
 {
-    m_numThread = numThread;
-    return RET_OK;
+    num_threads_ = num_threads;
+    return kRetOk;
 }
 
-int32_t InferenceHelperTensorflowLite::setCustomOps(const std::vector<std::pair<const char*, const void*>>& customOps)
+int32_t InferenceHelperTensorflowLite::SetCustomOps(const std::vector<std::pair<const char*, const void*>>& custom_ops)
 {
-    for (auto op : customOps) {
-        m_resolver->AddCustom(op.first, (const TfLiteRegistration*)op.second);
+    for (auto op : custom_ops) {
+        resolver_->AddCustom(op.first, (const TfLiteRegistration*)op.second);
     }
-    return RET_OK;
+    return kRetOk;
 }
 
-int32_t InferenceHelperTensorflowLite::initialize(const std::string& modelFilename, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList)
+int32_t InferenceHelperTensorflowLite::Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
     /*** Create network ***/
 #if 0
-    m_model = tflite::FlatBufferModel::BuildFromFile(modelFilename.c_str());
+    model_ = tflite::FlatBufferModel::BuildFromFile(model_filename.c_str());
 #else
-    std::ifstream ifs(modelFilename, std::ios::binary);
+    std::ifstream ifs(model_filename, std::ios::binary);
     if (ifs) {
         ifs >> std::noskipws;
-        (void)std::copy(std::istream_iterator<char>(ifs), std::istream_iterator<char>(), back_inserter(m_modelBuffer));
+        (void)std::copy(std::istream_iterator<char>(ifs), std::istream_iterator<char>(), back_inserter(model_buffer_));
     } else {
-        PRINT_E("Failed to read model (%s)\n", modelFilename.c_str());
-        return RET_ERR;
+        PRINT_E("Failed to read model (%s)\n", model_filename.c_str());
+        return kRetErr;
     }
     ifs.close();
-    m_model = tflite::FlatBufferModel::BuildFromBuffer(m_modelBuffer.data(), m_modelBuffer.size());
+    model_ = tflite::FlatBufferModel::BuildFromBuffer(model_buffer_.data(), model_buffer_.size());
 #endif
 
-    if (m_model == nullptr) {
-        PRINT_E("Failed to build model (%s)\n", modelFilename.c_str());
-        return RET_ERR;
+    if (model_ == nullptr) {
+        PRINT_E("Failed to build model (%s)\n", model_filename.c_str());
+        return kRetErr;
     }
 
-    tflite::InterpreterBuilder builder(*m_model, *m_resolver);
-    builder(&m_interpreter);
-    if (m_interpreter == nullptr) {
-        PRINT_E("Failed to build interpreter (%s)\n", modelFilename.c_str());
-        return RET_ERR;
+    tflite::InterpreterBuilder builder(*model_, *resolver_);
+    builder(&interpreter_);
+    if (interpreter_ == nullptr) {
+        PRINT_E("Failed to build interpreter (%s)\n", model_filename.c_str());
+        return kRetErr;
     }
 
-    m_interpreter->SetNumThreads(m_numThread);
+    interpreter_->SetNumThreads(num_threads_);
 
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK
-    if (m_helperType == TENSORFLOW_LITE_XNNPACK) {
+    if (helper_type_ == kTensorflowLiteXnnpack) {
         auto options = TfLiteXNNPackDelegateOptionsDefault();
-        options.num_threads = m_numThread;
-        m_delegate = TfLiteXNNPackDelegateCreate(&options);
-        m_interpreter->ModifyGraphWithDelegate(m_delegate);
+        options.num_threads = num_threads_;
+        delegate_ = TfLiteXNNPackDelegateCreate(&options);
+        interpreter_->ModifyGraphWithDelegate(delegate_);
     }
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU
-    if (m_helperType == TENSORFLOW_LITE_GPU) {
+    if (helper_type_ == kTensorflowLiteGpu) {
         auto options = TfLiteGpuDelegateOptionsV2Default();
         options.inference_preference = TFLITE_GPU_INFERENCE_PREFERENCE_SUSTAINED_SPEED;
         options.inference_priority1 = TFLITE_GPU_INFERENCE_PRIORITY_MIN_LATENCY;
-        m_delegate = TfLiteGpuDelegateV2Create(&options);
-        m_interpreter->ModifyGraphWithDelegate(m_delegate);
+        delegate_ = TfLiteGpuDelegateV2Create(&options);
+        interpreter_->ModifyGraphWithDelegate(delegate_);
     }
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU
-    if (m_helperType == TENSORFLOW_LITE_EDGETPU) {
+    if (helper_type_ == kTensorflowLiteEdgetpu) {
         size_t num_devices;
         std::unique_ptr<edgetpu_device, decltype(&edgetpu_free_devices)> devices(edgetpu_list_devices(&num_devices), &edgetpu_free_devices);
         if (num_devices > 0) {
             const auto& device = devices.get()[0];
-            m_delegate = edgetpu_create_delegate(device.type, device.path, nullptr, 0);
-            if (m_delegate) {
-                m_interpreter->ModifyGraphWithDelegate(m_delegate);
+            delegate_ = edgetpu_create_delegate(device.type, device.path, nullptr, 0);
+            if (delegate_) {
+                interpreter_->ModifyGraphWithDelegate(delegate_);
             } else {
                 PRINT_E("[WARNING] Failed to create Edge TPU delegate\n");
             }
@@ -141,8 +141,8 @@ int32_t InferenceHelperTensorflowLite::initialize(const std::string& modelFilena
     }
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI
-    if (m_helperType == TENSORFLOW_LITE_NNAPI) {
-        m_interpreter->SetNumThreads(1);
+    if (helper_type_ == kTensorflowLiteNnapi) {
+        interpreter_->SetNumThreads(1);
         tflite::StatefulNnApiDelegate::Options options;
         //options.execution_preference = tflite::StatefulNnApiDelegate::Options::kSustainedSpeed;
         //options.disallow_nnapi_cpu = true;
@@ -151,11 +151,11 @@ int32_t InferenceHelperTensorflowLite::initialize(const std::string& modelFilena
         //options.accelerator_name = "qti-dsp";
         //options.accelerator_name = "qti-gpu";
         //options.accelerator_name = "nnapi-reference";
-        m_delegate = new tflite::StatefulNnApiDelegate(options);
-        if (m_delegate) {
-            m_interpreter->ModifyGraphWithDelegate(m_delegate);
-            //m_interpreter->SetAllowFp16PrecisionForFp32(true);
-            auto actualOptions = tflite::StatefulNnApiDelegate::GetOptions(m_delegate);
+        delegate_ = new tflite::StatefulNnApiDelegate(options);
+        if (delegate_) {
+            interpreter_->ModifyGraphWithDelegate(delegate_);
+            //interpreter_->SetAllowFp16PrecisionForFp32(true);
+            auto actualOptions = tflite::StatefulNnApiDelegate::GetOptions(delegate_);
             PRINT("[INFO] NNAPI options.accelerator_name = %s\n", actualOptions.accelerator_name);
         } else {
             PRINT_E("[WARNING] Failed to create NNAPI delegate\n");
@@ -163,200 +163,200 @@ int32_t InferenceHelperTensorflowLite::initialize(const std::string& modelFilena
     }
 #endif
     /* Memo: If you get error around here in Visual Studio, please make sure you don't use Debug */
-    if (m_interpreter->AllocateTensors() != kTfLiteOk) {
-        PRINT_E("Failed to allocate tensors (%s)\n", modelFilename.c_str());
-        return RET_ERR;
+    if (interpreter_->AllocateTensors() != kTfLiteOk) {
+        PRINT_E("Failed to allocate tensors (%s)\n", model_filename.c_str());
+        return kRetErr;
     }
 
     /* Get model information */
-    displayModelInfo(*m_interpreter);
+    DisplayModelInfo(*interpreter_);
 
     /* Check if input tensor name exists anddims are the same as described in the model. In case dims is unfixed, resize tensor size. Get id and type */
-    for (auto& inputTensorInfo : inputTensorInfoList) {
-        if (getInputTensorInfo(inputTensorInfo) != RET_OK) {
-            PRINT_E("Invalid input tensor info (%s)\n", inputTensorInfo.name.c_str());
-            return RET_ERR;
+    for (auto& input_tensor_info : input_tensor_info_list) {
+        if (GetInputTensorInfo(input_tensor_info) != kRetOk) {
+            PRINT_E("Invalid input tensor info (%s)\n", input_tensor_info.name.c_str());
+            return kRetErr;
         }
     }
     
     /* Check if output tensor name exists and get info (id, ptr to data, dims, type) */
-    for (auto& outputTensorInfo : outputTensorInfoList) {
-        if (getOutputTensorInfo(outputTensorInfo) != RET_OK) {
-            PRINT_E("Invalid output tensor info (%s)\n", outputTensorInfo.name.c_str());
-            return RET_ERR;
+    for (auto& output_tensor_info : output_tensor_info_list) {
+        if (GetOutputTensorInfo(output_tensor_info) != kRetOk) {
+            PRINT_E("Invalid output tensor info (%s)\n", output_tensor_info.name.c_str());
+            return kRetErr;
         }
     }
 
     /* Convert normalize parameter to speed up */
-    for (auto& inputTensorInfo : inputTensorInfoList) {
-        convertNormalizeParameters(inputTensorInfo);
+    for (auto& input_tensor_info : input_tensor_info_list) {
+        ConvertNormalizeParameters(input_tensor_info);
     }
 
-    return RET_OK;
+    return kRetOk;
 };
 
 
-int32_t InferenceHelperTensorflowLite::finalize(void)
+int32_t InferenceHelperTensorflowLite::Finalize(void)
 {
-    m_model.reset();
-    m_resolver.reset();
-    m_interpreter.reset();
+    model_.reset();
+    resolver_.reset();
+    interpreter_.reset();
 
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_EDGETPU
-    if (m_helperType == TENSORFLOW_LITE_EDGETPU) {
-        edgetpu_free_delegate(m_delegate);
+    if (helper_type_ == kTensorflowLiteEdgetpu) {
+        edgetpu_free_delegate(delegate_);
     }
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU
-    if (m_helperType == TENSORFLOW_LITE_GPU) {
-        TfLiteGpuDelegateV2Delete(m_delegate);
+    if (helper_type_ == kTensorflowLiteGpu) {
+        TfLiteGpuDelegateV2Delete(delegate_);
     }
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK
-    if (m_helperType == TENSORFLOW_LITE_XNNPACK) {
-        TfLiteXNNPackDelegateDelete(m_delegate);
+    if (helper_type_ == kTensorflowLiteXnnpack) {
+        TfLiteXNNPackDelegateDelete(delegate_);
     }
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI
-    if (m_helperType == TENSORFLOW_LITE_NNAPI) {
-        delete reinterpret_cast<tflite::StatefulNnApiDelegate*>(m_delegate);
+    if (helper_type_ == kTensorflowLiteNnapi) {
+        delete reinterpret_cast<tflite::StatefulNnApiDelegate*>(delegate_);
     }
 #endif
-    return RET_OK;
+    return kRetOk;
 }
 
-int32_t InferenceHelperTensorflowLite::preProcess(const std::vector<InputTensorInfo>& inputTensorInfoList)
+int32_t InferenceHelperTensorflowLite::PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list)
 {
-    if (m_interpreter == nullptr) {
+    if (interpreter_ == nullptr) {
         PRINT_E("Interpreter is not built yet\n");
-        return RET_ERR;
+        return kRetErr;
     }
 
-    for (const auto& inputTensorInfo : inputTensorInfoList) {
-        TfLiteTensor* tensor = m_interpreter->tensor(inputTensorInfo.id);
+    for (const auto& input_tensor_info : input_tensor_info_list) {
+        TfLiteTensor* tensor = interpreter_->tensor(input_tensor_info.id);
         if (!tensor) {
-            PRINT_E("Invalid input name (%s, %d)\n", inputTensorInfo.name.c_str(), inputTensorInfo.id);
-            return RET_ERR;
+            PRINT_E("Invalid input name (%s, %d)\n", input_tensor_info.name.c_str(), input_tensor_info.id);
+            return kRetErr;
         }
-        if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_IMAGE) {
-            if ((inputTensorInfo.imageInfo.width != inputTensorInfo.imageInfo.cropWidth) || (inputTensorInfo.imageInfo.height != inputTensorInfo.imageInfo.cropHeight)) {
+        if (input_tensor_info.data_type == InputTensorInfo::kDataTypeImage) {
+            if ((input_tensor_info.image_info.width != input_tensor_info.image_info.crop_width) || (input_tensor_info.image_info.height != input_tensor_info.image_info.crop_height)) {
                 PRINT_E("Crop is not supported\n");
-                return  RET_ERR;
+                return  kRetErr;
             }
-            if ((inputTensorInfo.imageInfo.cropWidth != inputTensorInfo.tensorDims.width) || (inputTensorInfo.imageInfo.cropHeight != inputTensorInfo.tensorDims.height)) {
+            if ((input_tensor_info.image_info.crop_width != input_tensor_info.tensor_dims.width) || (input_tensor_info.image_info.crop_height != input_tensor_info.tensor_dims.height)) {
                 PRINT_E("Resize is not supported\n");
-                return  RET_ERR;
+                return  kRetErr;
             }
-            if (inputTensorInfo.imageInfo.channel != inputTensorInfo.tensorDims.channel) {
+            if (input_tensor_info.image_info.channel != input_tensor_info.tensor_dims.channel) {
                 PRINT_E("Color conversion is not supported\n");
-                return  RET_ERR;
+                return  kRetErr;
             }
 
             /* Normalize image (NHWC to NHWC)*/
-            uint8_t* src = static_cast<uint8_t*>(inputTensorInfo.data);
-            if (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_UINT8) {
-                uint8_t* dst = m_interpreter->typed_tensor<uint8_t>(inputTensorInfo.id);
-                memcpy(dst, src, sizeof(uint8_t) * inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height * inputTensorInfo.tensorDims.channel);
-            } else if (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_FP32) {
-                float* dst = m_interpreter->typed_tensor<float>(inputTensorInfo.id);
-#pragma omp parallel for num_threads(m_numThread)
-                for (int32_t i = 0; i < inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height; i++) {
-                    for (int32_t c = 0; c < inputTensorInfo.tensorDims.channel; c++) {
+            uint8_t* src = static_cast<uint8_t*>(input_tensor_info.data);
+            if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
+                uint8_t* dst = interpreter_->typed_tensor<uint8_t>(input_tensor_info.id);
+                memcpy(dst, src, sizeof(uint8_t) * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height * input_tensor_info.tensor_dims.channel);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
+                float* dst = interpreter_->typed_tensor<float>(input_tensor_info.id);
+#pragma omp parallel for num_threads(num_threads_)
+                for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
+                    for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
 #if 1
-                        dst[i * inputTensorInfo.tensorDims.channel + c] = (src[i * inputTensorInfo.tensorDims.channel + c] - inputTensorInfo.normalize.mean[c]) * inputTensorInfo.normalize.norm[c];
+                        dst[i * input_tensor_info.tensor_dims.channel + c] = (src[i * input_tensor_info.tensor_dims.channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
 #else
-                        dst[i * inputTensorInfo.tensorDims.channel + c] = (src[i * inputTensorInfo.tensorDims.channel + c] / 255.0f - inputTensorInfo.normalize.mean[c]) / inputTensorInfo.normalize.norm[c];
+                        dst[i * input_tensor_info.tensor_dims.channel + c] = (src[i * input_tensor_info.tensor_dims.channel + c] / 255.0f - input_tensor_info.normalize.mean[c]) / input_tensor_info.normalize.norm[c];
 #endif
                     }
                 }
             } else {
-                PRINT_E("Unsupported tensorType (%d)\n", inputTensorInfo.tensorType);
-                return RET_ERR;
+                PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
+                return kRetErr;
             }
 
-        } else if ( (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NHWC) || (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NCHW) ){
-            if (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_UINT8) {
-                uint8_t* dst = m_interpreter->typed_tensor<uint8_t>(inputTensorInfo.id);
-                uint8_t* src = static_cast<uint8_t*>(inputTensorInfo.data);
-                if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NHWC) {
-                    memcpy(dst, src, sizeof(uint8_t) * inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height * inputTensorInfo.tensorDims.channel);
-                    // setBufferToTensor(inputTensorInfo.id, src);
+        } else if ( (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) ){
+            if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
+                uint8_t* dst = interpreter_->typed_tensor<uint8_t>(input_tensor_info.id);
+                uint8_t* src = static_cast<uint8_t*>(input_tensor_info.data);
+                if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {
+                    memcpy(dst, src, sizeof(uint8_t) * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height * input_tensor_info.tensor_dims.channel);
+                    // setBufferToTensor(input_tensor_info.id, src);
                 } else {	/* NCHW -> NHWC */
-                    for (int32_t i = 0; i < inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height; i++) {
-                        for (int32_t c = 0; c < inputTensorInfo.tensorDims.channel; c++) {
-                            dst[i * inputTensorInfo.tensorDims.channel + c] = src[c * (inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height) + i];
+                    for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
+                        for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
+                            dst[i * input_tensor_info.tensor_dims.channel + c] = src[c * (input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height) + i];
                         }
                     }
                 }
-            } else if (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_FP32) {
-                float* dst = m_interpreter->typed_tensor<float>(inputTensorInfo.id);
-                float* src = static_cast<float*>(inputTensorInfo.data);
-                if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NHWC) {	/* NHWC -> NHWC */
-                    memcpy(dst, src, sizeof(float) * inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height * inputTensorInfo.tensorDims.channel);
-                    // setBufferToTensor(inputTensorInfo.id, src);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
+                float* dst = interpreter_->typed_tensor<float>(input_tensor_info.id);
+                float* src = static_cast<float*>(input_tensor_info.data);
+                if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {	/* NHWC -> NHWC */
+                    memcpy(dst, src, sizeof(float) * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height * input_tensor_info.tensor_dims.channel);
+                    // setBufferToTensor(input_tensor_info.id, src);
                 } else {	/* NCHW -> NHWC */
-                    for (int32_t i = 0; i < inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height; i++) {
-                        for (int32_t c = 0; c < inputTensorInfo.tensorDims.channel; c++) {
-                            dst[i * inputTensorInfo.tensorDims.channel + c] = src[c * (inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height) + i];
+                    for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
+                        for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
+                            dst[i * input_tensor_info.tensor_dims.channel + c] = src[c * (input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height) + i];
                         }
                     }
                 }
-            } else if (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_INT32) {
-                int32_t* dst = m_interpreter->typed_tensor<int32_t>(inputTensorInfo.id);
-                int32_t* src = static_cast<int32_t*>(inputTensorInfo.data);
-                if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NHWC) {	/* NHWC -> NHWC */
-                    memcpy(dst, src, sizeof(int32_t) * inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height * inputTensorInfo.tensorDims.channel);
-                    // setBufferToTensor(inputTensorInfo.id, src);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt32) {
+                int32_t* dst = interpreter_->typed_tensor<int32_t>(input_tensor_info.id);
+                int32_t* src = static_cast<int32_t*>(input_tensor_info.data);
+                if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {	/* NHWC -> NHWC */
+                    memcpy(dst, src, sizeof(int32_t) * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height * input_tensor_info.tensor_dims.channel);
+                    // setBufferToTensor(input_tensor_info.id, src);
                 } else {	/* NCHW -> NHWC */
-                    for (int32_t i = 0; i < inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height; i++) {
-                        for (int32_t c = 0; c < inputTensorInfo.tensorDims.channel; c++) {
-                            dst[i * inputTensorInfo.tensorDims.channel + c] = src[c * (inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height) + i];
+                    for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
+                        for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
+                            dst[i * input_tensor_info.tensor_dims.channel + c] = src[c * (input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height) + i];
                         }
                     }
                 }
-            } else if (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_INT64) {
-                int64_t* dst = m_interpreter->typed_tensor<int64_t>(inputTensorInfo.id);
-                int64_t* src = static_cast<int64_t*>(inputTensorInfo.data);
-                if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NHWC) {	/* NHWC -> NHWC */
-                    memcpy(dst, src, sizeof(int64_t) * inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height * inputTensorInfo.tensorDims.channel);
-                    // setBufferToTensor(inputTensorInfo.id, src);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt64) {
+                int64_t* dst = interpreter_->typed_tensor<int64_t>(input_tensor_info.id);
+                int64_t* src = static_cast<int64_t*>(input_tensor_info.data);
+                if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {	/* NHWC -> NHWC */
+                    memcpy(dst, src, sizeof(int64_t) * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height * input_tensor_info.tensor_dims.channel);
+                    // setBufferToTensor(input_tensor_info.id, src);
                 } else {	/* NCHW -> NHWC */
-                    for (int32_t i = 0; i < inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height; i++) {
-                        for (int32_t c = 0; c < inputTensorInfo.tensorDims.channel; c++) {
-                            dst[i * inputTensorInfo.tensorDims.channel + c] = src[c * (inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height) + i];
+                    for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
+                        for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
+                            dst[i * input_tensor_info.tensor_dims.channel + c] = src[c * (input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height) + i];
                         }
                     }
                 }
             } else {
-                PRINT_E("Invalid tensor type (%d)\n", inputTensorInfo.tensorType);
-                return RET_ERR;
+                PRINT_E("Invalid tensor type (%d)\n", input_tensor_info.tensor_type);
+                return kRetErr;
             }
         } else {
-            PRINT_E("Unsupported data type (%d)\n", inputTensorInfo.dataType);
-            return RET_ERR;
+            PRINT_E("Unsupported data type (%d)\n", input_tensor_info.data_type);
+            return kRetErr;
         }
     }
-    return RET_OK;
+    return kRetOk;
 
 }
 
-int32_t InferenceHelperTensorflowLite::invoke(std::vector<OutputTensorInfo>& outputTensorInfoList)
+int32_t InferenceHelperTensorflowLite::Process(std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
-    if (m_interpreter->Invoke() != kTfLiteOk) {
+    if (interpreter_->Invoke() != kTfLiteOk) {
         PRINT_E("Failed to invoke\n");
-        return RET_ERR;
+        return kRetErr;
     }
-    return RET_OK;
+    return kRetOk;
 }
 
-void InferenceHelperTensorflowLite::displayModelInfo(const tflite::Interpreter& interpreter)
+void InferenceHelperTensorflowLite::DisplayModelInfo(const tflite::Interpreter& interpreter)
 {
     /* Memo: If you get error around here in Visual Studio, please make sure you don't use Debug */
-    const auto& inputIndices = interpreter.inputs();
-    int32_t inputNum = static_cast<int32_t>(inputIndices.size());
-    PRINT("Input num = %d\n", inputNum);
-    for (int32_t i = 0; i < inputNum; i++) {
-        auto* tensor = interpreter.tensor(inputIndices[i]);
+    const auto& input_indices = interpreter.inputs();
+    int32_t input_num = static_cast<int32_t>(input_indices.size());
+    PRINT("Input num = %d\n", input_num);
+    for (int32_t i = 0; i < input_num; i++) {
+        auto* tensor = interpreter.tensor(input_indices[i]);
         PRINT("    tensor[%d]->name: %s\n", i, tensor->name);
         for (int32_t j = 0; j < tensor->dims->size; j++) {
             PRINT("    tensor[%d]->dims->size[%d]: %d\n", i, j, tensor->dims->data[j]);
@@ -369,11 +369,11 @@ void InferenceHelperTensorflowLite::displayModelInfo(const tflite::Interpreter& 
         }
     }
 
-    const auto& outputIndices = interpreter.outputs();
-    int32_t outputNum = static_cast<int32_t>(outputIndices.size());
-    PRINT("Output num = %d\n", outputNum);
-    for (int32_t i = 0; i < outputNum; i++) {
-        auto* tensor = interpreter.tensor(outputIndices[i]);
+    const auto& output_indices = interpreter.outputs();
+    int32_t output_num = static_cast<int32_t>(output_indices.size());
+    PRINT("Output num = %d\n", output_num);
+    for (int32_t i = 0; i < output_num; i++) {
+        auto* tensor = interpreter.tensor(output_indices[i]);
         PRINT("    tensor[%d]->name: %s\n", i, tensor->name);
         for (int32_t j = 0; j < tensor->dims->size; j++) {
             PRINT("    tensor[%d]->dims->size[%d]: %d\n", i, j, tensor->dims->data[j]);
@@ -388,129 +388,129 @@ void InferenceHelperTensorflowLite::displayModelInfo(const tflite::Interpreter& 
 }
 
 
-int32_t InferenceHelperTensorflowLite::getInputTensorInfo(InputTensorInfo& tensorInfo)
+int32_t InferenceHelperTensorflowLite::GetInputTensorInfo(InputTensorInfo& tensor_info)
 {
-    for (auto i : m_interpreter->inputs()) {
-        TfLiteTensor* tensor = m_interpreter->tensor(i);
-        if (std::string(tensor->name) == tensorInfo.name) {
-            tensorInfo.id = i;
+    for (auto i : interpreter_->inputs()) {
+        TfLiteTensor* tensor = interpreter_->tensor(i);
+        if (std::string(tensor->name) == tensor_info.name) {
+            tensor_info.id = i;
             
-            bool isModelSizeFixed = true;
+            bool is_model_size_fixed = true;
             for (int32_t i = 0; i < tensor->dims->size; i++) {
-                if (tensor->dims->data[i] == -1) isModelSizeFixed = false;
+                if (tensor->dims->data[i] == -1) is_model_size_fixed = false;
             }
-            bool isSizeAssigned = true;
-            if ( (tensorInfo.tensorDims.batch == -1) || (tensorInfo.tensorDims.height == -1) || (tensorInfo.tensorDims.width == -1) || (tensorInfo.tensorDims.channel == -1)) isSizeAssigned = false;
+            bool is_size_assigned = true;
+            if ( (tensor_info.tensor_dims.batch == -1) || (tensor_info.tensor_dims.height == -1) || (tensor_info.tensor_dims.width == -1) || (tensor_info.tensor_dims.channel == -1)) is_size_assigned = false;
             
-            if (!isModelSizeFixed && !isSizeAssigned) {
+            if (!is_model_size_fixed && !is_size_assigned) {
                 PRINT_E("Model input size is not set\n");
-                return RET_ERR;
-            } if (isModelSizeFixed && isSizeAssigned) {
-                bool isSizeOK = true;
+                return kRetErr;
+            } if (is_model_size_fixed && is_size_assigned) {
+                bool is_size_ok = true;
                 for (int32_t i = 0; i < tensor->dims->size; i++) {	// NHWC
-                    if ((i == 0) && (tensorInfo.tensorDims.batch != tensor->dims->data[0])) isSizeOK = false;
-                    if ((i == 1) && (tensorInfo.tensorDims.height != tensor->dims->data[1])) isSizeOK = false;
-                    if ((i == 2) && (tensorInfo.tensorDims.width != tensor->dims->data[2])) isSizeOK = false;
-                    if ((i == 3) && (tensorInfo.tensorDims.channel != tensor->dims->data[3])) isSizeOK = false;
+                    if ((i == 0) && (tensor_info.tensor_dims.batch != tensor->dims->data[0])) is_size_ok = false;
+                    if ((i == 1) && (tensor_info.tensor_dims.height != tensor->dims->data[1])) is_size_ok = false;
+                    if ((i == 2) && (tensor_info.tensor_dims.width != tensor->dims->data[2])) is_size_ok = false;
+                    if ((i == 3) && (tensor_info.tensor_dims.channel != tensor->dims->data[3])) is_size_ok = false;
                 }
-                if (!isSizeOK) {
+                if (!is_size_ok) {
                     PRINT_E("Invalid size\n");
-                    return RET_ERR;
+                    return kRetErr;
                 }
-            } if (isModelSizeFixed && !isSizeAssigned) {
+            } if (is_model_size_fixed && !is_size_assigned) {
                 PRINT("Input tensor size is set from the model\n");
-                tensorInfo.tensorDims.batch = (std::max)(1, tensor->dims->data[0]);
-                tensorInfo.tensorDims.height = (std::max)(1, tensor->dims->data[1]);
-                tensorInfo.tensorDims.width = (std::max)(1, tensor->dims->data[2]);
-                tensorInfo.tensorDims.channel = (std::max)(1, tensor->dims->data[3]);
-            } if (!isModelSizeFixed && isSizeAssigned) {
+                tensor_info.tensor_dims.batch = (std::max)(1, tensor->dims->data[0]);
+                tensor_info.tensor_dims.height = (std::max)(1, tensor->dims->data[1]);
+                tensor_info.tensor_dims.width = (std::max)(1, tensor->dims->data[2]);
+                tensor_info.tensor_dims.channel = (std::max)(1, tensor->dims->data[3]);
+            } if (!is_model_size_fixed && is_size_assigned) {
                 PRINT("[WARNING] ResizeInputTensor is not tested\n");
                 std::vector<int32_t> dims;
-                dims.push_back(tensorInfo.tensorDims.batch);
-                dims.push_back(tensorInfo.tensorDims.height);
-                dims.push_back(tensorInfo.tensorDims.width);
-                dims.push_back(tensorInfo.tensorDims.channel);
-                m_interpreter->ResizeInputTensor(i, dims);
-                if (m_interpreter->AllocateTensors() != kTfLiteOk) {
+                dims.push_back(tensor_info.tensor_dims.batch);
+                dims.push_back(tensor_info.tensor_dims.height);
+                dims.push_back(tensor_info.tensor_dims.width);
+                dims.push_back(tensor_info.tensor_dims.channel);
+                interpreter_->ResizeInputTensor(i, dims);
+                if (interpreter_->AllocateTensors() != kTfLiteOk) {
                     PRINT_E("Failed to allocate tensors\n");
-                    return RET_ERR;
+                    return kRetErr;
                 }
             }
 
-            if (tensor->type == kTfLiteUInt8) tensorInfo.tensorType = TensorInfo::TENSOR_TYPE_UINT8;
-            if (tensor->type == kTfLiteFloat32) tensorInfo.tensorType = TensorInfo::TENSOR_TYPE_FP32;
-            if (tensor->type == kTfLiteInt32) tensorInfo.tensorType = TensorInfo::TENSOR_TYPE_INT32;
-            if (tensor->type == kTfLiteInt64) tensorInfo.tensorType = TensorInfo::TENSOR_TYPE_INT64;
-            return RET_OK;
+            if (tensor->type == kTfLiteUInt8) tensor_info.tensor_type = TensorInfo::kTensorTypeUint8;
+            if (tensor->type == kTfLiteFloat32) tensor_info.tensor_type = TensorInfo::kTensorTypeFp32;
+            if (tensor->type == kTfLiteInt32) tensor_info.tensor_type = TensorInfo::kTensorTypeInt32;
+            if (tensor->type == kTfLiteInt64) tensor_info.tensor_type = TensorInfo::kTensorTypeInt64;
+            return kRetOk;
         }
     }
 
-    PRINT_E("Invalid name (%s) \n", tensorInfo.name.c_str());
-    return RET_ERR;
+    PRINT_E("Invalid name (%s) \n", tensor_info.name.c_str());
+    return kRetErr;
 }
 
-int32_t InferenceHelperTensorflowLite::getOutputTensorInfo(OutputTensorInfo& tensorInfo)
+int32_t InferenceHelperTensorflowLite::GetOutputTensorInfo(OutputTensorInfo& tensor_info)
 {
-    for (auto i : m_interpreter->outputs()) {
-        const TfLiteTensor* tensor = m_interpreter->tensor(i);
-        if (std::string(tensor->name) == tensorInfo.name) {
-            tensorInfo.id = i;
+    for (auto i : interpreter_->outputs()) {
+        const TfLiteTensor* tensor = interpreter_->tensor(i);
+        if (std::string(tensor->name) == tensor_info.name) {
+            tensor_info.id = i;
             // NHWC
             for (int32_t i = 0; i < tensor->dims->size; i++) {
-                if (i == 0) tensorInfo.tensorDims.batch = tensor->dims->data[0];
-                if (i == 1) tensorInfo.tensorDims.height = tensor->dims->data[1];
-                if (i == 2) tensorInfo.tensorDims.width = tensor->dims->data[2];
-                if (i == 3) tensorInfo.tensorDims.channel = tensor->dims->data[3];
+                if (i == 0) tensor_info.tensor_dims.batch = tensor->dims->data[0];
+                if (i == 1) tensor_info.tensor_dims.height = tensor->dims->data[1];
+                if (i == 2) tensor_info.tensor_dims.width = tensor->dims->data[2];
+                if (i == 3) tensor_info.tensor_dims.channel = tensor->dims->data[3];
             }
 
             switch (tensor->type) {
             case kTfLiteUInt8:
-                tensorInfo.tensorType = TensorInfo::TENSOR_TYPE_UINT8;
-                tensorInfo.data = m_interpreter->typed_tensor<uint8_t>(i);
-                tensorInfo.quant.scale = tensor->params.scale;
-                tensorInfo.quant.zeroPoint = tensor->params.zero_point;
+                tensor_info.tensor_type = TensorInfo::kTensorTypeUint8;
+                tensor_info.data = interpreter_->typed_tensor<uint8_t>(i);
+                tensor_info.quant.scale = tensor->params.scale;
+                tensor_info.quant.zeroPoint = tensor->params.zero_point;
                 break;
             case kTfLiteFloat32:
-                tensorInfo.tensorType = TensorInfo::TENSOR_TYPE_FP32;
-                tensorInfo.data = m_interpreter->typed_tensor<float>(i);
+                tensor_info.tensor_type = TensorInfo::kTensorTypeFp32;
+                tensor_info.data = interpreter_->typed_tensor<float>(i);
                 break;
             case kTfLiteInt32:
-                tensorInfo.tensorType = TensorInfo::TENSOR_TYPE_INT32;
-                tensorInfo.data = m_interpreter->typed_tensor<int32_t>(i);
+                tensor_info.tensor_type = TensorInfo::kTensorTypeInt32;
+                tensor_info.data = interpreter_->typed_tensor<int32_t>(i);
                 break;
             case kTfLiteInt64:
-                tensorInfo.tensorType = TensorInfo::TENSOR_TYPE_INT64;
-                tensorInfo.data = m_interpreter->typed_tensor<int64_t>(i);
+                tensor_info.tensor_type = TensorInfo::kTensorTypeInt64;
+                tensor_info.data = interpreter_->typed_tensor<int64_t>(i);
                 break;
             default:
-                return RET_ERR;
+                return kRetErr;
             }
-            return RET_OK;;
+            return kRetOk;;
         }
     }
-    PRINT_E("Invalid name (%s) \n", tensorInfo.name.c_str());
-    return RET_ERR;
+    PRINT_E("Invalid name (%s) \n", tensor_info.name.c_str());
+    return kRetErr;
 
 }
 
-void InferenceHelperTensorflowLite::convertNormalizeParameters(InputTensorInfo& inputTensorInfo)
+void InferenceHelperTensorflowLite::ConvertNormalizeParameters(InputTensorInfo& tensor_info)
 {
-    if (inputTensorInfo.dataType != InputTensorInfo::DATA_TYPE_IMAGE) return;
+    if (tensor_info.data_type != InputTensorInfo::kDataTypeImage) return;
 
 #if 0
     /* Convert to speeden up normalization:  ((src / 255) - mean) / norm  = src * 1 / (255 * norm) - (mean / norm) */
     for (int32_t i = 0; i < 3; i++) {
-        inputTensorInfo.normalize.mean[i] /= inputTensorInfo.normalize.norm[i];
-        inputTensorInfo.normalize.norm[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] = 1.0f / inputTensorInfo.normalize.norm[i];
+        tensor_info.normalize.mean[i] /= tensor_info.normalize.norm[i];
+        tensor_info.normalize.norm[i] *= 255.0f;
+        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
     }
 #endif
 #if 1
     /* Convert to speeden up normalization:  ((src / 255) - mean) / norm = (src  - (mean * 255))  * (1 / (255 * norm)) */
     for (int32_t i = 0; i < 3; i++) {
-        inputTensorInfo.normalize.mean[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] = 1.0f / inputTensorInfo.normalize.norm[i];
+        tensor_info.normalize.mean[i] *= 255.0f;
+        tensor_info.normalize.norm[i] *= 255.0f;
+        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
     }
 #endif
 }
@@ -518,47 +518,46 @@ void InferenceHelperTensorflowLite::convertNormalizeParameters(InputTensorInfo& 
 static TfLiteFloatArray* TfLiteFloatArrayCopy(const TfLiteFloatArray* src)
 {
     if (!src) return nullptr;
-    TfLiteFloatArray* ret = static_cast<TfLiteFloatArray*>(
-        malloc(TfLiteFloatArrayGetSizeInBytes(src->size)));
+    TfLiteFloatArray* ret = static_cast<TfLiteFloatArray*>(malloc(TfLiteFloatArrayGetSizeInBytes(src->size)));
     if (!ret) return nullptr;
     ret->size = src->size;
     std::memcpy(ret->data, src->data, src->size * sizeof(float));
     return ret;
 }
 
-int32_t InferenceHelperTensorflowLite::setBufferToTensor(int32_t index, void *data)
+int32_t InferenceHelperTensorflowLite::SetBufferToTensor(int32_t index, void *data)
 {
-    const TfLiteTensor* tensor = m_interpreter->tensor(index);
-    const int32_t modelInputHeight = tensor->dims->data[1];
-    const int32_t modelInputWidth = tensor->dims->data[2];
-    const int32_t modelInputChannel = tensor->dims->data[3];
+    const TfLiteTensor* tensor = interpreter_->tensor(index);
+    const int32_t model_input_height = tensor->dims->data[1];
+    const int32_t model_input_width = tensor->dims->data[2];
+    const int32_t model_input_channel = tensor->dims->data[3];
 
     if (tensor->type == kTfLiteUInt8) {
-        int32_t dataSize = sizeof(int8_t) * 1 * modelInputHeight * modelInputWidth * modelInputChannel;
+        int32_t data_size = sizeof(int8_t) * 1 * model_input_height * model_input_width * model_input_channel;
         /* Need deep copy quantization parameters */
         /* reference: https://github.com/google-coral/edgetpu/blob/master/src/cpp/basic/basic_engine_native.cc */
         /* todo: do I need to release allocated memory ??? */
-        const TfLiteAffineQuantization* inputQuantParams = reinterpret_cast<TfLiteAffineQuantization*>(tensor->quantization.params);
-        TfLiteQuantization inputQuantClone;
-        inputQuantClone = tensor->quantization;
-        TfLiteAffineQuantization* inputQuantParamsClone = reinterpret_cast<TfLiteAffineQuantization*>(malloc(sizeof(TfLiteAffineQuantization)));
-        inputQuantParamsClone->scale = TfLiteFloatArrayCopy(inputQuantParams->scale);
-        inputQuantParamsClone->zero_point = TfLiteIntArrayCopy(inputQuantParams->zero_point);
-        inputQuantParamsClone->quantized_dimension = inputQuantParams->quantized_dimension;
-        inputQuantClone.params = inputQuantParamsClone;
+        const TfLiteAffineQuantization* input_quant_params = reinterpret_cast<TfLiteAffineQuantization*>(tensor->quantization.params);
+        TfLiteQuantization input_quant_clone;
+        input_quant_clone = tensor->quantization;
+        TfLiteAffineQuantization* input_quant_params_clone = reinterpret_cast<TfLiteAffineQuantization*>(malloc(sizeof(TfLiteAffineQuantization)));
+        input_quant_params_clone->scale = TfLiteFloatArrayCopy(input_quant_params->scale);
+        input_quant_params_clone->zero_point = TfLiteIntArrayCopy(input_quant_params->zero_point);
+        input_quant_params_clone->quantized_dimension = input_quant_params->quantized_dimension;
+        input_quant_clone.params = input_quant_params_clone;
 
-        m_interpreter->SetTensorParametersReadOnly(
+        interpreter_->SetTensorParametersReadOnly(
             index, tensor->type, tensor->name,
             std::vector<int32_t>(tensor->dims->data, tensor->dims->data + tensor->dims->size),
-            inputQuantClone,	// use copied parameters
-            (const char*)data, dataSize);
+            input_quant_clone,	// use copied parameters
+            (const char*)data, data_size);
     } else {
-        int32_t dataSize = sizeof(float) * 1 * modelInputHeight * modelInputWidth * modelInputChannel;
-        m_interpreter->SetTensorParametersReadOnly(
+        int32_t data_size = sizeof(float) * 1 * model_input_height * model_input_width * model_input_channel;
+        interpreter_->SetTensorParametersReadOnly(
             index, tensor->type, tensor->name,
             std::vector<int32_t>(tensor->dims->data, tensor->dims->data + tensor->dims->size),
             tensor->quantization,
-            (const char*)data, dataSize);
+            (const char*)data, data_size);
     }
     return 0;
 }

@@ -41,7 +41,7 @@ public:
     int32_t Process(std::vector<OutputTensorInfo>& output_tensor_info_list) override;
 
 private:
-    void ConvertNormalizeParameters(InputTensorInfo& input_tensor_info);
+    void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
 
 private:
     cv::dnn::Net net_;

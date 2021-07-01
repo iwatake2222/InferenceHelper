@@ -33,21 +33,21 @@ class InferenceHelperNcnn : public InferenceHelper {
 public:
     InferenceHelperNcnn();
     ~InferenceHelperNcnn() override;
-    int32_t setNumThread(const int32_t numThread) override;
-    int32_t setCustomOps(const std::vector<std::pair<const char*, const void*>>& customOps) override;
-    int32_t initialize(const std::string& modelFilename, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList) override;
-    int32_t finalize(void) override;
-    int32_t preProcess(const std::vector<InputTensorInfo>& inputTensorInfoList) override;
-    int32_t invoke(std::vector<OutputTensorInfo>& outputTensorInfoList) override;
+    int32_t SetNumThreads(const int32_t num_threads) override;
+    int32_t SetCustomOps(const std::vector<std::pair<const char*, const void*>>& custom_ops) override;
+    int32_t Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list) override;
+    int32_t Finalize(void) override;
+    int32_t PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list) override;
+    int32_t Process(std::vector<OutputTensorInfo>& output_tensor_info_list) override;
 
 private:
-    void convertNormalizeParameters(InputTensorInfo& tensorInfo);
+    void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
 
 private:
-    std::unique_ptr<ncnn::Net> m_net;
-    std::vector<std::pair<std::string, ncnn::Mat>> m_inMatList;	// <name, mat>
-    std::vector<ncnn::Mat> m_outMatList;
-    int32_t m_numThread;
+    std::unique_ptr<ncnn::Net> net_;
+    std::vector<std::pair<std::string, ncnn::Mat>> in_mat_list_;	// <name, mat>
+    std::vector<ncnn::Mat> out_mat_list_;
+    int32_t num_threads_;
 };
 
 #endif

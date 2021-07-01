@@ -36,25 +36,25 @@ class InferenceHelperTensorRt : public InferenceHelper {
 public:
     InferenceHelperTensorRt();
     ~InferenceHelperTensorRt() override {};
-    int32_t setNumThread(const int32_t numThread) override;
-    int32_t setCustomOps(const std::vector<std::pair<const char*, const void*>>& customOps) override;
-    int32_t initialize(const std::string& modelFilename, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList) override;
-    int32_t finalize(void) override;
-    int32_t preProcess(const std::vector<InputTensorInfo>& inputTensorInfoList) override;
-    int32_t invoke(std::vector<OutputTensorInfo>& outputTensorInfoList) override;
+    int32_t SetNumThreads(const int32_t num_threads) override;
+    int32_t SetCustomOps(const std::vector<std::pair<const char*, const void*>>& custom_ops) override;
+    int32_t Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list) override;
+    int32_t Finalize(void) override;
+    int32_t PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list) override;
+    int32_t Process(std::vector<OutputTensorInfo>& output_tensor_info_list) override;
 
 private:
-    int32_t allocateBuffers(std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList);
-    void convertNormalizeParameters(InputTensorInfo& tensorInfo);
+    int32_t AllocateBuffers(std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list);
+    void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
     
 private:
-    int32_t m_numThread;
-    std::shared_ptr<nvinfer1::IRuntime> m_runtime;
-    std::shared_ptr<nvinfer1::ICudaEngine> m_engine;
-    std::shared_ptr<nvinfer1::IExecutionContext> m_context;
-    std::vector<std::pair<void*, int32_t>> m_bufferListCPU;			// pointer and size (can be overwritten by user)
-    std::vector<std::pair<void*, int32_t>> m_bufferListCPUReserved;	// pointer and size (fixed in initialization)
-    std::vector<void*> m_bufferListGPU;
+    int32_t num_threads_;
+    std::shared_ptr<nvinfer1::IRuntime> runtime_;
+    std::shared_ptr<nvinfer1::ICudaEngine> engine_;
+    std::shared_ptr<nvinfer1::IExecutionContext> context_;
+    std::vector<std::pair<void*, int32_t>> buffer_list_cpu_;            // pointer and size (can be overwritten by user)
+    std::vector<std::pair<void*, int32_t>> buffer_list_cpu_reserved_;   // pointer and size (fixed in initialization)
+    std::vector<void*> buffer_list_gpu_;
 };
 
 #endif

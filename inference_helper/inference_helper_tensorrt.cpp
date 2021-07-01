@@ -50,7 +50,7 @@ limitations under the License.
 
 #ifdef USE_INT8
 /* ★ Modify the following (use the same parameter as the model. Also, ppm must be the same size but not normalized.) */
-#define CAL_DIR        "/home/pi/play_with_tensorrt/InferenceHelper/TensorRT/calibration/sample_ppm"
+#define CAL_DIR        "../../InferenceHelper/inference_helper/tensorrt//calibration/sample_ppm"
 #define CAL_LIST_FILE  "list.txt"
 #define CAL_INPUT_NAME "data"
 #define CAL_BATCH_SIZE 10
@@ -73,59 +73,59 @@ limitations under the License.
 /*** Function ***/
 InferenceHelperTensorRt::InferenceHelperTensorRt()
 {
-    m_numThread = 1;
+    num_threads_ = 1;
 }
 
-int32_t InferenceHelperTensorRt::setNumThread(const int32_t numThread)
+int32_t InferenceHelperTensorRt::SetNumThreads(const int32_t num_threads)
 {
-    m_numThread = numThread;
-    return RET_OK;
+    num_threads_ = num_threads;
+    return kRetOk;
 }
 
-int32_t InferenceHelperTensorRt::setCustomOps(const std::vector<std::pair<const char*, const void*>>& customOps)
+int32_t InferenceHelperTensorRt::SetCustomOps(const std::vector<std::pair<const char*, const void*>>& custom_ops)
 {
     PRINT("[WARNING] This method is not supported\n");
-    return RET_OK;
+    return kRetOk;
 }
 
-int32_t InferenceHelperTensorRt::initialize(const std::string& modelFilename, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList)
+int32_t InferenceHelperTensorRt::Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
     /* check model format */
-    bool isTrtModel = false;
-    bool isOnnxModel = false;
+    bool is_trt_model = false;
+    bool is_onnx_model = false;
     // bool isUffModel = false;	// todo
-    std::string trtModelFilename = std::string(modelFilename);
-    if (modelFilename.find(".onnx") != std::string::npos) {
-        isOnnxModel = true;
-        trtModelFilename = trtModelFilename.replace(trtModelFilename.find(".onnx"), std::string(".onnx").length(), ".trt\0");
-    } else if (trtModelFilename.find(".trt") != std::string::npos) {
-        isTrtModel = true;
+    std::string trt_model_filename = std::string(model_filename);
+    if (model_filename.find(".onnx") != std::string::npos) {
+        is_onnx_model = true;
+        trt_model_filename = trt_model_filename.replace(trt_model_filename.find(".onnx"), std::string(".onnx").length(), ".trt\0");
+    } else if (trt_model_filename.find(".trt") != std::string::npos) {
+        is_trt_model = true;
     } else {
-        PRINT_E("unsupoprted file format (%s)\n", modelFilename.c_str());
-        return RET_ERR;
+        PRINT_E("unsupoprted file format (%s)\n", model_filename.c_str());
+        return kRetErr;
     }
 
     /* create runtime and engine from model file */
-    if (isTrtModel) {
+    if (is_trt_model) {
         std::string buffer;
-        std::ifstream stream(modelFilename, std::ios::binary);
+        std::ifstream stream(model_filename, std::ios::binary);
         if (stream) {
             stream >> std::noskipws;
             copy(std::istream_iterator<char>(stream), std::istream_iterator<char>(), back_inserter(buffer));
         }
-        m_runtime = std::shared_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(sample::gLogger.getTRTLogger()), samplesCommon::InferDeleter());
-        m_engine = std::shared_ptr<nvinfer1::ICudaEngine>(m_runtime->deserializeCudaEngine(buffer.data(), buffer.size(), NULL), samplesCommon::InferDeleter());
+        runtime_ = std::shared_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(sample::gLogger.getTRTLogger()), samplesCommon::InferDeleter());
+        engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(buffer.data(), buffer.size(), NULL), samplesCommon::InferDeleter());
         stream.close();
-        if (!m_engine) {
-            PRINT_E("Failed to create engine (%s)\n", modelFilename.c_str());
-            return RET_ERR;
+        if (!engine_) {
+            PRINT_E("Failed to create engine (%s)\n", model_filename.c_str());
+            return kRetErr;
         }
-        m_context = std::shared_ptr<nvinfer1::IExecutionContext>(m_engine->createExecutionContext(), samplesCommon::InferDeleter());
-        if (!m_context) {
-            PRINT_E("Failed to create context (%s)\n", modelFilename.c_str());
-            return RET_ERR;
+        context_ = std::shared_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext(), samplesCommon::InferDeleter());
+        if (!context_) {
+            PRINT_E("Failed to create context (%s)\n", model_filename.c_str());
+            return kRetErr;
         }
-    } else if (isOnnxModel) {
+    } else if (is_onnx_model) {
         /* create a TensorRT model from another format */
         auto builder = std::shared_ptr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(sample::gLogger.getTRTLogger()), samplesCommon::InferDeleter());
 #if 0
@@ -137,10 +137,10 @@ int32_t InferenceHelperTensorRt::initialize(const std::string& modelFilename, st
 #endif
         auto config = std::shared_ptr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig(), samplesCommon::InferDeleter());
 
-        auto parserOnnx = std::shared_ptr<nvonnxparser::IParser>(nvonnxparser::createParser(*network, sample::gLogger.getTRTLogger()), samplesCommon::InferDeleter());
-        if (!parserOnnx->parseFromFile(modelFilename.c_str(), (int)nvinfer1::ILogger::Severity::kWARNING)) {
-            PRINT_E("Failed to parse onnx file (%s)", modelFilename.c_str());
-            return RET_ERR;
+        auto parser_onnx = std::shared_ptr<nvonnxparser::IParser>(nvonnxparser::createParser(*network, sample::gLogger.getTRTLogger()), samplesCommon::InferDeleter());
+        if (!parser_onnx->parseFromFile(model_filename.c_str(), (int)nvinfer1::ILogger::Severity::kWARNING)) {
+            PRINT_E("Failed to parse onnx file (%s)", model_filename.c_str());
+            return kRetErr;
         }
 
         builder->setMaxBatchSize(1);
@@ -152,313 +152,313 @@ int32_t InferenceHelperTensorRt::initialize(const std::string& modelFilename, st
         config->setFlag(nvinfer1::BuilderFlag::kFP16);
 #elif defined(USE_INT8)
         config->setFlag(nvinfer1::BuilderFlag::kINT8);
-        std::vector<std::string> dataDirs;
-        dataDirs.push_back(CAL_DIR);
-        nvinfer1::DimsNCHW imageDims{CAL_BATCH_SIZE, CAL_IMAGE_C, CAL_IMAGE_H, CAL_IMAGE_W};
-        BatchStream calibrationStream(CAL_BATCH_SIZE, CAL_NB_BATCHES, imageDims, CAL_LIST_FILE, dataDirs);
-        auto calibrator = std::unique_ptr<nvinfer1::IInt8Calibrator>(new Int8EntropyCalibrator2<BatchStream>(calibrationStream, 0, "my_model", CAL_INPUT_NAME));
+        std::vector<std::string> data_dirs;
+        data_dirs.push_back(CAL_DIR);
+        nvinfer1::DimsNCHW image_dims{CAL_BATCH_SIZE, CAL_IMAGE_C, CAL_IMAGE_H, CAL_IMAGE_W};
+        BatchStream calibration_stream(CAL_BATCH_SIZE, CAL_NB_BATCHES, image_dims, CAL_LIST_FILE, data_dirs);
+        auto calibrator = std::unique_ptr<nvinfer1::IInt8Calibrator>(new Int8EntropyCalibrator2<BatchStream>(calibration_stream, 0, "my_model", CAL_INPUT_NAME));
         config->setInt8Calibrator(calibrator.get());
 #endif 
 
-        m_engine = std::shared_ptr<nvinfer1::ICudaEngine>(builder->buildEngineWithConfig(*network, *config), samplesCommon::InferDeleter());
-        if (!m_engine) {
-            PRINT_E("Failed to create engine (%s)\n", modelFilename.c_str());
-            return RET_ERR;
+        engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(builder->buildEngineWithConfig(*network, *config), samplesCommon::InferDeleter());
+        if (!engine_) {
+            PRINT_E("Failed to create engine (%s)\n", model_filename.c_str());
+            return kRetErr;
         }
-        m_context = std::shared_ptr<nvinfer1::IExecutionContext>(m_engine->createExecutionContext(), samplesCommon::InferDeleter());
-        if (!m_context) {
-            PRINT_E("Failed to create context (%s)\n", modelFilename.c_str());
-            return RET_ERR;
+        context_ = std::shared_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext(), samplesCommon::InferDeleter());
+        if (!context_) {
+            PRINT_E("Failed to create context (%s)\n", model_filename.c_str());
+            return kRetErr;
         }
 #if 1
         /* save serialized model for next time */
-        nvinfer1::IHostMemory* trtModelStream = m_engine->serialize();
-        std::ofstream ofs(std::string(trtModelFilename), std::ios::out | std::ios::binary);
-        ofs.write((char*)(trtModelStream->data()), trtModelStream->size());
+        nvinfer1::IHostMemory* trt_model_stream = engine_->serialize();
+        std::ofstream ofs(std::string(trt_model_filename), std::ios::out | std::ios::binary);
+        ofs.write((char*)(trt_model_stream->data()), trt_model_stream->size());
         ofs.close();
-        trtModelStream->destroy();
+        trt_model_stream->destroy();
 #endif
     }
 
     /* Allocate host/device buffers and assign to tensor info */
-    for (auto& inputTensorInfo : inputTensorInfoList) {
-        inputTensorInfo.id = -1;	// not assigned
+    for (auto& input_tensor_info : input_tensor_info_list) {
+        input_tensor_info.id = -1;	// not assigned
     }
-    for (auto& outputTensorInfo : outputTensorInfoList) {
-        outputTensorInfo.id = -1;	// not assigned
+    for (auto& output_tensor_info : output_tensor_info_list) {
+        output_tensor_info.id = -1;	// not assigned
     }
-    if (allocateBuffers(inputTensorInfoList, outputTensorInfoList) != RET_OK) {
-        return RET_ERR;
+    if (AllocateBuffers(input_tensor_info_list, output_tensor_info_list) != kRetOk) {
+        return kRetErr;
     }
     /* Check if the tensor is assigned (exists in the model) */
-    for (auto& inputTensorInfo : inputTensorInfoList) {
-        if (inputTensorInfo.id == -1) {
-            PRINT_E("Input tensor doesn't exist in the model (%s)\n", inputTensorInfo.name.c_str());
-            return RET_ERR;
+    for (auto& input_tensor_info : input_tensor_info_list) {
+        if (input_tensor_info.id == -1) {
+            PRINT_E("Input tensor doesn't exist in the model (%s)\n", input_tensor_info.name.c_str());
+            return kRetErr;
         }
     }
-    for (auto& outputTensorInfo : outputTensorInfoList) {
-        if (outputTensorInfo.id == -1) {
-            PRINT_E("Output tensor doesn't exist in the model (%s)\n", outputTensorInfo.name.c_str());
-            return RET_ERR;
+    for (auto& output_tensor_info : output_tensor_info_list) {
+        if (output_tensor_info.id == -1) {
+            PRINT_E("Output tensor doesn't exist in the model (%s)\n", output_tensor_info.name.c_str());
+            return kRetErr;
         }
     }
 
     /* Convert normalize parameter to speed up */
-    for (auto& inputTensorInfo : inputTensorInfoList) {
-        convertNormalizeParameters(inputTensorInfo);
+    for (auto& input_tensor_info : input_tensor_info_list) {
+        ConvertNormalizeParameters(input_tensor_info);
     }
 
 
-    return RET_OK;
+    return kRetOk;
 }
 
-int InferenceHelperTensorRt::finalize(void)
+int InferenceHelperTensorRt::Finalize(void)
 {
-    int numOfInOut = m_engine->getNbBindings();
-    for (int i = 0; i < numOfInOut; i++) {
-        const auto dataType = m_engine->getBindingDataType(i);
-        switch (dataType) {
+    int num_of_in_out = engine_->getNbBindings();
+    for (int i = 0; i < num_of_in_out; i++) {
+        const auto data_type = engine_->getBindingDataType(i);
+        switch (data_type) {
         case nvinfer1::DataType::kFLOAT:
         case nvinfer1::DataType::kHALF:
         case nvinfer1::DataType::kINT32:
-            delete[] (float*)(m_bufferListCPUReserved[i].first);
+            delete[] (float*)(buffer_list_cpu_reserved_[i].first);
             break;
         case nvinfer1::DataType::kINT8:
-            delete[] (int*)(m_bufferListCPUReserved[i].first);
+            delete[] (int*)(buffer_list_cpu_reserved_[i].first);
             break;
         default:
-            return RET_ERR;
+            return kRetErr;
         }
     }
 
-    for (auto p : m_bufferListGPU) {
+    for (auto p : buffer_list_gpu_) {
         cudaFree(p);
     }
 
-    return RET_OK;
+    return kRetOk;
 }
 
-int32_t InferenceHelperTensorRt::preProcess(const std::vector<InputTensorInfo>& inputTensorInfoList)
+int32_t InferenceHelperTensorRt::PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list)
 {
-    for (const auto& inputTensorInfo : inputTensorInfoList) {
-        if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_IMAGE) {
-            if ((inputTensorInfo.imageInfo.width != inputTensorInfo.imageInfo.cropWidth) || (inputTensorInfo.imageInfo.height != inputTensorInfo.imageInfo.cropHeight)) {
+    for (const auto& input_tensor_info : input_tensor_info_list) {
+        if (input_tensor_info.data_type == InputTensorInfo::kDataTypeImage) {
+            if ((input_tensor_info.image_info.width != input_tensor_info.image_info.crop_width) || (input_tensor_info.image_info.height != input_tensor_info.image_info.crop_height)) {
                 PRINT_E("Crop is not supported\n");
-                return  RET_ERR;
+                return  kRetErr;
             }
-            if ((inputTensorInfo.imageInfo.cropWidth != inputTensorInfo.tensorDims.width) || (inputTensorInfo.imageInfo.cropHeight != inputTensorInfo.tensorDims.height)) {
+            if ((input_tensor_info.image_info.crop_width != input_tensor_info.tensor_dims.width) || (input_tensor_info.image_info.crop_height != input_tensor_info.tensor_dims.height)) {
                 PRINT_E("Resize is not supported\n");
-                return  RET_ERR;
+                return  kRetErr;
             }
-            if (inputTensorInfo.imageInfo.channel != inputTensorInfo.tensorDims.channel) {
+            if (input_tensor_info.image_info.channel != input_tensor_info.tensor_dims.channel) {
                 PRINT_E("Color conversion is not supported\n");
-                return  RET_ERR;
+                return  kRetErr;
             }
 
             /* Normalize image */
-            if (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_FP32) {
+            if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
                 /* convert NHWC to NCHW */
-                float *dst = (float*)(m_bufferListCPU[inputTensorInfo.id].first);
-                uint8_t *src = (uint8_t*)(inputTensorInfo.data);
-                if (m_bufferListCPU[inputTensorInfo.id].second != 4 * inputTensorInfo.imageInfo.width * inputTensorInfo.imageInfo.height * inputTensorInfo.imageInfo.channel) {
+                float *dst = (float*)(buffer_list_cpu_[input_tensor_info.id].first);
+                uint8_t *src = (uint8_t*)(input_tensor_info.data);
+                if (buffer_list_cpu_[input_tensor_info.id].second != 4 * input_tensor_info.image_info.width * input_tensor_info.image_info.height * input_tensor_info.image_info.channel) {
                     PRINT_E("Data size doesn't match\n");
-                    return  RET_ERR;
+                    return  kRetErr;
                 }
-#pragma omp parallel for num_threads(m_numThread)
-                for (int32_t c = 0; c < inputTensorInfo.tensorDims.channel; c++) {
-                    for (int32_t i = 0; i < inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height; i++) {
+#pragma omp parallel for num_threads(num_threads_)
+                for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
+                    for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
 #if 1
-                        dst[c * inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height + i] = 
-                            (src[i * inputTensorInfo.tensorDims.channel + c] - inputTensorInfo.normalize.mean[c]) * inputTensorInfo.normalize.norm[c];
+                        dst[c * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height + i] = 
+                            (src[i * input_tensor_info.tensor_dims.channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
 #else
-                        dst[c * inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height + i] = 
-                            (src[i * inputTensorInfo.tensorDims.channel + c] / 255.0f - inputTensorInfo.normalize.mean[c]) / inputTensorInfo.normalize.norm[c];
+                        dst[c * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height + i] = 
+                            (src[i * input_tensor_info.tensor_dims.channel + c] / 255.0f - input_tensor_info.normalize.mean[c]) / input_tensor_info.normalize.norm[c];
 #endif
                     }
                 }
-            } else if (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_UINT8) {
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
                 /* convert NHWC to NCHW */
-                uint8_t *dst = (uint8_t*)(m_bufferListCPU[inputTensorInfo.id].first);
-                uint8_t *src = (uint8_t*)(inputTensorInfo.data);
-                if (m_bufferListCPU[inputTensorInfo.id].second != 1 * inputTensorInfo.imageInfo.width * inputTensorInfo.imageInfo.height * inputTensorInfo.imageInfo.channel) {
+                uint8_t *dst = (uint8_t*)(buffer_list_cpu_[input_tensor_info.id].first);
+                uint8_t *src = (uint8_t*)(input_tensor_info.data);
+                if (buffer_list_cpu_[input_tensor_info.id].second != 1 * input_tensor_info.image_info.width * input_tensor_info.image_info.height * input_tensor_info.image_info.channel) {
                     PRINT_E("Data size doesn't match\n");
-                    return  RET_ERR;
+                    return  kRetErr;
                 }
-#pragma omp parallel for num_threads(m_numThread)
-                for (int32_t c = 0; c < inputTensorInfo.tensorDims.channel; c++) {
-                    for (int32_t i = 0; i < inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height; i++) {
-                        dst[c * inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height + i] = src[i * inputTensorInfo.tensorDims.channel + c];
+#pragma omp parallel for num_threads(num_threads_)
+                for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
+                    for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
+                        dst[c * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height + i] = src[i * input_tensor_info.tensor_dims.channel + c];
                     }
                 }
             } else {
-                PRINT_E("Unsupported tensorType (%d)\n", inputTensorInfo.tensorType);
-                return RET_ERR;
+                PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
+                return kRetErr;
             }
 
-        } else if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NHWC) {
+        } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {
                 /* convert NHWC to NCHW */
-                uint8_t *dst = (uint8_t*)(m_bufferListCPU[inputTensorInfo.id].first);
-                uint8_t *src = (uint8_t*)(inputTensorInfo.data);
-#pragma omp parallel for
-                for (int32_t c = 0; c < inputTensorInfo.tensorDims.channel; c++) {
-                    for (int32_t i = 0; i < inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height; i++) {
-                        dst[c * inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height + i] = src[i * inputTensorInfo.tensorDims.channel + c];
+                uint8_t *dst = (uint8_t*)(buffer_list_cpu_[input_tensor_info.id].first);
+                uint8_t *src = (uint8_t*)(input_tensor_info.data);
+#pragma omp parallel for num_threads(num_threads_)
+                for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
+                    for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
+                        dst[c * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height + i] = src[i * input_tensor_info.tensor_dims.channel + c];
                     }
                 }
-        } else if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NCHW) {
-            uint8_t *dst = (uint8_t*)(m_bufferListCPU[inputTensorInfo.id].first);
-            uint8_t *src = (uint8_t*)(inputTensorInfo.data);
-            memcpy(dst, src, m_bufferListCPU[inputTensorInfo.id].second);
+        } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) {
+            uint8_t *dst = (uint8_t*)(buffer_list_cpu_[input_tensor_info.id].first);
+            uint8_t *src = (uint8_t*)(input_tensor_info.data);
+            memcpy(dst, src, buffer_list_cpu_[input_tensor_info.id].second);
         } else {
-            PRINT_E("Unsupported tensorType (%d)\n", inputTensorInfo.tensorType);
-            return RET_ERR;
+            PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
+            return kRetErr;
         }
 
     }
-    return RET_OK;
+    return kRetOk;
 }
 
-int32_t InferenceHelperTensorRt::invoke(std::vector<OutputTensorInfo>& outputTensorInfoList)
+int32_t InferenceHelperTensorRt::Process(std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
     cudaStream_t stream;
     cudaStreamCreate(&stream);
 
-    for (int i = 0; i < (int)m_bufferListCPU.size(); i++) {
-        if (m_engine->bindingIsInput(i)) {
-            cudaMemcpyAsync(m_bufferListGPU[i], m_bufferListCPU[i].first, m_bufferListCPU[i].second, cudaMemcpyHostToDevice, stream);
+    for (int i = 0; i < (int)buffer_list_cpu_.size(); i++) {
+        if (engine_->bindingIsInput(i)) {
+            cudaMemcpyAsync(buffer_list_gpu_[i], buffer_list_cpu_[i].first, buffer_list_cpu_[i].second, cudaMemcpyHostToDevice, stream);
         }
     }
-    m_context->enqueue(1, &m_bufferListGPU[0], stream, NULL);
-    for (int i = 0; i < (int)m_bufferListCPU.size(); i++) {
-        if (!m_engine->bindingIsInput(i)) {
-            cudaMemcpyAsync(m_bufferListCPU[i].first, m_bufferListGPU[i], m_bufferListCPU[i].second, cudaMemcpyDeviceToHost, stream);
+    context_->enqueue(1, &buffer_list_gpu_[0], stream, NULL);
+    for (int i = 0; i < (int)buffer_list_cpu_.size(); i++) {
+        if (!engine_->bindingIsInput(i)) {
+            cudaMemcpyAsync(buffer_list_cpu_[i].first, buffer_list_gpu_[i], buffer_list_cpu_[i].second, cudaMemcpyDeviceToHost, stream);
         }
     }
     cudaStreamSynchronize(stream);
 
     cudaStreamDestroy(stream);
 
-    (void)outputTensorInfoList;	// no need to set output data, because the ptr to output data is already set at initialize
+    (void)output_tensor_info_list;	// no need to set output data, because the ptr to output data is already set at initialize
 
-    return RET_OK;
+    return kRetOk;
 }
 
-int32_t InferenceHelperTensorRt::allocateBuffers(std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList)
+int32_t InferenceHelperTensorRt::AllocateBuffers(std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
-    int32_t numOfInOut = m_engine->getNbBindings();
-    PRINT("numOfInOut = %d\n", numOfInOut);
+    int32_t num_of_in_out = engine_->getNbBindings();
+    PRINT("num_of_in_out = %d\n", num_of_in_out);
 
-    for (int32_t i = 0; i < numOfInOut; i++) {
-        PRINT("tensor[%d]->name: %s\n", i, m_engine->getBindingName(i));
-        PRINT("  is input = %d\n", m_engine->bindingIsInput(i));
-        int32_t dataSize = 1;
-        const auto dims = m_engine->getBindingDimensions(i);
+    for (int32_t i = 0; i < num_of_in_out; i++) {
+        PRINT("tensor[%d]->name: %s\n", i, engine_->getBindingName(i));
+        PRINT("  is input = %d\n", engine_->bindingIsInput(i));
+        int32_t data_size = 1;
+        const auto dims = engine_->getBindingDimensions(i);
         for (int32_t i = 0; i < dims.nbDims; i++) {
             PRINT("  dims.d[%d] = %d\n", i, dims.d[i]);
-            dataSize *= dims.d[i];
+            data_size *= dims.d[i];
         }
-        const auto dataType = m_engine->getBindingDataType(i);
-        PRINT("  dataType = %d\n", static_cast<int32_t>(dataType));
+        const auto data_type = engine_->getBindingDataType(i);
+        PRINT("  data_type = %d\n", static_cast<int32_t>(data_type));
 
-        void* bufferCPU = nullptr;
-        void* bufferGPU = nullptr;
-        switch (dataType) {
+        void* buffer_cpu = nullptr;
+        void* buffer_gpu = nullptr;
+        switch (data_type) {
         case nvinfer1::DataType::kFLOAT:
         case nvinfer1::DataType::kHALF:
         case nvinfer1::DataType::kINT32:
-            bufferCPU = new float[dataSize];
-            m_bufferListCPU.push_back(std::pair<void*,int32_t>(bufferCPU, dataSize * sizeof(float)));
-            cudaMalloc(&bufferGPU, dataSize * sizeof(float));
-            m_bufferListGPU.push_back(bufferGPU);
+            buffer_cpu = new float[data_size];
+            buffer_list_cpu_.push_back(std::pair<void*,int32_t>(buffer_cpu, data_size * sizeof(float)));
+            cudaMalloc(&buffer_gpu, data_size * sizeof(float));
+            buffer_list_gpu_.push_back(buffer_gpu);
             break;
         case nvinfer1::DataType::kINT8:
-            bufferCPU = new int8_t[dataSize];
-            m_bufferListCPU.push_back(std::pair<void*,int32_t>(bufferCPU, dataSize * sizeof(int8_t)));
-            cudaMalloc(&bufferGPU, dataSize * sizeof(int8_t));
-            m_bufferListGPU.push_back(bufferGPU);
+            buffer_cpu = new int8_t[data_size];
+            buffer_list_cpu_.push_back(std::pair<void*,int32_t>(buffer_cpu, data_size * sizeof(int8_t)));
+            cudaMalloc(&buffer_gpu, data_size * sizeof(int8_t));
+            buffer_list_gpu_.push_back(buffer_gpu);
             break;
         default:
-            PRINT_E("Unsupported datatype (%d)\n", static_cast<int32_t>(dataType));
-            return RET_ERR;
+            PRINT_E("Unsupported datatype (%d)\n", static_cast<int32_t>(data_type));
+            return kRetErr;
         }
 
-        if(m_engine->bindingIsInput(i)) {
-            for (auto& inputTensorInfo : inputTensorInfoList) {
-                int32_t id = m_engine->getBindingIndex(inputTensorInfo.name.c_str());
+        if(engine_->bindingIsInput(i)) {
+            for (auto& input_tensor_info : input_tensor_info_list) {
+                int32_t id = engine_->getBindingIndex(input_tensor_info.name.c_str());
                 if (id == i) {
-                    inputTensorInfo.id = id;
+                    input_tensor_info.id = id;
                     for (int32_t i = 0; i < dims.nbDims; i++) {
-                        if (((i == 0) && (inputTensorInfo.tensorDims.batch == dims.d[i]))
-                            || ((i == 1) && (inputTensorInfo.tensorDims.channel == dims.d[i]))
-                            || ((i == 2) && (inputTensorInfo.tensorDims.height == dims.d[i]))
-                            || ((i == 3) && (inputTensorInfo.tensorDims.width == dims.d[i]))) {
+                        if (((i == 0) && (input_tensor_info.tensor_dims.batch == dims.d[i]))
+                            || ((i == 1) && (input_tensor_info.tensor_dims.channel == dims.d[i]))
+                            || ((i == 2) && (input_tensor_info.tensor_dims.height == dims.d[i]))
+                            || ((i == 3) && (input_tensor_info.tensor_dims.width == dims.d[i]))) {
                             /* OK */
                         } else {
                             PRINT_E("Input Tensor size doesn't match\n");
-                            return RET_ERR;
+                            return kRetErr;
                         }
                     }
-                    if (((inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_UINT8) && (dataType == nvinfer1::DataType::kINT8))
-                        || ((inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_FP32) && (dataType == nvinfer1::DataType::kFLOAT))
-                        || ((inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_INT32) && (dataType == nvinfer1::DataType::kINT32))) {
+                    if (((input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) && (data_type == nvinfer1::DataType::kINT8))
+                        || ((input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) && (data_type == nvinfer1::DataType::kFLOAT))
+                        || ((input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt32) && (data_type == nvinfer1::DataType::kINT32))) {
                             /* OK */
                     } else {
                         PRINT_E("Input Tensor type doesn't match\n");
-                        return RET_ERR;
+                        return kRetErr;
                     }
                 }
             }
         } else {
-            for (auto& outputTensorInfo : outputTensorInfoList) {
-                int32_t id = m_engine->getBindingIndex(outputTensorInfo.name.c_str());
+            for (auto& output_tensor_info : output_tensor_info_list) {
+                int32_t id = engine_->getBindingIndex(output_tensor_info.name.c_str());
                 if (id == i) {
-                    outputTensorInfo.id = id;
+                    output_tensor_info.id = id;
                     for (int32_t i = 0; i < dims.nbDims; i++) {
-                        if (i == 0) outputTensorInfo.tensorDims.batch = dims.d[i];
-                        if (i == 1) outputTensorInfo.tensorDims.channel = dims.d[i];
-                        if (i == 2) outputTensorInfo.tensorDims.height = dims.d[i];
-                        if (i == 3) outputTensorInfo.tensorDims.width = dims.d[i];
+                        if (i == 0) output_tensor_info.tensor_dims.batch = dims.d[i];
+                        if (i == 1) output_tensor_info.tensor_dims.channel = dims.d[i];
+                        if (i == 2) output_tensor_info.tensor_dims.height = dims.d[i];
+                        if (i == 3) output_tensor_info.tensor_dims.width = dims.d[i];
                     }
-                    if (((outputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_UINT8) && (dataType == nvinfer1::DataType::kINT8))
-                        || ((outputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_FP32) && (dataType == nvinfer1::DataType::kFLOAT))
-                        || ((outputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_INT32) && (dataType == nvinfer1::DataType::kINT32))) {
+                    if (((output_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) && (data_type == nvinfer1::DataType::kINT8))
+                        || ((output_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) && (data_type == nvinfer1::DataType::kFLOAT))
+                        || ((output_tensor_info.tensor_type == TensorInfo::kTensorTypeInt32) && (data_type == nvinfer1::DataType::kINT32))) {
                             /* OK */
                     } else {
                         PRINT_E("Output Tensor type doesn't match\n");
-                        return RET_ERR;
+                        return kRetErr;
                     }
-                    if (dataType == nvinfer1::DataType::kINT8) {
-                        outputTensorInfo.quant.scale = 1.0;			// todo
-                        outputTensorInfo.quant.zeroPoint = 0.0;
+                    if (data_type == nvinfer1::DataType::kINT8) {
+                        output_tensor_info.quant.scale = 1.0;			// todo
+                        output_tensor_info.quant.zeroPoint = 0.0;
                     }
-                    outputTensorInfo.data = bufferCPU;
+                    output_tensor_info.data = buffer_cpu;
                 }
             }
         }
     }
 
-    return RET_OK;
+    return kRetOk;
 }
 
-void InferenceHelperTensorRt::convertNormalizeParameters(InputTensorInfo& inputTensorInfo)
+void InferenceHelperTensorRt::ConvertNormalizeParameters(InputTensorInfo& tensor_info)
 {
-    if (inputTensorInfo.dataType != InputTensorInfo::DATA_TYPE_IMAGE) return;
+    if (tensor_info.data_type != InputTensorInfo::kDataTypeImage) return;
 
 #if 0
     /* Convert to speeden up normalization:  ((src / 255) - mean) / norm  = src * 1 / (255 * norm) - (mean / norm) */
     for (int32_t i = 0; i < 3; i++) {
-        inputTensorInfo.normalize.mean[i] /= inputTensorInfo.normalize.norm[i];
-        inputTensorInfo.normalize.norm[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] = 1.0f / inputTensorInfo.normalize.norm[i];
+        tensor_info.normalize.mean[i] /= tensor_info.normalize.norm[i];
+        tensor_info.normalize.norm[i] *= 255.0f;
+        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
     }
 #endif
 #if 1
     /* Convert to speeden up normalization:  ((src / 255) - mean) / norm = (src  - (mean * 255))  * (1 / (255 * norm)) */
     for (int32_t i = 0; i < 3; i++) {
-        inputTensorInfo.normalize.mean[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] = 1.0f / inputTensorInfo.normalize.norm[i];
+        tensor_info.normalize.mean[i] *= 255.0f;
+        tensor_info.normalize.norm[i] *= 255.0f;
+        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
     }
 #endif
 }

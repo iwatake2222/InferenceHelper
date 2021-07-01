@@ -41,246 +41,246 @@ limitations under the License.
 /*** Function ***/
 InferenceHelperMnn::InferenceHelperMnn()
 {
-    m_numThread = 1;
+    num_threads_ = 1;
 }
 
 InferenceHelperMnn::~InferenceHelperMnn()
 {
 }
 
-int32_t InferenceHelperMnn::setNumThread(const int32_t numThread)
+int32_t InferenceHelperMnn::SetNumThreads(const int32_t num_threads)
 {
-    m_numThread = numThread;
-    return RET_OK;
+    num_threads_ = num_threads;
+    return kRetOk;
 }
 
-int32_t InferenceHelperMnn::setCustomOps(const std::vector<std::pair<const char*, const void*>>& customOps)
+int32_t InferenceHelperMnn::SetCustomOps(const std::vector<std::pair<const char*, const void*>>& custom_ops)
 {
     PRINT("[WARNING] This method is not supported\n");
-    return RET_OK;
+    return kRetOk;
 }
 
-int32_t InferenceHelperMnn::initialize(const std::string& modelFilename, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList)
+int32_t InferenceHelperMnn::Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
     /*** Create network ***/
-    m_net.reset(MNN::Interpreter::createFromFile(modelFilename.c_str()));
-    if (!m_net) {
-        PRINT_E("Failed to load model file (%s)\n", modelFilename.c_str());
-        return RET_ERR;
+    net_.reset(MNN::Interpreter::createFromFile(model_filename.c_str()));
+    if (!net_) {
+        PRINT_E("Failed to load model file (%s)\n", model_filename.c_str());
+        return kRetErr;
     }
 
     MNN::ScheduleConfig scheduleConfig;
     scheduleConfig.type = MNN_FORWARD_AUTO;
-    scheduleConfig.numThread = m_numThread;
+    scheduleConfig.numThread = num_threads_;
     // BackendConfig bnconfig;
     // bnconfig.precision = BackendConfig::Precision_Low;
     // config.backendConfig = &bnconfig;
-    m_session = m_net->createSession(scheduleConfig);
-    if (!m_session) {
+    session_ = net_->createSession(scheduleConfig);
+    if (!session_) {
         PRINT_E("Failed to create session\n");
-        return RET_ERR;
+        return kRetErr;
     }
 
     /* Check tensor info fits the info from model */
-    for (auto& inputTensorInfo : inputTensorInfoList) {
-        auto inputTensor = m_net->getSessionInput(m_session, inputTensorInfo.name.c_str());
-        if (inputTensor == nullptr) {
-            PRINT_E("Invalid input name (%s)\n", inputTensorInfo.name.c_str());
-            return RET_ERR;
+    for (auto& input_tensor_info : input_tensor_info_list) {
+        auto input_tensor = net_->getSessionInput(session_, input_tensor_info.name.c_str());
+        if (input_tensor == nullptr) {
+            PRINT_E("Invalid input name (%s)\n", input_tensor_info.name.c_str());
+            return kRetErr;
         }
-        if ((inputTensor->getType().code == halide_type_float) && (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_FP32)) {
+        if ((input_tensor->getType().code == halide_type_float) && (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32)) {
             /* OK */
-        } else if ((inputTensor->getType().code == halide_type_uint) && (inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_UINT8)) {
+        } else if ((input_tensor->getType().code == halide_type_uint) && (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8)) {
             /* OK */
         } else {
-            PRINT_E("Incorrect input tensor type (%d, %d)\n", inputTensor->getType().code, inputTensorInfo.tensorType);
-            return RET_ERR;
+            PRINT_E("Incorrect input tensor type (%d, %d)\n", input_tensor->getType().code, input_tensor_info.tensor_type);
+            return kRetErr;
         }
-        if ((inputTensor->channel() != -1) && (inputTensor->height() != -1) && (inputTensor->width() != -1)) {
-            if (inputTensorInfo.tensorDims.channel != -1) {
-                if ((inputTensor->channel() == inputTensorInfo.tensorDims.channel) && (inputTensor->height() == inputTensorInfo.tensorDims.height) && (inputTensor->width() == inputTensorInfo.tensorDims.width)) {
+        if ((input_tensor->channel() != -1) && (input_tensor->height() != -1) && (input_tensor->width() != -1)) {
+            if (input_tensor_info.tensor_dims.channel != -1) {
+                if ((input_tensor->channel() == input_tensor_info.tensor_dims.channel) && (input_tensor->height() == input_tensor_info.tensor_dims.height) && (input_tensor->width() == input_tensor_info.tensor_dims.width)) {
                     /* OK */
                 } else {
                     PRINT_E("Incorrect input tensor size\n");
-                    return RET_ERR;
+                    return kRetErr;
                 }
             } else {
                 PRINT("Input tensor size is set from the model\n");
-                inputTensorInfo.tensorDims.channel = inputTensor->channel();
-                inputTensorInfo.tensorDims.height = inputTensor->height();
-                inputTensorInfo.tensorDims.width = inputTensor->width();
+                input_tensor_info.tensor_dims.channel = input_tensor->channel();
+                input_tensor_info.tensor_dims.height = input_tensor->height();
+                input_tensor_info.tensor_dims.width = input_tensor->width();
             }
         } else {
-            if (inputTensorInfo.tensorDims.channel != -1) {
+            if (input_tensor_info.tensor_dims.channel != -1) {
                 PRINT("Input tensor size is resized\n");
                 /* In case the input size  is not fixed */
-                m_net->resizeTensor(inputTensor, { 1, inputTensorInfo.tensorDims.channel, inputTensorInfo.tensorDims.height, inputTensorInfo.tensorDims.width });
-                m_net->resizeSession(m_session);
+                net_->resizeTensor(input_tensor, { 1, input_tensor_info.tensor_dims.channel, input_tensor_info.tensor_dims.height, input_tensor_info.tensor_dims.width });
+                net_->resizeSession(session_);
             } else {
                 PRINT_E("Model input size is not set\n");
-                return RET_ERR;
+                return kRetErr;
             }
         }
     }
-    for (const auto& outputTensorInfo : outputTensorInfoList) {
-        auto outputTensor = m_net->getSessionOutput(m_session, outputTensorInfo.name.c_str());
-        if (outputTensor == nullptr) {
-            PRINT_E("Invalid output name (%s)\n", outputTensorInfo.name.c_str());
-            return RET_ERR;
+    for (const auto& output_tensor_info : output_tensor_info_list) {
+        auto output_tensor = net_->getSessionOutput(session_, output_tensor_info.name.c_str());
+        if (output_tensor == nullptr) {
+            PRINT_E("Invalid output name (%s)\n", output_tensor_info.name.c_str());
+            return kRetErr;
         }
         /* Output size is set when run inference later */
     }
 
     /* Convert normalize parameter to speed up */
-    for (auto& inputTensorInfo : inputTensorInfoList) {
-        convertNormalizeParameters(inputTensorInfo);
+    for (auto& input_tensor_info : input_tensor_info_list) {
+        ConvertNormalizeParameters(input_tensor_info);
     }
 
 
-    return RET_OK;
+    return kRetOk;
 };
 
 
-int32_t InferenceHelperMnn::finalize(void)
+int32_t InferenceHelperMnn::Finalize(void)
 {
-    m_net->releaseSession(m_session);
-    m_net->releaseModel();
-    m_net.reset();
-    m_outMatList.clear();
-    return RET_ERR;
+    net_->releaseSession(session_);
+    net_->releaseModel();
+    net_.reset();
+    out_mat_list_.clear();
+    return kRetErr;
 }
 
-int32_t InferenceHelperMnn::preProcess(const std::vector<InputTensorInfo>& inputTensorInfoList)
+int32_t InferenceHelperMnn::PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list)
 {
-    for (const auto& inputTensorInfo : inputTensorInfoList) {
-        auto inputTensor = m_net->getSessionInput(m_session, inputTensorInfo.name.c_str());
-        if (inputTensor == nullptr) {
-            PRINT_E("Invalid input name (%s)\n", inputTensorInfo.name.c_str());
-            return RET_ERR;
+    for (const auto& input_tensor_info : input_tensor_info_list) {
+        auto input_tensor = net_->getSessionInput(session_, input_tensor_info.name.c_str());
+        if (input_tensor == nullptr) {
+            PRINT_E("Invalid input name (%s)\n", input_tensor_info.name.c_str());
+            return kRetErr;
         }
-        if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_IMAGE) {
+        if (input_tensor_info.data_type == InputTensorInfo::kDataTypeImage) {
             /* Crop */
-            if ((inputTensorInfo.imageInfo.width != inputTensorInfo.imageInfo.cropWidth) || (inputTensorInfo.imageInfo.height != inputTensorInfo.imageInfo.cropHeight)) {
+            if ((input_tensor_info.image_info.width != input_tensor_info.image_info.crop_width) || (input_tensor_info.image_info.height != input_tensor_info.image_info.crop_height)) {
                 PRINT_E("Crop is not supported\n");
-                return RET_ERR;
+                return kRetErr;
             }
 
-            MNN::CV::ImageProcess::Config imageProcessconfig;
+            MNN::CV::ImageProcess::Config image_processconfig;
             /* Convert color type */
-            if ((inputTensorInfo.imageInfo.channel == 3) && (inputTensorInfo.tensorDims.channel == 3)) {
-                imageProcessconfig.sourceFormat = (inputTensorInfo.imageInfo.isBGR) ? MNN::CV::BGR : MNN::CV::RGB;
-                if (inputTensorInfo.imageInfo.swapColor) {
-                    imageProcessconfig.destFormat = (inputTensorInfo.imageInfo.isBGR) ? MNN::CV::RGB : MNN::CV::BGR;
+            if ((input_tensor_info.image_info.channel == 3) && (input_tensor_info.tensor_dims.channel == 3)) {
+                image_processconfig.sourceFormat = (input_tensor_info.image_info.is_bgr) ? MNN::CV::BGR : MNN::CV::RGB;
+                if (input_tensor_info.image_info.swap_color) {
+                    image_processconfig.destFormat = (input_tensor_info.image_info.is_bgr) ? MNN::CV::RGB : MNN::CV::BGR;
                 } else {
-                    imageProcessconfig.destFormat = (inputTensorInfo.imageInfo.isBGR) ? MNN::CV::BGR : MNN::CV::RGB;
+                    image_processconfig.destFormat = (input_tensor_info.image_info.is_bgr) ? MNN::CV::BGR : MNN::CV::RGB;
                 }
-            } else if ((inputTensorInfo.imageInfo.channel == 1) && (inputTensorInfo.tensorDims.channel == 1)) {
-                imageProcessconfig.sourceFormat = MNN::CV::GRAY;
-                imageProcessconfig.destFormat = MNN::CV::GRAY;
-            } else if ((inputTensorInfo.imageInfo.channel == 3) && (inputTensorInfo.tensorDims.channel == 1)) {
-                imageProcessconfig.sourceFormat = (inputTensorInfo.imageInfo.isBGR) ? MNN::CV::BGR : MNN::CV::RGB;
-                imageProcessconfig.destFormat = MNN::CV::GRAY;
-            } else if ((inputTensorInfo.imageInfo.channel == 1) && (inputTensorInfo.tensorDims.channel == 3)) {
-                imageProcessconfig.sourceFormat = MNN::CV::GRAY;
-                imageProcessconfig.destFormat = MNN::CV::BGR;
+            } else if ((input_tensor_info.image_info.channel == 1) && (input_tensor_info.tensor_dims.channel == 1)) {
+                image_processconfig.sourceFormat = MNN::CV::GRAY;
+                image_processconfig.destFormat = MNN::CV::GRAY;
+            } else if ((input_tensor_info.image_info.channel == 3) && (input_tensor_info.tensor_dims.channel == 1)) {
+                image_processconfig.sourceFormat = (input_tensor_info.image_info.is_bgr) ? MNN::CV::BGR : MNN::CV::RGB;
+                image_processconfig.destFormat = MNN::CV::GRAY;
+            } else if ((input_tensor_info.image_info.channel == 1) && (input_tensor_info.tensor_dims.channel == 3)) {
+                image_processconfig.sourceFormat = MNN::CV::GRAY;
+                image_processconfig.destFormat = MNN::CV::BGR;
             } else {
-                PRINT_E("Unsupported color conversion (%d, %d)\n", inputTensorInfo.imageInfo.channel, inputTensorInfo.tensorDims.channel);
-                return RET_ERR;
+                PRINT_E("Unsupported color conversion (%d, %d)\n", input_tensor_info.image_info.channel, input_tensor_info.tensor_dims.channel);
+                return kRetErr;
             }
 
             /* Normalize image */
-            std::memcpy(imageProcessconfig.mean, inputTensorInfo.normalize.mean, sizeof(imageProcessconfig.mean));
-            std::memcpy(imageProcessconfig.normal, inputTensorInfo.normalize.norm, sizeof(imageProcessconfig.normal));
+            std::memcpy(image_processconfig.mean, input_tensor_info.normalize.mean, sizeof(image_processconfig.mean));
+            std::memcpy(image_processconfig.normal, input_tensor_info.normalize.norm, sizeof(image_processconfig.normal));
             
             /* Resize image */
-            imageProcessconfig.filterType = MNN::CV::BILINEAR;
+            image_processconfig.filterType = MNN::CV::BILINEAR;
             MNN::CV::Matrix trans;
-            trans.setScale(static_cast<float>(inputTensorInfo.imageInfo.cropWidth) / inputTensorInfo.tensorDims.width, static_cast<float>(inputTensorInfo.imageInfo.cropHeight) / inputTensorInfo.tensorDims.height);
+            trans.setScale(static_cast<float>(input_tensor_info.image_info.crop_width) / input_tensor_info.tensor_dims.width, static_cast<float>(input_tensor_info.image_info.crop_height) / input_tensor_info.tensor_dims.height);
 
             /* Do pre-process */
-            std::shared_ptr<MNN::CV::ImageProcess> pretreat(MNN::CV::ImageProcess::create(imageProcessconfig));
+            std::shared_ptr<MNN::CV::ImageProcess> pretreat(MNN::CV::ImageProcess::create(image_processconfig));
             pretreat->setMatrix(trans);
-            pretreat->convert(static_cast<uint8_t*>(inputTensorInfo.data), inputTensorInfo.imageInfo.cropWidth, inputTensorInfo.imageInfo.cropHeight, 0, inputTensor);
-        } else if ( (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NHWC) || (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NCHW) ) {
+            pretreat->convert(static_cast<uint8_t*>(input_tensor_info.data), input_tensor_info.image_info.crop_width, input_tensor_info.image_info.crop_height, 0, input_tensor);
+        } else if ( (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) ) {
             std::unique_ptr<MNN::Tensor> tensor;
-            if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_BLOB_NHWC) {
-                tensor.reset(new MNN::Tensor(inputTensor, MNN::Tensor::TENSORFLOW));
+            if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {
+                tensor.reset(new MNN::Tensor(input_tensor, MNN::Tensor::TENSORFLOW));
             } else {
-                tensor.reset(new MNN::Tensor(inputTensor, MNN::Tensor::CAFFE));
+                tensor.reset(new MNN::Tensor(input_tensor, MNN::Tensor::CAFFE));
             }
             if (tensor->getType().code == halide_type_float) {
-                for (int32_t i = 0; i < inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height * inputTensorInfo.tensorDims.channel; i++) {
-                    tensor->host<float>()[i] = static_cast<float*>(inputTensorInfo.data)[i];
+                for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height * input_tensor_info.tensor_dims.channel; i++) {
+                    tensor->host<float>()[i] = static_cast<float*>(input_tensor_info.data)[i];
                 }
             } else {
-                for (int32_t i = 0; i < inputTensorInfo.tensorDims.width * inputTensorInfo.tensorDims.height * inputTensorInfo.tensorDims.channel; i++) {
-                    tensor->host<uint8_t>()[i] = static_cast<uint8_t*>(inputTensorInfo.data)[i];
+                for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height * input_tensor_info.tensor_dims.channel; i++) {
+                    tensor->host<uint8_t>()[i] = static_cast<uint8_t*>(input_tensor_info.data)[i];
                 }
             }
-            inputTensor->copyFromHostTensor(tensor.get());
+            input_tensor->copyFromHostTensor(tensor.get());
         } else {
-            PRINT_E("Unsupported data type (%d)\n", inputTensorInfo.dataType);
-            return RET_ERR;
+            PRINT_E("Unsupported data type (%d)\n", input_tensor_info.data_type);
+            return kRetErr;
         }
     }
-    return RET_OK;
+    return kRetOk;
 }
 
-int32_t InferenceHelperMnn::invoke(std::vector<OutputTensorInfo>& outputTensorInfoList)
+int32_t InferenceHelperMnn::Process(std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
-    m_net->runSession(m_session);
+    net_->runSession(session_);
 
-    m_outMatList.clear();
-    for (auto& outputTensorInfo : outputTensorInfoList) {
-        auto outputTensor = m_net->getSessionOutput(m_session, outputTensorInfo.name.c_str());
-        if (outputTensor == nullptr) {
-            PRINT_E("Invalid output name (%s)\n", outputTensorInfo.name.c_str());
-            return RET_ERR;
+    out_mat_list_.clear();
+    for (auto& output_tensor_info : output_tensor_info_list) {
+        auto output_tensor = net_->getSessionOutput(session_, output_tensor_info.name.c_str());
+        if (output_tensor == nullptr) {
+            PRINT_E("Invalid output name (%s)\n", output_tensor_info.name.c_str());
+            return kRetErr;
         }
 
-        auto dimType = outputTensor->getDimensionType();
-        std::unique_ptr<MNN::Tensor> outputUser(new MNN::Tensor(outputTensor, dimType));
-        outputTensor->copyToHostTensor(outputUser.get());
+        auto dimType = output_tensor->getDimensionType();
+        std::unique_ptr<MNN::Tensor> outputUser(new MNN::Tensor(output_tensor, dimType));
+        output_tensor->copyToHostTensor(outputUser.get());
         auto type = outputUser->getType();
         if (type.code == halide_type_float) {
-            outputTensorInfo.tensorType = TensorInfo::TENSOR_TYPE_FP32;
-            outputTensorInfo.data = outputUser->host<float>();
+            output_tensor_info.tensor_type = TensorInfo::kTensorTypeFp32;
+            output_tensor_info.data = outputUser->host<float>();
         } else if (type.code == halide_type_uint && type.bytes() == 1) {
-            outputTensorInfo.tensorType = TensorInfo::TENSOR_TYPE_UINT8;
-            outputTensorInfo.data = outputUser->host<uint8_t>();
+            output_tensor_info.tensor_type = TensorInfo::kTensorTypeUint8;
+            output_tensor_info.data = outputUser->host<uint8_t>();
         } else {
             PRINT_E("Unexpected data type\n");
-            return RET_ERR;
+            return kRetErr;
         }
         
-        outputTensorInfo.tensorDims.batch = (std::max)(outputUser->batch(), 1);
-        outputTensorInfo.tensorDims.channel = (std::max)(outputUser->channel(), 1);
-        outputTensorInfo.tensorDims.height = (std::max)(outputUser->height(), 1);
-        outputTensorInfo.tensorDims.width = (std::max)(outputUser->width(), 1);
-        m_outMatList.push_back(std::move(outputUser));	// store data in member variable so that data keep exist
+        output_tensor_info.tensor_dims.batch = (std::max)(outputUser->batch(), 1);
+        output_tensor_info.tensor_dims.channel = (std::max)(outputUser->channel(), 1);
+        output_tensor_info.tensor_dims.height = (std::max)(outputUser->height(), 1);
+        output_tensor_info.tensor_dims.width = (std::max)(outputUser->width(), 1);
+        out_mat_list_.push_back(std::move(outputUser));	// store data in member variable so that data keep exist
     }
 
-    return RET_OK;
+    return kRetOk;
 }
 
-void InferenceHelperMnn::convertNormalizeParameters(InputTensorInfo& inputTensorInfo)
+void InferenceHelperMnn::ConvertNormalizeParameters(InputTensorInfo& tensor_info)
 {
-    if (inputTensorInfo.dataType != InputTensorInfo::DATA_TYPE_IMAGE) return;
+    if (tensor_info.data_type != InputTensorInfo::kDataTypeImage) return;
 
 #if 0
     /* Convert to speeden up normalization:  ((src / 255) - mean) / norm  = src * 1 / (255 * norm) - (mean / norm) */
     for (int32_t i = 0; i < 3; i++) {
-        inputTensorInfo.normalize.mean[i] /= inputTensorInfo.normalize.norm[i];
-        inputTensorInfo.normalize.norm[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] = 1.0f / inputTensorInfo.normalize.norm[i];
+        tensor_info.normalize.mean[i] /= tensor_info.normalize.norm[i];
+        tensor_info.normalize.norm[i] *= 255.0f;
+        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
     }
 #endif
 #if 1
     /* Convert to speeden up normalization:  ((src / 255) - mean) / norm = (src  - (mean * 255))  * (1 / (255 * norm)) */
     for (int32_t i = 0; i < 3; i++) {
-        inputTensorInfo.normalize.mean[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] *= 255.0f;
-        inputTensorInfo.normalize.norm[i] = 1.0f / inputTensorInfo.normalize.norm[i];
+        tensor_info.normalize.mean[i] *= 255.0f;
+        tensor_info.normalize.norm[i] *= 255.0f;
+        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
     }
 #endif
 }

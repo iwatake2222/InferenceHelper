@@ -35,30 +35,30 @@ class InferenceHelperTensorflowLite : public InferenceHelper {
 public:
     InferenceHelperTensorflowLite();
     ~InferenceHelperTensorflowLite() override;
-    int32_t setNumThread(const int32_t numThread) override;
-    int32_t setCustomOps(const std::vector<std::pair<const char*, const void*>>& customOps) override;
-    int32_t initialize(const std::string& modelFilename, std::vector<InputTensorInfo>& inputTensorInfoList, std::vector<OutputTensorInfo>& outputTensorInfoList) override;
-    int32_t finalize(void) override;
-    int32_t preProcess(const std::vector<InputTensorInfo>& inputTensorInfoList) override;
-    int32_t invoke(std::vector<OutputTensorInfo>& outputTensorInfoList) override;
+    int32_t SetNumThreads(const int32_t num_threads) override;
+    int32_t SetCustomOps(const std::vector<std::pair<const char*, const void*>>& custom_ops) override;
+    int32_t Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list) override;
+    int32_t Finalize(void) override;
+    int32_t PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list) override;
+    int32_t Process(std::vector<OutputTensorInfo>& output_tensor_info_list) override;
 
 private:
-    int32_t getInputTensorInfo(InputTensorInfo& tensorInfo);
-    int32_t getOutputTensorInfo(OutputTensorInfo& tensorInfo);
-    void convertNormalizeParameters(InputTensorInfo& tensorInfo);
-    void displayModelInfo(const tflite::Interpreter& interpreter);
+    int32_t GetInputTensorInfo(InputTensorInfo& tensor_info);
+    int32_t GetOutputTensorInfo(OutputTensorInfo& tensor_info);
+    void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
+    void DisplayModelInfo(const tflite::Interpreter& interpreter);
 
-    int32_t setBufferToTensor(int32_t index, void *data);
+    int32_t SetBufferToTensor(int32_t index, void *data);
 
 
 private:
-    std::vector<char> m_modelBuffer;
-    std::unique_ptr<tflite::FlatBufferModel> m_model;
-    std::unique_ptr<tflite::ops::builtin::BuiltinOpResolver> m_resolver;
-    std::unique_ptr<tflite::Interpreter> m_interpreter;
-    TfLiteDelegate* m_delegate;
+    std::vector<char> model_buffer_;
+    std::unique_ptr<tflite::FlatBufferModel> model_;
+    std::unique_ptr<tflite::ops::builtin::BuiltinOpResolver> resolver_;
+    std::unique_ptr<tflite::Interpreter> interpreter_;
+    TfLiteDelegate* delegate_;
 
-    int32_t m_numThread;
+    int32_t num_threads_;
 };
 
 #endif
