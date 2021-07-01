@@ -48,7 +48,7 @@ https://github.com/iwatake2222/InferenceHelper_Sample
 ## Installation
 - Add this repository into your project (Using `git submodule` is recommended)
 - Download prebuilt libraries
-    - Download prebuilt libraries (ThirdParty.zip) from https://github.com/iwatake2222/InferenceHelper/releases/ 
+    - Download prebuilt libraries (third_party.zip) from https://github.com/iwatake2222/InferenceHelper/releases/ 
     - Extract it to `third_party`
 
 ### For Tensorflow Lite
