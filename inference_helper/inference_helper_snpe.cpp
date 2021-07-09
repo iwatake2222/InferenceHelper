@@ -252,7 +252,7 @@ static zdl::DlSystem::RuntimeList GetSystemAvailability(void)
 		PRINT_E("DSP is not available. Falling back to GPU.\n");
 		runtime = zdl::DlSystem::Runtime_t::GPU_FLOAT32_16_HYBRID;
 		if (zdl::SNPE::SNPEFactory::isRuntimeAvailable(runtime) == false) {
-			PRINT_E("GPU is not availagle. Falling back to CPU.\n");
+			PRINT_E("GPU is not available. Falling back to CPU.\n");
 			runtime = zdl::DlSystem::Runtime_t::CPU_FLOAT32;
 		}
 	}

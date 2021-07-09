@@ -41,7 +41,7 @@ endif()
 
 if(INFERENCE_HELPER_ENABLE_SNPE)
 	set(SRC ${SRC} inference_helper_snpe.h inference_helper_snpe.cpp)
-	set(SRC ${SRC} SNPE/CreateUserBuffer.cpp SNPE/CreateUserBuffer.hpp SNPE/Util.cpp SNPE/Util.hpp SNPE/udlExample.cpp SNPE/udlExample.hpp)
+	set(SRC ${SRC} snpe/CreateUserBuffer.cpp snpe/CreateUserBuffer.hpp snpe/Util.cpp snpe/Util.hpp snpe/udlExample.cpp snpe/udlExample.hpp)
 endif()
 
 add_library(${LibraryName} ${SRC})
