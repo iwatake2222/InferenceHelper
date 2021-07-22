@@ -14,6 +14,7 @@ set(INFERENCE_HELPER_ENABLE_TENSORRT off CACHE BOOL "With TensorRT? [on/off]")
 set(INFERENCE_HELPER_ENABLE_NCNN off CACHE BOOL "With Ncnn? [on/off]")
 set(INFERENCE_HELPER_ENABLE_MNN off CACHE BOOL "With Mnn? [on/off]")
 set(INFERENCE_HELPER_ENABLE_SNPE off CACHE BOOL "With SNPE? [on/off]")
+set(INFERENCE_HELPER_ENABLE_ARMNN off CACHE BOOL "With ARMNN? [on/off]")
 
 # Create library
 set(SRC inference_helper.h inference_helper.cpp)
@@ -42,6 +43,10 @@ endif()
 if(INFERENCE_HELPER_ENABLE_SNPE)
 	set(SRC ${SRC} inference_helper_snpe.h inference_helper_snpe.cpp)
 	set(SRC ${SRC} snpe/CreateUserBuffer.cpp snpe/CreateUserBuffer.hpp snpe/Util.cpp snpe/Util.hpp snpe/udlExample.cpp snpe/udlExample.hpp)
+endif()
+
+if(INFERENCE_HELPER_ENABLE_ARMNN)
+	set(SRC ${SRC} inference_helper_armnn.h inference_helper_armnn.cpp)
 endif()
 
 add_library(${LibraryName} ${SRC})
@@ -146,9 +151,17 @@ endif()
 
 # For SNPE
 if(INFERENCE_HELPER_ENABLE_SNPE)
-	include(${THIRD_PARTY_DIR}/cmakes/snpe.cmake)
-	target_include_directories(${LibraryName} PUBLIC ${SNPE_INC} ./snpe)
-	target_link_libraries(${LibraryName} ${SNPE_LIB})
-	add_definitions(-DINFERENCE_HELPER_ENABLE_SNPE)
+    include(${THIRD_PARTY_DIR}/cmakes/snpe.cmake)
+    target_include_directories(${LibraryName} PUBLIC ${SNPE_INC} ./snpe)
+    target_link_libraries(${LibraryName} ${SNPE_LIB})
+    add_definitions(-DINFERENCE_HELPER_ENABLE_SNPE)
+endif()
+
+# For ARMNN
+if(INFERENCE_HELPER_ENABLE_ARMNN)
+    include(${THIRD_PARTY_DIR}/cmakes/armnn.cmake)
+    target_include_directories(${LibraryName} PUBLIC ${ARMNN_INC})
+    target_link_libraries(${LibraryName} ${ARMNN_LIB})
+    add_definitions(-DINFERENCE_HELPER_ENABLE_ARMNN)
 endif()
 

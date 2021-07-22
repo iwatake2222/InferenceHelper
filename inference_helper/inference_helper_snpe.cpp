@@ -59,9 +59,9 @@ limitations under the License.
 /*** Function ***/
 InferenceHelperSnpe::InferenceHelperSnpe()
 {
-	num_threads_ = 1;
-	input_map_.reset(new zdl::DlSystem::UserBufferMap());
-	output_map_.reset(new zdl::DlSystem::UserBufferMap());
+    num_threads_ = 1;
+    input_map_.reset(new zdl::DlSystem::UserBufferMap());
+    output_map_.reset(new zdl::DlSystem::UserBufferMap());
 }
 
 InferenceHelperSnpe::~InferenceHelperSnpe()
@@ -70,396 +70,396 @@ InferenceHelperSnpe::~InferenceHelperSnpe()
 
 int32_t InferenceHelperSnpe::SetNumThreads(const int32_t num_threads)
 {
-	num_threads_ = num_threads;
-	return kRetOk;
+    num_threads_ = num_threads;
+    return kRetOk;
 }
 
 int32_t InferenceHelperSnpe::SetCustomOps(const std::vector<std::pair<const char*, const void*>>& custom_ops)
 {
-	PRINT("[WARNING] This method is not supported\n");
-	return kRetOk;
+    PRINT("[WARNING] This method is not supported\n");
+    return kRetOk;
 }
 
 int32_t InferenceHelperSnpe::Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
-	/* Settings for SNPE */
-	int32_t user_buffer_source_type = CPUBUFFER;
-	int32_t buffer_type = USERBUFFER_FLOAT;
-	int32_t bit_width = 0;
-	switch (input_tensor_info_list[0].tensor_type) {
-	case InputTensorInfo::kTensorTypeFp32:
-		buffer_type = USERBUFFER_FLOAT;
-		break;
-	case InputTensorInfo::kTensorTypeUint8:
-		buffer_type = USERBUFFER_TF8;
-		bit_width = 8;
-		break;
-	default:
-		PRINT_E("Unsupported tensor type\n");
-		return kRetErr;
-	}
-	bool use_user_supplied_buffers = (buffer_type == USERBUFFER_FLOAT || buffer_type == USERBUFFER_TF8 || buffer_type == USERBUFFER_TF16);
+    /* Settings for SNPE */
+    int32_t user_buffer_source_type = CPUBUFFER;
+    int32_t buffer_type = USERBUFFER_FLOAT;
+    int32_t bit_width = 0;
+    switch (input_tensor_info_list[0].tensor_type) {
+    case InputTensorInfo::kTensorTypeFp32:
+        buffer_type = USERBUFFER_FLOAT;
+        break;
+    case InputTensorInfo::kTensorTypeUint8:
+        buffer_type = USERBUFFER_TF8;
+        bit_width = 8;
+        break;
+    default:
+        PRINT_E("Unsupported tensor type\n");
+        return kRetErr;
+    }
+    bool use_user_supplied_buffers = (buffer_type == USERBUFFER_FLOAT || buffer_type == USERBUFFER_TF8 || buffer_type == USERBUFFER_TF16);
 
-	/* Create network */
-	snpe_ = CreateSnpe(model_filename, use_user_supplied_buffers);
-	if (!snpe_) {
-		PRINT_E("Failed to create SNPE\n");
-		return kRetErr;
-	}
+    /* Create network */
+    snpe_ = CreateSnpe(model_filename, use_user_supplied_buffers);
+    if (!snpe_) {
+        PRINT_E("Failed to create SNPE\n");
+        return kRetErr;
+    }
 
-	GetAllTensorInfo(snpe_, input_tensor_info_list, output_tensor_info_list);
+    GetAllTensorInfo(snpe_, input_tensor_info_list, output_tensor_info_list);
 
 
-	/* Allocate buffer memory for input/output */
-	if (use_user_supplied_buffers) {
-		if (buffer_type == USERBUFFER_TF8 || buffer_type == USERBUFFER_TF16) {
-			PRINT_E("Not tested\n");
-			createOutputBufferMap(*output_map_, application_output_buffers_, snpe_user_output_buffers_, snpe_, true, bit_width);
-			createInputBufferMap(*input_map_, application_input_buffers_, snpe_user_input_buffers_, snpe_, true, bit_width);
-		} else if (buffer_type == USERBUFFER_FLOAT) {
-			createOutputBufferMap(*output_map_, application_output_buffers_, snpe_user_output_buffers_, snpe_, false, bit_width);
-			if (user_buffer_source_type == CPUBUFFER) {
-				createInputBufferMap(*input_map_, application_input_buffers_, snpe_user_input_buffers_, snpe_, false, bit_width);
-			} else {
-				PRINT_E("Not supported\n");
-				return kRetErr;
-			}
-		}
-	} else {
-		PRINT_E("Not supported\n");
-		return kRetErr;
-	}
+    /* Allocate buffer memory for input/output */
+    if (use_user_supplied_buffers) {
+        if (buffer_type == USERBUFFER_TF8 || buffer_type == USERBUFFER_TF16) {
+            PRINT_E("Not tested\n");
+            createOutputBufferMap(*output_map_, application_output_buffers_, snpe_user_output_buffers_, snpe_, true, bit_width);
+            createInputBufferMap(*input_map_, application_input_buffers_, snpe_user_input_buffers_, snpe_, true, bit_width);
+        } else if (buffer_type == USERBUFFER_FLOAT) {
+            createOutputBufferMap(*output_map_, application_output_buffers_, snpe_user_output_buffers_, snpe_, false, bit_width);
+            if (user_buffer_source_type == CPUBUFFER) {
+                createInputBufferMap(*input_map_, application_input_buffers_, snpe_user_input_buffers_, snpe_, false, bit_width);
+            } else {
+                PRINT_E("Not supported\n");
+                return kRetErr;
+            }
+        }
+    } else {
+        PRINT_E("Not supported\n");
+        return kRetErr;
+    }
 
-	/* Convert normalize parameter to speed up */
-	for (auto& input_tensor_info : input_tensor_info_list) {
-		ConvertNormalizeParameters(input_tensor_info);
-	}
+    /* Convert normalize parameter to speed up */
+    for (auto& input_tensor_info : input_tensor_info_list) {
+        ConvertNormalizeParameters(input_tensor_info);
+    }
 
-	return kRetOk;
+    return kRetOk;
 };
 
 
 int32_t InferenceHelperSnpe::Finalize(void)
 {
-	return kRetErr;
+    return kRetErr;
 }
 
 int32_t InferenceHelperSnpe::PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list)
 {
-	if (!snpe_ || !input_map_ || !output_map_) {
-		PRINT_E("Interpreter is not built yet\n");
-		return kRetErr;
-	}
+    if (!snpe_ || !input_map_ || !output_map_) {
+        PRINT_E("Interpreter is not built yet\n");
+        return kRetErr;
+    }
 
-	for (const auto& input_tensor_info : input_tensor_info_list) {
-		if (input_tensor_info.data_type == InputTensorInfo::kDataTypeImage) {
-			if ((input_tensor_info.image_info.width != input_tensor_info.image_info.crop_width) || (input_tensor_info.image_info.height != input_tensor_info.image_info.crop_height)) {
-				PRINT_E("Crop is not supported\n");
-				return  kRetErr;
-			}
-			if ((input_tensor_info.image_info.crop_width != input_tensor_info.tensor_dims.width) || (input_tensor_info.image_info.crop_height != input_tensor_info.tensor_dims.height)) {
-				PRINT_E("Resize is not supported\n");
-				return  kRetErr;
-			}
-			if (input_tensor_info.image_info.channel != input_tensor_info.tensor_dims.channel) {
-				PRINT_E("Color conversion is not supported\n");
-				return  kRetErr;
-			}
+    for (const auto& input_tensor_info : input_tensor_info_list) {
+        if (input_tensor_info.data_type == InputTensorInfo::kDataTypeImage) {
+            if ((input_tensor_info.image_info.width != input_tensor_info.image_info.crop_width) || (input_tensor_info.image_info.height != input_tensor_info.image_info.crop_height)) {
+                PRINT_E("Crop is not supported\n");
+                return  kRetErr;
+            }
+            if ((input_tensor_info.image_info.crop_width != input_tensor_info.tensor_dims.width) || (input_tensor_info.image_info.crop_height != input_tensor_info.tensor_dims.height)) {
+                PRINT_E("Resize is not supported\n");
+                return  kRetErr;
+            }
+            if (input_tensor_info.image_info.channel != input_tensor_info.tensor_dims.channel) {
+                PRINT_E("Color conversion is not supported\n");
+                return  kRetErr;
+            }
 
-			/* Normalize image (NHWC to NHWC)*/
-			uint8_t* src = static_cast<uint8_t*>(input_tensor_info.data);
-			if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
-				PRINT_E("kTensorTypeUint8 is not supported\n");
-			} else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
-				float* dst = reinterpret_cast<float*> (&application_input_buffers_.at(input_tensor_info.name)[0]);
+            /* Normalize image (NHWC to NHWC)*/
+            uint8_t* src = static_cast<uint8_t*>(input_tensor_info.data);
+            if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
+                PRINT_E("kTensorTypeUint8 is not supported\n");
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
+                float* dst = reinterpret_cast<float*> (&application_input_buffers_.at(input_tensor_info.name)[0]);
 #pragma omp parallel for num_threads(num_threads_)
-				for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
-					for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
+                for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
+                    for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
 #if 1
-						dst[i * input_tensor_info.tensor_dims.channel + c] = (src[i * input_tensor_info.tensor_dims.channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
+                        dst[i * input_tensor_info.tensor_dims.channel + c] = (src[i * input_tensor_info.tensor_dims.channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
 #else
-						dst[i * input_tensor_info.tensor_dims.channel + c] = (src[i * input_tensor_info.tensor_dims.channel + c] / 255.0f - input_tensor_info.normalize.mean[c]) / input_tensor_info.normalize.norm[c];
+                        dst[i * input_tensor_info.tensor_dims.channel + c] = (src[i * input_tensor_info.tensor_dims.channel + c] / 255.0f - input_tensor_info.normalize.mean[c]) / input_tensor_info.normalize.norm[c];
 #endif
-					}
-				}
-			} else {
-				PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
-				return kRetErr;
-			}
+                    }
+                }
+            } else {
+                PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
+                return kRetErr;
+            }
 
-		} else if ( (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) ){
-			PRINT_E("kDataTypeBlobNhwc (kDataTypeBlobNchw) is not supported\n");
-			return kRetErr;
-		} else {
-			PRINT_E("Unsupported data type (%d)\n", input_tensor_info.data_type);
-			return kRetErr;
-		}
-	}
-	return kRetOk;
+        } else if ( (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) ){
+            PRINT_E("kDataTypeBlobNhwc (kDataTypeBlobNchw) is not supported\n");
+            return kRetErr;
+        } else {
+            PRINT_E("Unsupported data type (%d)\n", input_tensor_info.data_type);
+            return kRetErr;
+        }
+    }
+    return kRetOk;
 }
 
 int32_t InferenceHelperSnpe::Process(std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
-	if (!snpe_ || !input_map_ || !output_map_) {
-		PRINT_E("Interpreter is not built yet\n");
-		return kRetErr;
-	}
+    if (!snpe_ || !input_map_ || !output_map_) {
+        PRINT_E("Interpreter is not built yet\n");
+        return kRetErr;
+    }
 
-	bool exec_status = snpe_->execute(*input_map_, *output_map_);
-	if (exec_status == false) {
-		PRINT_E("Error while executing the network.\n");
-		return kRetErr;
-	}
+    bool exec_status = snpe_->execute(*input_map_, *output_map_);
+    if (exec_status == false) {
+        PRINT_E("Error while executing the network.\n");
+        return kRetErr;
+    }
 
-	for (auto& output_tensor_info : output_tensor_info_list) {
-		output_tensor_info.data = application_output_buffers_.at(output_tensor_info.name).data();
-	}
+    for (auto& output_tensor_info : output_tensor_info_list) {
+        output_tensor_info.data = application_output_buffers_.at(output_tensor_info.name).data();
+    }
 
-	return kRetOk;
+    return kRetOk;
 }
 
 void InferenceHelperSnpe::ConvertNormalizeParameters(InputTensorInfo& tensor_info)
 {
-	if (tensor_info.data_type != InputTensorInfo::kDataTypeImage) return;
+    if (tensor_info.data_type != InputTensorInfo::kDataTypeImage) return;
 
 #if 0
-	/* Convert to speeden up normalization:  ((src / 255) - mean) / norm  = src * 1 / (255 * norm) - (mean / norm) */
-	for (int32_t i = 0; i < 3; i++) {
-		tensor_info.normalize.mean[i] /= tensor_info.normalize.norm[i];
-		tensor_info.normalize.norm[i] *= 255.0f;
-		tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
-	}
+    /* Convert to speeden up normalization:  ((src / 255) - mean) / norm  = src * 1 / (255 * norm) - (mean / norm) */
+    for (int32_t i = 0; i < 3; i++) {
+        tensor_info.normalize.mean[i] /= tensor_info.normalize.norm[i];
+        tensor_info.normalize.norm[i] *= 255.0f;
+        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
+    }
 #endif
 #if 1
-	/* Convert to speeden up normalization:  ((src / 255) - mean) / norm = (src  - (mean * 255))  * (1 / (255 * norm)) */
-	for (int32_t i = 0; i < 3; i++) {
-		tensor_info.normalize.mean[i] *= 255.0f;
-		tensor_info.normalize.norm[i] *= 255.0f;
-		tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
-	}
+    /* Convert to speeden up normalization:  ((src / 255) - mean) / norm = (src  - (mean * 255))  * (1 / (255 * norm)) */
+    for (int32_t i = 0; i < 3; i++) {
+        tensor_info.normalize.mean[i] *= 255.0f;
+        tensor_info.normalize.norm[i] *= 255.0f;
+        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
+    }
 #endif
 }
 
 
 static zdl::DlSystem::RuntimeList GetSystemAvailability(void)
 {
-	zdl::DlSystem::Version_t version = zdl::SNPE::SNPEFactory::getLibraryVersion();
-	PRINT("SNPE Version: %s\n", version.asString().c_str());
+    zdl::DlSystem::Version_t version = zdl::SNPE::SNPEFactory::getLibraryVersion();
+    PRINT("SNPE Version: %s\n", version.asString().c_str());
 
-	zdl::DlSystem::RuntimeList runtime_list;
-	zdl::DlSystem::Runtime_t runtime = zdl::DlSystem::Runtime_t::DSP_FIXED8_TF;
-	if (zdl::SNPE::SNPEFactory::isRuntimeAvailable(runtime) == false) {
-		PRINT_E("DSP is not available. Falling back to GPU.\n");
-		runtime = zdl::DlSystem::Runtime_t::GPU_FLOAT32_16_HYBRID;
-		if (zdl::SNPE::SNPEFactory::isRuntimeAvailable(runtime) == false) {
-			PRINT_E("GPU is not available. Falling back to CPU.\n");
-			runtime = zdl::DlSystem::Runtime_t::CPU_FLOAT32;
-		}
-	}
-	runtime_list.add(runtime);
-	return runtime_list;
+    zdl::DlSystem::RuntimeList runtime_list;
+    zdl::DlSystem::Runtime_t runtime = zdl::DlSystem::Runtime_t::DSP_FIXED8_TF;
+    if (zdl::SNPE::SNPEFactory::isRuntimeAvailable(runtime) == false) {
+        PRINT_E("DSP is not available. Falling back to GPU.\n");
+        runtime = zdl::DlSystem::Runtime_t::GPU_FLOAT32_16_HYBRID;
+        if (zdl::SNPE::SNPEFactory::isRuntimeAvailable(runtime) == false) {
+            PRINT_E("GPU is not available. Falling back to CPU.\n");
+            runtime = zdl::DlSystem::Runtime_t::CPU_FLOAT32;
+        }
+    }
+    runtime_list.add(runtime);
+    return runtime_list;
 }
 
 
 std::unique_ptr<zdl::SNPE::SNPE> InferenceHelperSnpe::CreateSnpe(const std::string& model_filename, bool use_user_supplied_buffers)
 {
-	zdl::DlSystem::RuntimeList runtime_list = GetSystemAvailability();
+    zdl::DlSystem::RuntimeList runtime_list = GetSystemAvailability();
 
-	std::unique_ptr<zdl::DlContainer::IDlContainer> container = zdl::DlContainer::IDlContainer::open(zdl::DlSystem::String(model_filename.c_str()));
-	if (container == nullptr) {
-		PRINT_E("Error while opening the container file.\n");
-		return nullptr;
-	}
+    std::unique_ptr<zdl::DlContainer::IDlContainer> container = zdl::DlContainer::IDlContainer::open(zdl::DlSystem::String(model_filename.c_str()));
+    if (container == nullptr) {
+        PRINT_E("Error while opening the container file.\n");
+        return nullptr;
+    }
 
-	zdl::DlSystem::UDLFactoryFunc udl_func = UdlExample::MyUDLFactory;
-	zdl::DlSystem::UDLBundle udl_bundle;
-	udl_bundle.cookie = (void*)0xdeadbeaf, udl_bundle.func = udl_func; // 0xdeadbeaf to test cookie
-	zdl::DlSystem::PlatformConfig platform_config;
+    zdl::DlSystem::UDLFactoryFunc udl_func = UdlExample::MyUDLFactory;
+    zdl::DlSystem::UDLBundle udl_bundle;
+    udl_bundle.cookie = (void*)0xdeadbeaf, udl_bundle.func = udl_func; // 0xdeadbeaf to test cookie
+    zdl::DlSystem::PlatformConfig platform_config;
 
-	zdl::SNPE::SNPEBuilder snpe_builder(container.get());
-	std::unique_ptr<zdl::SNPE::SNPE> snpe = snpe_builder.setOutputLayers({})
-		.setRuntimeProcessorOrder(runtime_list)
-		.setUdlBundle(udl_bundle)
-		.setUseUserSuppliedBuffers(use_user_supplied_buffers)
-		.setPlatformConfig(platform_config)
-		.setInitCacheMode(false)
-		.build();
-	if (snpe == nullptr) {
-		PRINT_E("Error while building SNPE object.\n");
-		return nullptr;
-	}
+    zdl::SNPE::SNPEBuilder snpe_builder(container.get());
+    std::unique_ptr<zdl::SNPE::SNPE> snpe = snpe_builder.setOutputLayers({})
+        .setRuntimeProcessorOrder(runtime_list)
+        .setUdlBundle(udl_bundle)
+        .setUseUserSuppliedBuffers(use_user_supplied_buffers)
+        .setPlatformConfig(platform_config)
+        .setInitCacheMode(false)
+        .build();
+    if (snpe == nullptr) {
+        PRINT_E("Error while building SNPE object.\n");
+        return nullptr;
+    }
 
-	auto logger_opt = snpe->getDiagLogInterface();
-	if (!logger_opt) {
-		PRINT_E("SNPE failed to obtain logging interface.\n");
-	}
-	auto logger = *logger_opt;
-	auto opts = logger->getOptions();
-	opts.LogFileDirectory = model_filename + "_log/";
-	if(!logger->setOptions(opts)) {
-		PRINT_E("Failed to set options\n");
-		return nullptr;
-	}
-	if (!logger->start()) {
-		PRINT_E("Failed to start logger\n");
-		return nullptr;
-	}
-	return snpe;
+    auto logger_opt = snpe->getDiagLogInterface();
+    if (!logger_opt) {
+        PRINT_E("SNPE failed to obtain logging interface.\n");
+    }
+    auto logger = *logger_opt;
+    auto opts = logger->getOptions();
+    opts.LogFileDirectory = model_filename + "_log/";
+    if(!logger->setOptions(opts)) {
+        PRINT_E("Failed to set options\n");
+        return nullptr;
+    }
+    if (!logger->start()) {
+        PRINT_E("Failed to start logger\n");
+        return nullptr;
+    }
+    return snpe;
 }
 
 int32_t InferenceHelperSnpe::GetTensorInfo(std::unique_ptr<zdl::SNPE::SNPE> const& snpe, const std::string& name, int32_t& batch, int32_t& height, int32_t& width, int32_t& channel)
 {
-	auto buffer_attributes_opt = snpe->getInputOutputBufferAttributes(name.c_str());
-	if (!buffer_attributes_opt) {
-		PRINT_E("Error obtaining attributes for input tensor. %s\n", name.c_str());
-		return kRetErr;
-	}
-	zdl::DlSystem::TensorShape tensor_shape = buffer_attributes_opt->getDims();
+    auto buffer_attributes_opt = snpe->getInputOutputBufferAttributes(name.c_str());
+    if (!buffer_attributes_opt) {
+        PRINT_E("Error obtaining attributes for input tensor. %s\n", name.c_str());
+        return kRetErr;
+    }
+    zdl::DlSystem::TensorShape tensor_shape = buffer_attributes_opt->getDims();
 
-	batch = -1;
-	height = -1;
-	width = -1;
-	channel = -1;
+    batch = -1;
+    height = -1;
+    width = -1;
+    channel = -1;
 
-	batch = static_cast<int32_t>(tensor_shape.getDimensions()[0]);
-	if (tensor_shape.rank() > 1) {
-		height = static_cast<int32_t>(tensor_shape.getDimensions()[1]);
-	}
-	if (tensor_shape.rank() > 2) {
-		width = static_cast<int32_t>(tensor_shape.getDimensions()[2]);
-	}
-	if (tensor_shape.rank() > 3) {
-		channel = static_cast<int32_t>(tensor_shape.getDimensions()[3]);
-	}
-	PRINT("%s: batch = %d, height = %d, width = %d, channel = %d\n", name.c_str(), batch, height, width, channel);
+    batch = static_cast<int32_t>(tensor_shape.getDimensions()[0]);
+    if (tensor_shape.rank() > 1) {
+        height = static_cast<int32_t>(tensor_shape.getDimensions()[1]);
+    }
+    if (tensor_shape.rank() > 2) {
+        width = static_cast<int32_t>(tensor_shape.getDimensions()[2]);
+    }
+    if (tensor_shape.rank() > 3) {
+        channel = static_cast<int32_t>(tensor_shape.getDimensions()[3]);
+    }
+    PRINT("%s: batch = %d, height = %d, width = %d, channel = %d\n", name.c_str(), batch, height, width, channel);
 
-	return kRetOk;
+    return kRetOk;
 }
 
 int32_t InferenceHelperSnpe::GetAllTensorInfo(std::unique_ptr<zdl::SNPE::SNPE> const& snpe, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
-	for (auto& input_tensor_info : input_tensor_info_list) {
-		int32_t batch, height, width, channel;
-		if (GetTensorInfo(snpe, input_tensor_info.name, batch, height, width, channel) != 0) {
-			return kRetErr;
-		}
-		if (batch == -1 && input_tensor_info.tensor_dims.batch == -1) {
-			PRINT_E("%s: Batch size is undefined\n", input_tensor_info.name.c_str());
-			return kRetErr;
-		} else if (batch != -1 && input_tensor_info.tensor_dims.batch == -1) {
-			input_tensor_info.tensor_dims.batch = batch;
-		} else if (batch == -1 && input_tensor_info.tensor_dims.batch != -1) {
-			// do nothing
-		} else {
-			if (batch != input_tensor_info.tensor_dims.batch) {
-				PRINT_E("%s: Batch size doesn't match: %d vs %d\n", input_tensor_info.name.c_str(), batch, input_tensor_info.tensor_dims.batch);
-				return kRetErr;
-			}
-		}
-		if (height == -1 && input_tensor_info.tensor_dims.height == -1) {
-			// PRINT_E("%s: Height size is undefined\n", input_tensor_info.name.c_str());
-			// return kRetErr;
-			input_tensor_info.tensor_dims.height = 1;
-		} else if (height != -1 && input_tensor_info.tensor_dims.height == -1) {
-			input_tensor_info.tensor_dims.height = height;
-		} else if (height == -1 && input_tensor_info.tensor_dims.height != -1) {
-			// do nothing
-		} else {
-			if (height != input_tensor_info.tensor_dims.height) {
-				PRINT_E("%s: Height size doesn't match: %d vs %d\n", input_tensor_info.name.c_str(), height, input_tensor_info.tensor_dims.height);
-				return kRetErr;
-			}
-		}
-		if (width == -1 && input_tensor_info.tensor_dims.width == -1) {
-			// PRINT_E("%s: Width size is undefined\n", input_tensor_info.name.c_str());
-			// return kRetErr;
-			input_tensor_info.tensor_dims.width = 1;
-		} else if (width != -1 && input_tensor_info.tensor_dims.width == -1) {
-			input_tensor_info.tensor_dims.width = width;
-		} else if (width == -1 && input_tensor_info.tensor_dims.width != -1) {
-			// do nothing
-		} else {
-			if (width != input_tensor_info.tensor_dims.width) {
-				PRINT_E("%s: Width size doesn't match: %d vs %d\n", input_tensor_info.name.c_str(), width, input_tensor_info.tensor_dims.width);
-				return kRetErr;
-			}
-		}
-		if (channel == -1 && input_tensor_info.tensor_dims.channel == -1) {
-			// PRINT_E("%s: Channel size is undefined\n", input_tensor_info.name.c_str());
-			// return kRetErr;
-			input_tensor_info.tensor_dims.channel = 1;
-		} else if (channel != -1 && input_tensor_info.tensor_dims.channel == -1) {
-			input_tensor_info.tensor_dims.channel = channel;
-		} else if (channel == -1 && input_tensor_info.tensor_dims.channel != -1) {
-			// do nothing
-		} else {
-			if (channel != input_tensor_info.tensor_dims.channel) {
-				PRINT_E("%s: Channel size doesn't match: %d vs %d\n", input_tensor_info.name.c_str(), channel, input_tensor_info.tensor_dims.channel);
-				return kRetErr;
-			}
-		}
-	}
-	
-	for (auto& output_tensor_info : output_tensor_info_list) {
-		int32_t batch, height, width, channel;
-		GetTensorInfo(snpe, output_tensor_info.name, batch, height, width, channel);
+    for (auto& input_tensor_info : input_tensor_info_list) {
+        int32_t batch, height, width, channel;
+        if (GetTensorInfo(snpe, input_tensor_info.name, batch, height, width, channel) != 0) {
+            return kRetErr;
+        }
+        if (batch == -1 && input_tensor_info.tensor_dims.batch == -1) {
+            PRINT_E("%s: Batch size is undefined\n", input_tensor_info.name.c_str());
+            return kRetErr;
+        } else if (batch != -1 && input_tensor_info.tensor_dims.batch == -1) {
+            input_tensor_info.tensor_dims.batch = batch;
+        } else if (batch == -1 && input_tensor_info.tensor_dims.batch != -1) {
+            // do nothing
+        } else {
+            if (batch != input_tensor_info.tensor_dims.batch) {
+                PRINT_E("%s: Batch size doesn't match: %d vs %d\n", input_tensor_info.name.c_str(), batch, input_tensor_info.tensor_dims.batch);
+                return kRetErr;
+            }
+        }
+        if (height == -1 && input_tensor_info.tensor_dims.height == -1) {
+            // PRINT_E("%s: Height size is undefined\n", input_tensor_info.name.c_str());
+            // return kRetErr;
+            input_tensor_info.tensor_dims.height = 1;
+        } else if (height != -1 && input_tensor_info.tensor_dims.height == -1) {
+            input_tensor_info.tensor_dims.height = height;
+        } else if (height == -1 && input_tensor_info.tensor_dims.height != -1) {
+            // do nothing
+        } else {
+            if (height != input_tensor_info.tensor_dims.height) {
+                PRINT_E("%s: Height size doesn't match: %d vs %d\n", input_tensor_info.name.c_str(), height, input_tensor_info.tensor_dims.height);
+                return kRetErr;
+            }
+        }
+        if (width == -1 && input_tensor_info.tensor_dims.width == -1) {
+            // PRINT_E("%s: Width size is undefined\n", input_tensor_info.name.c_str());
+            // return kRetErr;
+            input_tensor_info.tensor_dims.width = 1;
+        } else if (width != -1 && input_tensor_info.tensor_dims.width == -1) {
+            input_tensor_info.tensor_dims.width = width;
+        } else if (width == -1 && input_tensor_info.tensor_dims.width != -1) {
+            // do nothing
+        } else {
+            if (width != input_tensor_info.tensor_dims.width) {
+                PRINT_E("%s: Width size doesn't match: %d vs %d\n", input_tensor_info.name.c_str(), width, input_tensor_info.tensor_dims.width);
+                return kRetErr;
+            }
+        }
+        if (channel == -1 && input_tensor_info.tensor_dims.channel == -1) {
+            // PRINT_E("%s: Channel size is undefined\n", input_tensor_info.name.c_str());
+            // return kRetErr;
+            input_tensor_info.tensor_dims.channel = 1;
+        } else if (channel != -1 && input_tensor_info.tensor_dims.channel == -1) {
+            input_tensor_info.tensor_dims.channel = channel;
+        } else if (channel == -1 && input_tensor_info.tensor_dims.channel != -1) {
+            // do nothing
+        } else {
+            if (channel != input_tensor_info.tensor_dims.channel) {
+                PRINT_E("%s: Channel size doesn't match: %d vs %d\n", input_tensor_info.name.c_str(), channel, input_tensor_info.tensor_dims.channel);
+                return kRetErr;
+            }
+        }
+    }
+    
+    for (auto& output_tensor_info : output_tensor_info_list) {
+        int32_t batch, height, width, channel;
+        GetTensorInfo(snpe, output_tensor_info.name, batch, height, width, channel);
 
-		if (batch == -1 && output_tensor_info.tensor_dims.batch == -1) {
-			PRINT_E("%s: Batch size is undefined\n", output_tensor_info.name.c_str());
-			return kRetErr;
-		} else if (batch != -1 && output_tensor_info.tensor_dims.batch == -1) {
-			output_tensor_info.tensor_dims.batch = batch;
-		} else if (batch == -1 && output_tensor_info.tensor_dims.batch != -1) {
-			// do nothing
-		} else {
-			if (batch != output_tensor_info.tensor_dims.batch) {
-				PRINT_E("%s: Batch size doesn't match: %d vs %d\n", output_tensor_info.name.c_str(), batch, output_tensor_info.tensor_dims.batch);
-				return kRetErr;
-			}
-		}
-		if (height == -1 && output_tensor_info.tensor_dims.height == -1) {
-			// PRINT_E("%s: Height size is undefined\n", output_tensor_info.name.c_str());
-			// return kRetErr;
-			output_tensor_info.tensor_dims.height = 1;
-		} else if (height != -1 && output_tensor_info.tensor_dims.height == -1) {
-			output_tensor_info.tensor_dims.height = height;
-		} else if (height == -1 && output_tensor_info.tensor_dims.height != -1) {
-			// do nothing
-		} else {
-			if (height != output_tensor_info.tensor_dims.height) {
-				PRINT_E("%s: Height size doesn't match: %d vs %d\n", output_tensor_info.name.c_str(), height, output_tensor_info.tensor_dims.height);
-				return kRetErr;
-			}
-		}
-		if (width == -1 && output_tensor_info.tensor_dims.width == -1) {
-			// PRINT_E("%s: Width size is undefined\n", output_tensor_info.name.c_str());
-			// return kRetErr;
-			output_tensor_info.tensor_dims.width = 1;
-		} else if (width != -1 && output_tensor_info.tensor_dims.width == -1) {
-			output_tensor_info.tensor_dims.width = width;
-		} else if (width == -1 && output_tensor_info.tensor_dims.width != -1) {
-			// do nothing
-		} else {
-			if (width != output_tensor_info.tensor_dims.width) {
-				PRINT_E("%s: Width size doesn't match: %d vs %d\n", output_tensor_info.name.c_str(), width, output_tensor_info.tensor_dims.width);
-				return kRetErr;
-			}
-		}
-		if (channel == -1 && output_tensor_info.tensor_dims.channel == -1) {
-			// PRINT_E("%s: Channel size is undefined\n", output_tensor_info.name.c_str());
-			// return kRetErr;
-			output_tensor_info.tensor_dims.channel = 1;
-		} else if (channel != -1 && output_tensor_info.tensor_dims.channel == -1) {
-			output_tensor_info.tensor_dims.channel = channel;
-		} else if (channel == -1 && output_tensor_info.tensor_dims.channel != -1) {
-			// do nothing
-		} else {
-			if (channel != output_tensor_info.tensor_dims.channel) {
-				PRINT_E("%s: Channel size doesn't match: %d vs %d\n", output_tensor_info.name.c_str(), channel, output_tensor_info.tensor_dims.channel);
-				return kRetErr;
-			}
-		}
-	}
+        if (batch == -1 && output_tensor_info.tensor_dims.batch == -1) {
+            PRINT_E("%s: Batch size is undefined\n", output_tensor_info.name.c_str());
+            return kRetErr;
+        } else if (batch != -1 && output_tensor_info.tensor_dims.batch == -1) {
+            output_tensor_info.tensor_dims.batch = batch;
+        } else if (batch == -1 && output_tensor_info.tensor_dims.batch != -1) {
+            // do nothing
+        } else {
+            if (batch != output_tensor_info.tensor_dims.batch) {
+                PRINT_E("%s: Batch size doesn't match: %d vs %d\n", output_tensor_info.name.c_str(), batch, output_tensor_info.tensor_dims.batch);
+                return kRetErr;
+            }
+        }
+        if (height == -1 && output_tensor_info.tensor_dims.height == -1) {
+            // PRINT_E("%s: Height size is undefined\n", output_tensor_info.name.c_str());
+            // return kRetErr;
+            output_tensor_info.tensor_dims.height = 1;
+        } else if (height != -1 && output_tensor_info.tensor_dims.height == -1) {
+            output_tensor_info.tensor_dims.height = height;
+        } else if (height == -1 && output_tensor_info.tensor_dims.height != -1) {
+            // do nothing
+        } else {
+            if (height != output_tensor_info.tensor_dims.height) {
+                PRINT_E("%s: Height size doesn't match: %d vs %d\n", output_tensor_info.name.c_str(), height, output_tensor_info.tensor_dims.height);
+                return kRetErr;
+            }
+        }
+        if (width == -1 && output_tensor_info.tensor_dims.width == -1) {
+            // PRINT_E("%s: Width size is undefined\n", output_tensor_info.name.c_str());
+            // return kRetErr;
+            output_tensor_info.tensor_dims.width = 1;
+        } else if (width != -1 && output_tensor_info.tensor_dims.width == -1) {
+            output_tensor_info.tensor_dims.width = width;
+        } else if (width == -1 && output_tensor_info.tensor_dims.width != -1) {
+            // do nothing
+        } else {
+            if (width != output_tensor_info.tensor_dims.width) {
+                PRINT_E("%s: Width size doesn't match: %d vs %d\n", output_tensor_info.name.c_str(), width, output_tensor_info.tensor_dims.width);
+                return kRetErr;
+            }
+        }
+        if (channel == -1 && output_tensor_info.tensor_dims.channel == -1) {
+            // PRINT_E("%s: Channel size is undefined\n", output_tensor_info.name.c_str());
+            // return kRetErr;
+            output_tensor_info.tensor_dims.channel = 1;
+        } else if (channel != -1 && output_tensor_info.tensor_dims.channel == -1) {
+            output_tensor_info.tensor_dims.channel = channel;
+        } else if (channel == -1 && output_tensor_info.tensor_dims.channel != -1) {
+            // do nothing
+        } else {
+            if (channel != output_tensor_info.tensor_dims.channel) {
+                PRINT_E("%s: Channel size doesn't match: %d vs %d\n", output_tensor_info.name.c_str(), channel, output_tensor_info.tensor_dims.channel);
+                return kRetErr;
+            }
+        }
+    }
 
-	return kRetOk;
+    return kRetOk;
 }

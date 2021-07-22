@@ -28,6 +28,7 @@ public:
     enum {
         kTensorTypeNone,
         kTensorTypeUint8,
+        kTensorTypeInt8,
         kTensorTypeFp32,
         kTensorTypeInt32,
         kTensorTypeInt64,
@@ -180,6 +181,7 @@ public:
         kNcnn,
         kMnn,
         kSnpe,
+        kArmnn,
     } HelperType;
 
 public:

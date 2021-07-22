@@ -46,6 +46,9 @@ limitations under the License.
 #ifdef INFERENCE_HELPER_ENABLE_SNPE
 #include "inference_helper_snpe.h"
 #endif
+#ifdef INFERENCE_HELPER_ENABLE_ARMNN
+#include "inference_helper_armnn.h"
+#endif
 
 /*** Macro ***/
 #define TAG "InferenceHelper"
@@ -116,6 +119,12 @@ InferenceHelper* InferenceHelper::Create(const InferenceHelper::HelperType helpe
     case kSnpe:
         PRINT("Use SNPE\n");
         p = new InferenceHelperSnpe();
+        break;
+#endif
+#ifdef INFERENCE_HELPER_ENABLE_ARMNN
+    case kArmnn:
+        PRINT("Use ARMNN\n");
+        p = new InferenceHelperArmnn();
         break;
 #endif
     default:
