@@ -71,48 +71,29 @@ protected:
             return armnn::Status::Failure;
         }
         PRINT("Supported Backends:\n")
-        bool isEthosNPUAvailable = false;
-        bool isGpuAccAvailable = false;
-        bool isCpuAccAvailable = false;
-        bool isCpuRefAvailable = false;
         for (const auto& backend : runtime_->GetDeviceSpec().GetSupportedBackends()){
             const auto& backendStr = backend.Get();
             PRINT("  %s\n", backendStr.c_str());
-            if (backendStr == "EthosNPU") isEthosNPUAvailable = true;
-            if (backendStr == "GpuAcc") isGpuAccAvailable = true;
-            if (backendStr == "CpuAcc") isCpuAccAvailable = true;
-            if (backendStr == "CpuRef") isCpuRefAvailable = true;
         }
 
         armnn::OptimizerOptions optimizer_options;
         optimizer_options.m_ReduceFp32ToFp16 = false;
         std::vector<armnn::BackendId> preferred_backends;
-        if (isEthosNPUAvailable) {
-            // preferred_backends.push_back(armnn::Compute::Undefined);
-        } else if (isEthosNPUAvailable) {
-            preferred_backends.push_back(armnn::Compute::GpuAcc);
-        } else if (isGpuAccAvailable) {
-            preferred_backends.push_back(armnn::Compute::GpuAcc);
-            armnn::BackendOptions gpuAcc("GpuAcc",
-                                            {
-                                                    { "FastMathEnabled", true },
-                                                    { "TuningLevel", 2},
-                                            });
-            optimizer_options.m_ModelOptions.push_back(gpuAcc);
-        } else if (isCpuAccAvailable) {
-            preferred_backends.push_back(armnn::Compute::CpuAcc);
-            armnn::BackendOptions cpuAcc("CpuAcc",
-                                            {
-                                                    { "FastMathEnabled", true },
-                                                    { "NumberOfThreads", num_threads },
-                                            });
-            optimizer_options.m_ModelOptions.push_back(cpuAcc);
-        } else if (isCpuRefAvailable) {
-            preferred_backends.push_back(armnn::Compute::CpuRef);
-        } else {
-            PRINT_E("Supported backend not found\n");
-            return armnn::Status::Failure;
-        }
+        preferred_backends.push_back(armnn::Compute::GpuAcc);
+        armnn::BackendOptions gpuAcc("GpuAcc",
+                                        {
+                                            { "FastMathEnabled", true },
+                                            { "TuningLevel", 2},
+                                        });
+        optimizer_options.m_ModelOptions.push_back(gpuAcc);
+        preferred_backends.push_back(armnn::Compute::CpuAcc);
+        armnn::BackendOptions cpuAcc("CpuAcc",
+                                        {
+                                            { "FastMathEnabled", true },
+                                            { "NumberOfThreads", num_threads },
+                                        });
+        optimizer_options.m_ModelOptions.push_back(cpuAcc);
+        preferred_backends.push_back(armnn::Compute::CpuRef);
 
         armnn::IOptimizedNetworkPtr opt_net = armnn::Optimize(*network_, preferred_backends, runtime_->GetDeviceSpec(), optimizer_options);
         if (!opt_net) {
