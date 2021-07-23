@@ -1,37 +1,64 @@
-<mxfile host="65bd71144e" modified="2021-01-10T01:48:26.266Z" agent="5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.46.1 Chrome/78.0.3904.130 Electron/7.3.1 Safari/537.36" etag="uZrn58mdqdMWxrp378wF" version="13.10.0" type="embed">
+<mxfile host="65bd71144e">
     <diagram id="2nVCpC3mRS13LhFPs2z5" name="Page-1">
-        <mxGraphModel dx="1877" dy="1993" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+        <mxGraphModel dx="1847" dy="1969" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
+                <mxCell id="48" value="" style="endArrow=block;dashed=1;endFill=0;endSize=12;html=1;" parent="1" source="39" target="46" edge="1">
+                    <mxGeometry width="160" relative="1" as="geometry">
+                        <mxPoint x="110" y="330" as="sourcePoint"/>
+                        <mxPoint x="229.0839694656488" y="270" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="84" value="" style="endArrow=block;dashed=1;endFill=0;endSize=12;html=1;entryX=0.519;entryY=1.012;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="78" target="46" edge="1">
+                    <mxGeometry width="160" relative="1" as="geometry">
+                        <mxPoint x="478.52893746640393" y="290" as="sourcePoint"/>
+                        <mxPoint x="509.1999999999998" y="228.86599999999999" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="50" value="" style="endArrow=block;dashed=1;endFill=0;endSize=12;html=1;entryX=0.448;entryY=0.994;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="35" target="46" edge="1">
+                    <mxGeometry width="160" relative="1" as="geometry">
+                        <mxPoint x="361.14864864864876" y="330" as="sourcePoint"/>
+                        <mxPoint x="365.2027027027027" y="270" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="35" value="InferenceHelperNcnn" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="340" width="160" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="36" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" parent="35" vertex="1">
+                    <mxGeometry y="26" width="160" height="8" as="geometry"/>
+                </mxCell>
+                <mxCell id="74" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;dashed=1;dashPattern=1 2;" parent="1" vertex="1">
+                    <mxGeometry x="-40" y="250" width="760" height="150" as="geometry"/>
+                </mxCell>
                 <mxCell id="7" value="TensorInfo" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" parent="1" vertex="1">
                     <mxGeometry x="780" y="70" width="200" height="148" as="geometry"/>
                 </mxCell>
-                <mxCell id="8" value="+ name: std::string&#10;+ id: int32_t&#10;+ tensorType: int32_t&#10;+ tensorDims.batch: int32_t&#10;+ tensorDims.width: int32_t&#10;+ tensorDims.height: int32_t&#10;+ tensorDims.channel: int32_t&#10;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="7" vertex="1">
+                <mxCell id="8" value="+ name: std::string&#10;+ id: int32_t&#10;+ tensor_type: int32_t&#10;+ tensor_dims.batch: int32_t&#10;+ tensor_dims.width: int32_t&#10;+ tensor_dims.height: int32_t&#10;+ tensor_dims.channel: int32_t&#10;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="7" vertex="1">
                     <mxGeometry y="26" width="200" height="114" as="geometry"/>
                 </mxCell>
                 <mxCell id="9" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" parent="7" vertex="1">
                     <mxGeometry y="140" width="200" height="8" as="geometry"/>
                 </mxCell>
                 <mxCell id="10" value="InputTensorInfo" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" parent="1" vertex="1">
-                    <mxGeometry x="730" y="310" width="200" height="218" as="geometry"/>
+                    <mxGeometry x="730" y="290" width="200" height="228" as="geometry"/>
                 </mxCell>
-                <mxCell id="11" value="+ data: void*&#10;+ dataType: int32_t&#10;+ imageInfo.width: int32_t&#10;+ imageInfo.height: int32_t&#10;+ imageInfo.channel: int32_t&#10;+ imageInfo.cropX: int32_t&#10;+ imageInfo.cropY: int32_t&#10;+ imageInfo.cropWidth: int32_t&#10;+ imageInfo.cropHeight: int32_t&#10;+ imageInfo.isBGR: bool&#10;+ normalize.mean[3]: float&#10;+ normalize.norm[3]: float" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="10" vertex="1">
-                    <mxGeometry y="26" width="200" height="184" as="geometry"/>
+                <mxCell id="11" value="+ data: void*&#10;+ data_type: int32_t&#10;+ image_info.width: int32_t&#10;+ image_info.height: int32_t&#10;+ image_info.channel: int32_t&#10;+ image_info.crop_x: int32_t&#10;+ image_info.crop_y: int32_t&#10;+ image_info.crop_width: int32_t&#10;+ image_info.crop_height: int32_t&#10;+ image_info.is_bgr: bool&#10;+ image_info.swap_color: bool&#10;+ normalize.mean[3]: float&#10;+ normalize.norm[3]: float" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="10" vertex="1">
+                    <mxGeometry y="26" width="200" height="194" as="geometry"/>
                 </mxCell>
                 <mxCell id="12" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" parent="10" vertex="1">
-                    <mxGeometry y="210" width="200" height="8" as="geometry"/>
+                    <mxGeometry y="220" width="200" height="8" as="geometry"/>
                 </mxCell>
                 <mxCell id="17" value="OutputTensorInfo" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" parent="1" vertex="1">
-                    <mxGeometry x="960" y="310" width="160" height="134" as="geometry"/>
+                    <mxGeometry x="960" y="290" width="160" height="134" as="geometry"/>
                 </mxCell>
-                <mxCell id="18" value="+ data: void*&#10;+ quant.scale: float&#10;+ quant.zeroPoint: uint8_t&#10;- m_dataFp32: float*" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="17" vertex="1">
+                <mxCell id="18" value="+ data: void*&#10;+ quant.scale: float&#10;+ quant.zero_point: uint8_t&#10;- data_fp32_: float*" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="17" vertex="1">
                     <mxGeometry y="26" width="160" height="74" as="geometry"/>
                 </mxCell>
                 <mxCell id="19" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" parent="17" vertex="1">
                     <mxGeometry y="100" width="160" height="8" as="geometry"/>
                 </mxCell>
-                <mxCell id="20" value="+ getDataAsFloat(): float*" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="17" vertex="1">
+                <mxCell id="20" value="+ GetDataAsFloat(): float*" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="17" vertex="1">
                     <mxGeometry y="108" width="160" height="26" as="geometry"/>
                 </mxCell>
                 <mxCell id="21" value="" style="endArrow=block;endFill=0;endSize=12;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.47;exitY=0.009;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" source="10" target="7" edge="1">
@@ -47,57 +74,45 @@
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="31" value="InferenceHelperMnn" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" parent="1" vertex="1">
-                    <mxGeometry x="530" y="300" width="160" height="34" as="geometry"/>
+                    <mxGeometry x="380" y="280" width="160" height="34" as="geometry"/>
                 </mxCell>
                 <mxCell id="33" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" parent="31" vertex="1">
                     <mxGeometry y="26" width="160" height="8" as="geometry"/>
                 </mxCell>
-                <mxCell id="35" value="InferenceHelperNcnn" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" parent="1" vertex="1">
-                    <mxGeometry x="410" y="346" width="160" height="34" as="geometry"/>
-                </mxCell>
-                <mxCell id="36" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" parent="35" vertex="1">
-                    <mxGeometry y="26" width="160" height="8" as="geometry"/>
-                </mxCell>
                 <mxCell id="37" value="InferenceHelperOpenCV" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" parent="1" vertex="1">
-                    <mxGeometry x="60" y="300" width="160" height="34" as="geometry"/>
+                    <mxGeometry y="280" width="160" height="34" as="geometry"/>
                 </mxCell>
                 <mxCell id="38" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" parent="37" vertex="1">
                     <mxGeometry y="26" width="160" height="8" as="geometry"/>
                 </mxCell>
                 <mxCell id="39" value="InferenceHelperTensorflowLite" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" parent="1" vertex="1">
-                    <mxGeometry x="120" y="346" width="200" height="34" as="geometry"/>
+                    <mxGeometry x="-20" y="340" width="200" height="34" as="geometry"/>
                 </mxCell>
                 <mxCell id="40" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" parent="39" vertex="1">
                     <mxGeometry y="26" width="200" height="8" as="geometry"/>
                 </mxCell>
                 <mxCell id="41" value="InferenceHelperTensorRt" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" parent="1" vertex="1">
-                    <mxGeometry x="270" y="300" width="160" height="34" as="geometry"/>
+                    <mxGeometry x="210" y="280" width="160" height="34" as="geometry"/>
                 </mxCell>
                 <mxCell id="42" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" parent="41" vertex="1">
                     <mxGeometry y="26" width="160" height="8" as="geometry"/>
                 </mxCell>
                 <mxCell id="43" value="InferenceHelper" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" parent="1" vertex="1">
-                    <mxGeometry x="130" width="520" height="210" as="geometry"/>
+                    <mxGeometry x="130" width="520" height="220" as="geometry"/>
                 </mxCell>
-                <mxCell id="44" value="# m_helperType: HELPER_TYPE" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="43" vertex="1">
+                <mxCell id="44" value="# helper_type_: HelperType" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="43" vertex="1">
                     <mxGeometry y="26" width="520" height="24" as="geometry"/>
                 </mxCell>
                 <mxCell id="45" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" parent="43" vertex="1">
                     <mxGeometry y="50" width="520" height="8" as="geometry"/>
                 </mxCell>
-                <mxCell id="46" value="+ create(const HELPER_TYPE typeFw): static InferenceHelper*&#10;+ preProcessByOpenCV(const InputTensorInfo&amp; inputTensorInfo,&#10;                                        bool isNCHW, cv::Mat&amp; imgBlob): static void&#10;+ setNumThread(const int32_t numThread): int32_t&#10;+ setCustomOps(const std::vector&lt;std::pair&lt;const char*, const void*&gt;&gt;&amp; customOps): int32_t&#10;+ initialize(const std::string&amp; modelFilename, &#10;                 std::vector&lt;InputTensorInfo&gt;&amp; inputTensorInfoList, &#10;                 std::vector&lt;OutputTensorInfo&gt;&amp; outputTensorInfoList): int32_t&#10;+ preProcess(const std::vector&lt;InputTensorInfo&gt;&amp; inputTensorInfoList): int32_t&#10;+ invoke(std::vector&lt;OutputTensorInfo&gt;&amp; outputTensorInfoList): int32_t" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="43" vertex="1">
-                    <mxGeometry y="58" width="520" height="152" as="geometry"/>
+                <mxCell id="46" value="+ Create(const HelperType helper_type): static InferenceHelper*&#10;+ PreProcessByOpenCV(const InputTensorInfo&amp; input_tensor_info,&#10;                                        bool is_nchw, cv::Mat&amp; img_blob): static void&#10;+ SetNumThreads(const int32_t num_threads): int32_t&#10;+ SetCustomOps(const std::vector&lt;std::pair&lt;const char*, const void*&gt;&gt;&amp; custom_ops): int32_t&#10;+ Initialize(const std::string&amp; model_filename, &#10;                 std::vector&lt;InputTensorInfo&gt;&amp; input_tensor_info_list, &#10;                 std::vector&lt;OutputTensorInfo&gt;&amp; output_tensor_info_list): int32_t&#10;+ Finalize(void): int32_t&#10;+ Process(std::vector&lt;OutputTensorInfo&gt;&amp; output_tensor_info_list): int32_t&#10;+ Process(std::vector&lt;OutputTensorInfo&gt;&amp; output_tensor_info_list): int32_t" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="43" vertex="1">
+                    <mxGeometry y="58" width="520" height="162" as="geometry"/>
                 </mxCell>
                 <mxCell id="47" value="" style="endArrow=block;dashed=1;endFill=0;endSize=12;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" parent="1" source="37" target="46" edge="1">
                     <mxGeometry width="160" relative="1" as="geometry">
                         <mxPoint x="884" y="391.962" as="sourcePoint"/>
                         <mxPoint x="1010" y="258" as="targetPoint"/>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="48" value="" style="endArrow=block;dashed=1;endFill=0;endSize=12;html=1;" parent="1" source="39" target="46" edge="1">
-                    <mxGeometry width="160" relative="1" as="geometry">
-                        <mxPoint x="110" y="330" as="sourcePoint"/>
-                        <mxPoint x="229.0839694656488" y="270" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="49" value="" style="endArrow=block;dashed=1;endFill=0;endSize=12;html=1;" parent="1" source="41" target="46" edge="1">
@@ -106,22 +121,16 @@
                         <mxPoint x="304.1237113402062" y="270" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="50" value="" style="endArrow=block;dashed=1;endFill=0;endSize=12;html=1;" parent="1" source="35" target="46" edge="1">
-                    <mxGeometry width="160" relative="1" as="geometry">
-                        <mxPoint x="361.14864864864876" y="330" as="sourcePoint"/>
-                        <mxPoint x="365.2027027027027" y="270" as="targetPoint"/>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="51" value="" style="endArrow=block;dashed=1;endFill=0;endSize=12;html=1;entryX=0.71;entryY=0.993;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="31" target="46" edge="1">
+                <mxCell id="51" value="" style="endArrow=block;dashed=1;endFill=0;endSize=12;html=1;" parent="1" source="31" target="46" edge="1">
                     <mxGeometry width="160" relative="1" as="geometry">
                         <mxPoint x="461.2371134020618" y="376" as="sourcePoint"/>
                         <mxPoint x="406.5979381443299" y="270" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="52" value="&lt;p style=&quot;margin: 4px 0px 0px ; text-align: center&quot;&gt;&lt;b&gt;&lt;u&gt;HELPER_TYPE&lt;/u&gt;&lt;/b&gt;&lt;br&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;TENSOR_RT,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;TENSORFLOW_LITE,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;TENSORFLOW_LITE_EDGETPU,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;TENSORFLOW_LITE_GPU,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;TENSORFLOW_LITE_XNNPACK,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;NCNN,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;MNN,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;OPEN_CV,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;OPEN_CV_GPU,&lt;/p&gt;" style="verticalAlign=top;align=left;overflow=fill;fontSize=12;fontFamily=Helvetica;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="-110" y="59" width="210" height="170" as="geometry"/>
+                <mxCell id="52" value="&lt;p style=&quot;margin: 4px 0px 0px ; text-align: center&quot;&gt;&lt;b&gt;&lt;u&gt;HelperType&lt;/u&gt;&lt;/b&gt;&lt;br&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kOpencv&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kOpencvGpu&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kTensorflowLite&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kTensorflowLiteXnnpack&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kTensorflowLiteGpu&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kTensorflowLiteEdgetpu&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kTensorflowLiteNnapi&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kTensorrt&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kNcnn&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kMnn&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kSnpe&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kArmnn&lt;/p&gt;" style="verticalAlign=top;align=left;overflow=fill;fontSize=12;fontFamily=Helvetica;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="-90" width="170" height="221" as="geometry"/>
                 </mxCell>
-                <mxCell id="54" value="&lt;p style=&quot;margin: 4px 0px 0px ; text-align: center&quot;&gt;&lt;b&gt;&lt;u&gt;DATA_TYPE&lt;/u&gt;&lt;/b&gt;&lt;br&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;DATA_TYPE_IMAGE,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;DATA_TYPE_BLOB_NHWC,&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;DATA_TYPE_BLOB_NCHW,&lt;/p&gt;" style="verticalAlign=top;align=left;overflow=fill;fontSize=12;fontFamily=Helvetica;html=1;" parent="1" vertex="1">
+                <mxCell id="54" value="&lt;p style=&quot;margin: 4px 0px 0px ; text-align: center&quot;&gt;&lt;b&gt;&lt;u&gt;DataType&lt;/u&gt;&lt;/b&gt;&lt;br&gt;&lt;/p&gt;&lt;hr&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kDataTypeImage&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kDataTypeBlobNhwc&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;margin: 0px ; margin-left: 8px&quot;&gt;kDataTypeBlobNchw&lt;br&gt;&lt;/p&gt;" style="verticalAlign=top;align=left;overflow=fill;fontSize=12;fontFamily=Helvetica;html=1;" parent="1" vertex="1">
                     <mxGeometry x="470" y="448" width="210" height="80" as="geometry"/>
                 </mxCell>
                 <mxCell id="60" value="" style="endArrow=none;dashed=1;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="52" target="46" edge="1">
@@ -158,17 +167,32 @@
                         <mxPoint x="270" y="-130" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="73" value="ThirdParty/&lt;br&gt;pre-built library" style="html=1;" vertex="1" parent="1">
+                <mxCell id="73" value="ThirdParty/&lt;br&gt;pre-built library" style="html=1;" parent="1" vertex="1">
                     <mxGeometry x="100" y="448" width="110" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="74" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;dashed=1;dashPattern=1 2;" vertex="1" parent="1">
-                    <mxGeometry x="40" y="250" width="660" height="150" as="geometry"/>
-                </mxCell>
-                <mxCell id="76" value="link" style="endArrow=open;endFill=1;endSize=12;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.25;exitY=1;exitDx=0;exitDy=0;dashed=1;" edge="1" parent="1" source="74" target="73">
+                <mxCell id="76" value="link" style="endArrow=open;endFill=1;endSize=12;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.25;exitY=1;exitDx=0;exitDy=0;dashed=1;" parent="1" source="74" target="73" edge="1">
                     <mxGeometry x="-0.4963" y="11" width="160" relative="1" as="geometry">
                         <mxPoint x="660" y="144" as="sourcePoint"/>
                         <mxPoint x="790" y="163" as="targetPoint"/>
                         <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="78" value="InferenceHelperSnpe" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" parent="1" vertex="1">
+                    <mxGeometry x="380" y="340" width="160" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="79" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" parent="78" vertex="1">
+                    <mxGeometry y="26" width="160" height="8" as="geometry"/>
+                </mxCell>
+                <mxCell id="80" value="InferenceHelperArmnn" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;" parent="1" vertex="1">
+                    <mxGeometry x="555" y="280" width="160" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="81" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" parent="80" vertex="1">
+                    <mxGeometry y="26" width="160" height="8" as="geometry"/>
+                </mxCell>
+                <mxCell id="85" value="" style="endArrow=block;dashed=1;endFill=0;endSize=12;html=1;entryX=0.871;entryY=1.025;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.25;exitY=0;exitDx=0;exitDy=0;" parent="1" source="80" target="46" edge="1">
+                    <mxGeometry width="160" relative="1" as="geometry">
+                        <mxPoint x="467.6373722627736" y="350" as="sourcePoint"/>
+                        <mxPoint x="450.96000000000004" y="230" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
             </root>

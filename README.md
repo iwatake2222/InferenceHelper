@@ -12,6 +12,7 @@
 - ncnn
 - MNN
 - SNPE (Snapdragon Neural Processing Engine SDK (Qualcomm Neural Processing SDK for AI v1.51.0))
+- Arm NN
 
 ## Supported targets
 - Windows 10 (Visual Studio 2017 x64, Visual Studio 2019 x64)
@@ -31,6 +32,7 @@
 | ncnn                      | OK                       | OK            | OK            | OK               | OK                |
 | MNN                       | OK                       | OK            | OK            | OK               | OK                |
 | SNPE                      | not supported            | not supported | not tested    | OK               | OK                |
+| Arm NN                    | not supported            | OK            | not supported | OK               | not supported     |
 | Note                      | Visual Studio 2017, 2019 | Xubuntu 18.04 | Raspberry Pi  | Jetson Xavier NX | Pixel 4a          |
 
 
@@ -42,7 +44,6 @@ https://github.com/iwatake2222/InferenceHelper_Sample
 - https://github.com/iwatake2222/play_with_tensorrt
 - https://github.com/iwatake2222/play_with_ncnn
 - https://github.com/iwatake2222/play_with_mnn
-- https://github.com/iwatake2222/play_with_snpe
 
 # Usage
 ## Installation
@@ -103,6 +104,8 @@ https://github.com/iwatake2222/InferenceHelper_Sample
     cmake .. -DINFERENCE_HELPER_ENABLE_MNN=on
     # SNPE
     cmake .. -DINFERENCE_HELPER_ENABLE_SNPE=on
+    # Arm NN
+    cmake .. -DINFERENCE_HELPER_ENABLE_ARMNN=on
     ```
 
 - Enable/Disable preprocess using OpenCV:
@@ -127,6 +130,7 @@ typedef enum {
     kNcnn,
     kMnn,
     kSnpe,
+    kArmnn,
 } HelperType;
 ```
 
@@ -175,15 +179,15 @@ InputTensorInfo input_tensor_info("input", TensorInfo::TENSOR_TYPE_FP32);
 input_tensor_info.tensor_dims = { 1, 224, 224, 3 };
 input_tensor_info.data_type = InputTensorInfo::kDataTypeImage;
 input_tensor_info.data = img_src.data;
-input_tensor_info.imageInfo.width = img_src.cols;
-input_tensor_info.imageInfo.height = img_src.rows;
-input_tensor_info.imageInfo.channel = img_src.channels();
-input_tensor_info.imageInfo.cropX = 0;
-input_tensor_info.imageInfo.cropY = 0;
-input_tensor_info.imageInfo.cropWidth = img_src.cols;
-input_tensor_info.imageInfo.cropHeight = img_src.rows;
-input_tensor_info.imageInfo.isBGR = false;
-input_tensor_info.imageInfo.swapColor = false;
+input_tensor_info.image_info.width = img_src.cols;
+input_tensor_info.image_info.height = img_src.rows;
+input_tensor_info.image_info.channel = img_src.channels();
+input_tensor_info.image_info.crop_x = 0;
+input_tensor_info.image_info.crop_y = 0;
+input_tensor_info.image_info.crop_width = img_src.cols;
+input_tensor_info.image_info.crop_height = img_src.rows;
+input_tensor_info.image_info.is_bgr = false;
+input_tensor_info.image_info.swap_color = false;
 input_tensor_info.normalize.mean[0] = 0.485f;   /* https://github.com/onnx/models/tree/master/vision/classification/mobilenet#preprocessing */
 input_tensor_info.normalize.mean[1] = 0.456f;
 input_tensor_info.normalize.mean[2] = 0.406f;
@@ -228,6 +232,7 @@ inference_helper->Process(output_tensor_info_list)
 enum {
     kTensorTypeNone,
     kTensorTypeUint8,
+    kTensorTypeInt8,
     kTensorTypeFp32,
     kTensorTypeInt32,
     kTensorTypeInt64,
@@ -288,7 +293,7 @@ struct {
 void* data;     // [Out] Pointer to the output data_
 struct {
     float   scale;
-    uint8_t zeroPoint;
+    uint8_t zero_point;
 } quant;        // [Out] Parameters for dequantization (convert uint8 to float)
 ```
 

@@ -207,7 +207,7 @@ public:
             list_armnntensor_out_.push_back(std::make_pair(armnn_info.first, armnn::Tensor(armnn_info.second, list_buffer_out_.back())));
 
             tensor_info.data = list_buffer_out_.back();
-            tensor_info.quant.zeroPoint = armnn_tensor_info.GetQuantizationOffset();
+            tensor_info.quant.zero_point = armnn_tensor_info.GetQuantizationOffset();
             tensor_info.quant.scale = armnn_tensor_info.GetQuantizationScale();
         }
 

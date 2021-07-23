@@ -363,7 +363,7 @@ void InferenceHelperTensorflowLite::DisplayModelInfo(const tflite::Interpreter& 
         }
         if (tensor->type == kTfLiteUInt8) {
             PRINT("    tensor[%d]->type: quantized\n", i);
-            PRINT("    tensor[%d]->params.outputZeroPoint, scale: %d, %f\n", i, tensor->params.zero_point, tensor->params.scale);
+            PRINT("    tensor[%d]->params.zero_point, scale: %d, %f\n", i, tensor->params.zero_point, tensor->params.scale);
         } else {
             PRINT("    tensor[%d]->type: not quantized\n", i);
         }
@@ -380,7 +380,7 @@ void InferenceHelperTensorflowLite::DisplayModelInfo(const tflite::Interpreter& 
         }
         if (tensor->type == kTfLiteUInt8) {
             PRINT("    tensor[%d]->type: quantized\n", i);
-            PRINT("    tensor[%d]->params.outputZeroPoint, scale: %d, %f\n", i, tensor->params.zero_point, tensor->params.scale);
+            PRINT("    tensor[%d]->params.zero_point, scale: %d, %f\n", i, tensor->params.zero_point, tensor->params.scale);
         } else {
             PRINT("    tensor[%d]->type: not quantized\n", i);
         }
@@ -468,7 +468,7 @@ int32_t InferenceHelperTensorflowLite::GetOutputTensorInfo(OutputTensorInfo& ten
                 tensor_info.tensor_type = TensorInfo::kTensorTypeUint8;
                 tensor_info.data = interpreter_->typed_tensor<uint8_t>(i);
                 tensor_info.quant.scale = tensor->params.scale;
-                tensor_info.quant.zeroPoint = tensor->params.zero_point;
+                tensor_info.quant.zero_point = tensor->params.zero_point;
                 break;
             case kTfLiteFloat32:
                 tensor_info.tensor_type = TensorInfo::kTensorTypeFp32;

@@ -135,7 +135,7 @@ public:
 #pragma omp parallel
             for (int32_t i = 0; i < data_num; i++) {
                 const uint8_t* val_uint8 = static_cast<const uint8_t*>(data);
-                float val_float = (val_uint8[i] - quant.zeroPoint) * quant.scale;
+                float val_float = (val_uint8[i] - quant.zero_point) * quant.scale;
                 data_fp32_[i] = val_float;
             }
             return data_fp32_;
@@ -150,7 +150,7 @@ public:
     void* data;     // [Out] Pointer to the output data_
     struct {
         float   scale;
-        uint8_t zeroPoint;
+        uint8_t zero_point;
     } quant;        // [Out] Parameters for dequantization (convert uint8 to float)
 
 private:

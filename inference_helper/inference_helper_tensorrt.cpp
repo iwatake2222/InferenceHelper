@@ -430,7 +430,7 @@ int32_t InferenceHelperTensorRt::AllocateBuffers(std::vector<InputTensorInfo>& i
                     }
                     if (data_type == nvinfer1::DataType::kINT8) {
                         output_tensor_info.quant.scale = 1.0;			// todo
-                        output_tensor_info.quant.zeroPoint = 0.0;
+                        output_tensor_info.quant.zero_point = 0.0;
                     }
                     output_tensor_info.data = buffer_cpu;
                 }
