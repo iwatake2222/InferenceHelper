@@ -126,17 +126,26 @@ public:
     }
 
     float* GetDataAsFloat() {       /* Returned pointer should be with const, but returning pointer without const is convenient to create cv::Mat */
-        if (tensor_type == kTensorTypeUint8) {
+        if (tensor_type == kTensorTypeUint8 || tensor_type == kTensorTypeInt8) {
             int32_t data_num = 1;
-            data_num = tensor_dims.batch * tensor_dims.channel * tensor_dims.height * tensor_dims.width;
+            data_num = std::abs(tensor_dims.batch * tensor_dims.channel * tensor_dims.height * tensor_dims.width);
             if (data_fp32_ == nullptr) {
                 data_fp32_ = new float[data_num];
             }
+            if (tensor_type == kTensorTypeUint8) {
 #pragma omp parallel
-            for (int32_t i = 0; i < data_num; i++) {
-                const uint8_t* val_uint8 = static_cast<const uint8_t*>(data);
-                float val_float = (val_uint8[i] - quant.zero_point) * quant.scale;
-                data_fp32_[i] = val_float;
+                for (int32_t i = 0; i < data_num; i++) {
+                    const uint8_t* val_uint8 = static_cast<const uint8_t*>(data);
+                    float val_float = (val_uint8[i] - quant.zero_point) * quant.scale;
+                    data_fp32_[i] = val_float;
+                }
+            } else {
+#pragma omp parallel
+                for (int32_t i = 0; i < data_num; i++) {
+                    const int8_t* val_int8 = static_cast<const int8_t*>(data);
+                    float val_float = (val_int8[i] - quant.zero_point) * quant.scale;
+                    data_fp32_[i] = val_float;
+                }
             }
             return data_fp32_;
         } else if (tensor_type == kTensorTypeFp32) {
@@ -150,7 +159,7 @@ public:
     void* data;     // [Out] Pointer to the output data_
     struct {
         float   scale;
-        uint8_t zero_point;
+        int32_t zero_point;
     } quant;        // [Out] Parameters for dequantization (convert uint8 to float)
 
 private:

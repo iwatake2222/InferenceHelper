@@ -256,7 +256,13 @@ int32_t InferenceHelperTensorflowLite::PreProcess(const std::vector<InputTensorI
             uint8_t* src = static_cast<uint8_t*>(input_tensor_info.data);
             if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
                 uint8_t* dst = interpreter_->typed_tensor<uint8_t>(input_tensor_info.id);
-                memcpy(dst, src, sizeof(uint8_t) * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height * input_tensor_info.tensor_dims.channel);
+                memcpy(dst, src, sizeof(uint8_t) * std::abs(input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height * input_tensor_info.tensor_dims.channel));
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
+                int8_t* dst = interpreter_->typed_tensor<int8_t>(input_tensor_info.id);
+#pragma omp parallel for num_threads(num_threads_)
+                for (int32_t i = 0; i < std::abs(input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height * input_tensor_info.tensor_dims.channel); i++) {
+                    dst[i] = src[i] - 128;
+                }
             } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
                 float* dst = interpreter_->typed_tensor<float>(input_tensor_info.id);
 #pragma omp parallel for num_threads(num_threads_)
@@ -275,7 +281,7 @@ int32_t InferenceHelperTensorflowLite::PreProcess(const std::vector<InputTensorI
             }
 
         } else if ( (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) ){
-            if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
+            if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8 || input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
                 uint8_t* dst = interpreter_->typed_tensor<uint8_t>(input_tensor_info.id);
                 uint8_t* src = static_cast<uint8_t*>(input_tensor_info.data);
                 if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {
@@ -361,7 +367,7 @@ void InferenceHelperTensorflowLite::DisplayModelInfo(const tflite::Interpreter& 
         for (int32_t j = 0; j < tensor->dims->size; j++) {
             PRINT("    tensor[%d]->dims->size[%d]: %d\n", i, j, tensor->dims->data[j]);
         }
-        if (tensor->type == kTfLiteUInt8) {
+        if (tensor->type == kTfLiteUInt8 || tensor->type == kTfLiteInt8) {
             PRINT("    tensor[%d]->type: quantized\n", i);
             PRINT("    tensor[%d]->params.zero_point, scale: %d, %f\n", i, tensor->params.zero_point, tensor->params.scale);
         } else {
@@ -378,7 +384,7 @@ void InferenceHelperTensorflowLite::DisplayModelInfo(const tflite::Interpreter& 
         for (int32_t j = 0; j < tensor->dims->size; j++) {
             PRINT("    tensor[%d]->dims->size[%d]: %d\n", i, j, tensor->dims->data[j]);
         }
-        if (tensor->type == kTfLiteUInt8) {
+        if (tensor->type == kTfLiteUInt8 || tensor->type == kTfLiteInt8) {
             PRINT("    tensor[%d]->type: quantized\n", i);
             PRINT("    tensor[%d]->params.zero_point, scale: %d, %f\n", i, tensor->params.zero_point, tensor->params.scale);
         } else {
@@ -414,7 +420,10 @@ int32_t InferenceHelperTensorflowLite::GetInputTensorInfo(InputTensorInfo& tenso
                     if ((i == 3) && (tensor_info.tensor_dims.channel != tensor->dims->data[3])) is_size_ok = false;
                 }
                 if (!is_size_ok) {
-                    PRINT_E("Invalid size\n");
+                    PRINT_E("Invalid size. (%d = %d, %d = %d, %d = %d, %d = %d)\n"
+                        , tensor_info.tensor_dims.batch, tensor->dims->data[0], tensor_info.tensor_dims.height, tensor->dims->data[1]
+                        , tensor_info.tensor_dims.width, tensor->dims->data[2], tensor_info.tensor_dims.channel, tensor->dims->data[3]
+                    );
                     return kRetErr;
                 }
             } if (is_model_size_fixed && !is_size_assigned) {
@@ -438,6 +447,7 @@ int32_t InferenceHelperTensorflowLite::GetInputTensorInfo(InputTensorInfo& tenso
             }
 
             if (tensor->type == kTfLiteUInt8) tensor_info.tensor_type = TensorInfo::kTensorTypeUint8;
+            if (tensor->type == kTfLiteInt8) tensor_info.tensor_type = TensorInfo::kTensorTypeInt8;
             if (tensor->type == kTfLiteFloat32) tensor_info.tensor_type = TensorInfo::kTensorTypeFp32;
             if (tensor->type == kTfLiteInt32) tensor_info.tensor_type = TensorInfo::kTensorTypeInt32;
             if (tensor->type == kTfLiteInt64) tensor_info.tensor_type = TensorInfo::kTensorTypeInt64;
@@ -467,6 +477,12 @@ int32_t InferenceHelperTensorflowLite::GetOutputTensorInfo(OutputTensorInfo& ten
             case kTfLiteUInt8:
                 tensor_info.tensor_type = TensorInfo::kTensorTypeUint8;
                 tensor_info.data = interpreter_->typed_tensor<uint8_t>(i);
+                tensor_info.quant.scale = tensor->params.scale;
+                tensor_info.quant.zero_point = tensor->params.zero_point;
+                break;
+            case kTfLiteInt8:
+                tensor_info.tensor_type = TensorInfo::kTensorTypeInt8;
+                tensor_info.data = interpreter_->typed_tensor<int8_t>(i);
                 tensor_info.quant.scale = tensor->params.scale;
                 tensor_info.quant.zero_point = tensor->params.zero_point;
                 break;
