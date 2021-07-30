@@ -107,23 +107,23 @@ private:
     int32_t CheckTensorSize(const armnn::TensorInfo& armnn_tensor_info, TensorInfo& tensor_info)
     {
         bool is_size_assigned = true;
-        if ( (tensor_info.tensor_dims.batch == -1) || (tensor_info.tensor_dims.height == -1) || (tensor_info.tensor_dims.width == -1) || (tensor_info.tensor_dims.channel == -1)) is_size_assigned = false;
+        if (tensor_info.tensor_dims.empty()) is_size_assigned = false;
+
+        if (is_size_assigned) {
+            if (tensor_info.tensor_dims.size() != armnn_tensor_info.GetNumDimensions()) {
+                PRINT_E("Input Tensor size doesn't match\n");
+                return InferenceHelper::kRetErr;
+            }
+        }
+
         for (uint32_t i = 0; i < armnn_tensor_info.GetNumDimensions(); i++) {
             if (is_size_assigned) {
-                if (((i == data_order_indices_[0]) && (tensor_info.tensor_dims.batch == static_cast<int32_t>(armnn_tensor_info.GetShape()[i])))
-                    || ((i == data_order_indices_[1]) && (tensor_info.tensor_dims.height == static_cast<int32_t>(armnn_tensor_info.GetShape()[i])))
-                    || ((i == data_order_indices_[2]) && (tensor_info.tensor_dims.width == static_cast<int32_t>(armnn_tensor_info.GetShape()[i])))
-                    || ((i == data_order_indices_[3]) && (tensor_info.tensor_dims.channel == static_cast<int32_t>(armnn_tensor_info.GetShape()[i])))) {
-                    /* OK */
-                } else {
+                if (tensor_info.tensor_dims[i] != static_cast<int32_t>(armnn_tensor_info.GetShape()[i])) {
                     PRINT_E("Input Tensor size doesn't match\n");
                     return InferenceHelper::kRetErr;
                 }
             } else {
-                if (i == data_order_indices_[0]) tensor_info.tensor_dims.batch = armnn_tensor_info.GetShape()[i];
-                if (i == data_order_indices_[1]) tensor_info.tensor_dims.channel = armnn_tensor_info.GetShape()[i];
-                if (i == data_order_indices_[2]) tensor_info.tensor_dims.height = armnn_tensor_info.GetShape()[i];
-                if (i == data_order_indices_[3]) tensor_info.tensor_dims.width = armnn_tensor_info.GetShape()[i];
+                tensor_info.tensor_dims.push_back(static_cast<int32_t>(armnn_tensor_info.GetShape()[i]));
             }
         }
 
@@ -371,7 +371,6 @@ private:
 
 InferenceHelperArmnn::InferenceHelperArmnn()
 {
-    is_nhwc_ = true;
     num_threads_ = 1;
 }
 
@@ -393,10 +392,8 @@ int32_t InferenceHelperArmnn::Initialize(const std::string& model_filename, std:
 
     if (model_filename.find(".tflite") != std::string::npos) {
         armnn_wrapper_ = std::make_unique<ArmnnWrapperTfLite>();
-        is_nhwc_ = true;
     } else if (model_filename.find(".onnx") != std::string::npos) {
         armnn_wrapper_ = std::make_unique<ArmnnWrapperOnnx>();
-        is_nhwc_ = false;   // NCHW
     } else {
         PRINT_E("Invalid model filename (%s)\n", model_filename.c_str());
         return kRetErr;
@@ -436,11 +433,11 @@ int32_t InferenceHelperArmnn::PreProcess(const std::vector<InputTensorInfo>& inp
                 PRINT_E("Crop is not supported\n");
                 return  kRetErr;
             }
-            if ((input_tensor_info.image_info.crop_width != input_tensor_info.tensor_dims.width) || (input_tensor_info.image_info.crop_height != input_tensor_info.tensor_dims.height)) {
+            if ((input_tensor_info.image_info.crop_width != input_tensor_info.GetWidth()) || (input_tensor_info.image_info.crop_height != input_tensor_info.GetHeight())) {
                 PRINT_E("Resize is not supported\n");
                 return  kRetErr;
             }
-            if (input_tensor_info.image_info.channel != input_tensor_info.tensor_dims.channel) {
+            if (input_tensor_info.image_info.channel != input_tensor_info.GetChannel()) {
                 PRINT_E("Color conversion is not supported\n");
                 return  kRetErr;
             }
@@ -449,20 +446,20 @@ int32_t InferenceHelperArmnn::PreProcess(const std::vector<InputTensorInfo>& inp
             if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
                 float *dst = (float*)(armnn_wrapper_->list_buffer_in_[buffer_index]);
                 uint8_t *src = (uint8_t*)(input_tensor_info.data);
-                if (is_nhwc_) {
+                if (input_tensor_info.is_nchw) {
 #pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
-                        for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
-                            dst[i * input_tensor_info.tensor_dims.channel + c] = 
-                                (src[i * input_tensor_info.tensor_dims.channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
+                    for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
+                        for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
+                            dst[c * input_tensor_info.GetWidth() * input_tensor_info.GetHeight() + i] = 
+                                (src[i * input_tensor_info.GetChannel() + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
                         }
                     }
                 } else {
 #pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
-                        for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
-                            dst[c * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height + i] = 
-                                (src[i * input_tensor_info.tensor_dims.channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
+                    for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
+                        for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
+                            dst[i * input_tensor_info.GetChannel() + c] = 
+                                (src[i * input_tensor_info.GetChannel() + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
                         }
                     }
                 }
@@ -470,18 +467,18 @@ int32_t InferenceHelperArmnn::PreProcess(const std::vector<InputTensorInfo>& inp
                 uint8_t *dst = (uint8_t*)(armnn_wrapper_->list_buffer_in_[buffer_index]);
                 uint8_t *src = (uint8_t*)(input_tensor_info.data);
 
-                if (is_nhwc_) {
+                if (input_tensor_info.is_nchw) {
 #pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
-                        for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
-                            dst[i * input_tensor_info.tensor_dims.channel + c] = src[i * input_tensor_info.tensor_dims.channel + c];
+                    for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
+                        for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
+                            dst[c * input_tensor_info.GetWidth() * input_tensor_info.GetHeight() + i] = src[i * input_tensor_info.GetChannel() + c];
                         }
                     }
                 } else {
 #pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
-                        for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
-                            dst[c * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height + i] = src[i * input_tensor_info.tensor_dims.channel + c];
+                    for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
+                        for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
+                            dst[i * input_tensor_info.GetChannel() + c] = src[i * input_tensor_info.GetChannel() + c];
                         }
                     }
                 }
@@ -493,27 +490,27 @@ int32_t InferenceHelperArmnn::PreProcess(const std::vector<InputTensorInfo>& inp
         } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {
             uint8_t *dst = (uint8_t*)(armnn_wrapper_->list_buffer_in_[buffer_index]);
             uint8_t *src = (uint8_t*)(input_tensor_info.data);
-            if (is_nhwc_) {
-                memcpy(dst, src, input_tensor_info.tensor_dims.batch * input_tensor_info.tensor_dims.channel * input_tensor_info.tensor_dims.height * input_tensor_info.tensor_dims.width);
-            } else {
+            if (input_tensor_info.is_nchw) {
 #pragma omp parallel for num_threads(num_threads_)
-                for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
-                    for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
-                        dst[c * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height + i] = src[i * input_tensor_info.tensor_dims.channel + c];
+                for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
+                    for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
+                        dst[c * input_tensor_info.GetWidth() * input_tensor_info.GetHeight() + i] = src[i * input_tensor_info.GetChannel() + c];
                     }
                 }
+            } else {
+                memcpy(dst, src, input_tensor_info.GetBatch() * input_tensor_info.GetChannel() * input_tensor_info.GetHeight() * input_tensor_info.GetWidth());
             }
         } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) {
             uint8_t *dst = (uint8_t*)(armnn_wrapper_->list_buffer_in_[buffer_index]);
             uint8_t *src = (uint8_t*)(input_tensor_info.data);
-            if (is_nhwc_) {
-                for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
-                    for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
-                        dst[i * input_tensor_info.tensor_dims.channel + c] = src[c * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height + i];
+            if (input_tensor_info.is_nchw) {
+                memcpy(dst, src, input_tensor_info.GetBatch() * input_tensor_info.GetChannel() * input_tensor_info.GetHeight() * input_tensor_info.GetWidth());
+            } else {
+                for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
+                    for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
+                        dst[i * input_tensor_info.GetChannel() + c] = src[c * input_tensor_info.GetWidth() * input_tensor_info.GetHeight() + i];
                     }
                 }
-            } else {
-                memcpy(dst, src, input_tensor_info.tensor_dims.batch * input_tensor_info.tensor_dims.channel * input_tensor_info.tensor_dims.height * input_tensor_info.tensor_dims.width);
             }
         } else {
             PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);

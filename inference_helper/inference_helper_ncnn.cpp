@@ -86,6 +86,24 @@ int32_t InferenceHelperNcnn::Initialize(const std::string& model_filename, std::
         ConvertNormalizeParameters(input_tensor_info);
     }
 
+    /* Check if tensor info is set */
+    for (const auto& input_tensor_info : input_tensor_info_list) {
+        for (const auto& dim : input_tensor_info.tensor_dims) {
+            if (dim <= 0) {
+                PRINT_E("Invalid tensor size\n");
+                return kRetErr;
+            }
+        }
+    }
+    //for (const auto& output_tensor_info : output_tensor_info_list) {
+    //    for (const auto& dim : output_tensor_info.tensor_dims) {
+    //        if (dim <= 0) {
+    //            PRINT_E("Invalid tensor size\n");
+    //            return kRetErr;
+    //        }
+    //    }
+    //}
+
     return kRetOk;
 };
 
@@ -111,36 +129,36 @@ int32_t InferenceHelperNcnn::PreProcess(const std::vector<InputTensorInfo>& inpu
             }
             /* Convert color type */
             int32_t pixel_type = 0;
-            if ((input_tensor_info.image_info.channel == 3) && (input_tensor_info.tensor_dims.channel == 3)) {
+            if ((input_tensor_info.image_info.channel == 3) && (input_tensor_info.GetChannel() == 3)) {
                 pixel_type = (input_tensor_info.image_info.is_bgr) ? ncnn::Mat::PIXEL_BGR : ncnn::Mat::PIXEL_RGB;
                 if (input_tensor_info.image_info.swap_color) {
                     pixel_type = (input_tensor_info.image_info.is_bgr) ? ncnn::Mat::PIXEL_BGR2RGB : ncnn::Mat::PIXEL_RGB2BGR;
                 }
-            } else if ((input_tensor_info.image_info.channel == 1) && (input_tensor_info.tensor_dims.channel == 1)) {
+            } else if ((input_tensor_info.image_info.channel == 1) && (input_tensor_info.GetChannel() == 1)) {
                 pixel_type = ncnn::Mat::PIXEL_GRAY;
-            } else if ((input_tensor_info.image_info.channel == 3) && (input_tensor_info.tensor_dims.channel == 1)) {
+            } else if ((input_tensor_info.image_info.channel == 3) && (input_tensor_info.GetChannel() == 1)) {
                 pixel_type = (input_tensor_info.image_info.is_bgr) ? ncnn::Mat::PIXEL_BGR2GRAY : ncnn::Mat::PIXEL_RGB2GRAY;
-            } else if ((input_tensor_info.image_info.channel == 1) && (input_tensor_info.tensor_dims.channel == 3)) {
+            } else if ((input_tensor_info.image_info.channel == 1) && (input_tensor_info.GetChannel() == 3)) {
                 pixel_type = ncnn::Mat::PIXEL_GRAY2RGB;
             } else {
-                PRINT_E("Unsupported color conversion (%d, %d)\n", input_tensor_info.image_info.channel, input_tensor_info.tensor_dims.channel);
+                PRINT_E("Unsupported color conversion (%d, %d)\n", input_tensor_info.image_info.channel, input_tensor_info.GetChannel());
                 return kRetErr;
             }
             
-            if (input_tensor_info.image_info.crop_width == input_tensor_info.tensor_dims.width && input_tensor_info.image_info.crop_height == input_tensor_info.tensor_dims.height) {
+            if (input_tensor_info.image_info.crop_width == input_tensor_info.GetWidth() && input_tensor_info.image_info.crop_height == input_tensor_info.GetHeight()) {
                 /* Convert to blob */
                 ncnn_mat = ncnn::Mat::from_pixels((uint8_t*)input_tensor_info.data, pixel_type, input_tensor_info.image_info.width, input_tensor_info.image_info.height);
             } else {
                 /* Convert to blob with resize */
-                ncnn_mat = ncnn::Mat::from_pixels_resize((uint8_t*)input_tensor_info.data, pixel_type, input_tensor_info.image_info.width, input_tensor_info.image_info.height, input_tensor_info.tensor_dims.width, input_tensor_info.tensor_dims.height);
+                ncnn_mat = ncnn::Mat::from_pixels_resize((uint8_t*)input_tensor_info.data, pixel_type, input_tensor_info.image_info.width, input_tensor_info.image_info.height, input_tensor_info.GetWidth(), input_tensor_info.GetHeight());
             }
             /* Normalize image */
             ncnn_mat.substract_mean_normalize(input_tensor_info.normalize.mean, input_tensor_info.normalize.norm);
         } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {
             PRINT_E("[ToDo] Unsupported data type (%d)\n", input_tensor_info.data_type);
-            ncnn_mat = ncnn::Mat::from_pixels((uint8_t*)input_tensor_info.data, input_tensor_info.tensor_dims.channel == 3 ? ncnn::Mat::PIXEL_RGB : ncnn::Mat::PIXEL_GRAY, input_tensor_info.tensor_dims.width, input_tensor_info.tensor_dims.height);
+            ncnn_mat = ncnn::Mat::from_pixels((uint8_t*)input_tensor_info.data, input_tensor_info.GetChannel() == 3 ? ncnn::Mat::PIXEL_RGB : ncnn::Mat::PIXEL_GRAY, input_tensor_info.GetWidth(), input_tensor_info.GetHeight());
         } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) {
-            ncnn_mat = ncnn::Mat(input_tensor_info.tensor_dims.width, input_tensor_info.tensor_dims.height, input_tensor_info.tensor_dims.channel, input_tensor_info.data);
+            ncnn_mat = ncnn::Mat(input_tensor_info.GetWidth(), input_tensor_info.GetHeight(), input_tensor_info.GetChannel(), input_tensor_info.data);
         } else {
             PRINT_E("Unsupported data type (%d)\n", input_tensor_info.data_type);
             return kRetErr;
@@ -171,10 +189,11 @@ int32_t InferenceHelperNcnn::Process(std::vector<OutputTensorInfo>& output_tenso
         }
         out_mat_list_.push_back(ncnn_out);	// store ncnn mat in member variable so that data keep exist
         output_tensor_info.data = ncnn_out.data;
-        output_tensor_info.tensor_dims.batch = 1;
-        output_tensor_info.tensor_dims.channel = ncnn_out.c;
-        output_tensor_info.tensor_dims.height = ncnn_out.h;
-        output_tensor_info.tensor_dims.width = ncnn_out.w;
+        output_tensor_info.tensor_dims.clear();
+        output_tensor_info.tensor_dims.push_back(1);
+        output_tensor_info.tensor_dims.push_back(ncnn_out.c);
+        output_tensor_info.tensor_dims.push_back(ncnn_out.h);
+        output_tensor_info.tensor_dims.push_back(ncnn_out.w);
     }
 
     return kRetOk;

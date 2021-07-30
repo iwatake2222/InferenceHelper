@@ -175,7 +175,7 @@ inference_helper->SetCustomOps(custom_ops);
 
 ```c++
 std::vector<InputTensorInfo> input_tensor_list;
-InputTensorInfo input_tensor_info("input", TensorInfo::TENSOR_TYPE_FP32);
+InputTensorInfo input_tensor_info("input", TensorInfo::TENSOR_TYPE_FP32, false);    /* name, data_type, NCHW or NHWC */
 input_tensor_info.tensor_dims = { 1, 224, 224, 3 };
 input_tensor_info.data_type = InputTensorInfo::kDataTypeImage;
 input_tensor_info.data = img_src.data;
@@ -244,13 +244,10 @@ enum {
 std::string name;           // [In] Set the name_ of tensor
 int32_t     id;             // [Out] Do not modify (Used in InferenceHelper)
 int32_t     tensor_type;    // [In] The type of tensor (e.g. kTensorTypeFp32)
-struct {
-    int32_t batch;  // 0
-    int32_t width;  // 1
-    int32_t height; // 2
-    int32_t channel; // 3
-} tensor_dims;              // InputTensorInfo: [In] The dimentions of tensor. (If -1 is set at initialize, the size is updated from model info.)
-                            // OutputTensorInfo: [Out] The dimentions of tensor is set from model information
+std::vector<int32_t> tensor_dims;    // InputTensorInfo:   [In] The dimentions of tensor. (If empty at initialize, the size is updated from model info.)
+                                     // OutputTensorInfo: [Out] The dimentions of tensor is set from model information
+bool        is_nchw;        // [IN] NCHW or NHWC
+
 ```
 
 ## InputTensorInfo
