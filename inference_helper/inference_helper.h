@@ -178,14 +178,14 @@ public:
             }
             if (tensor_type == kTensorTypeUint8) {
 #pragma omp parallel
-                for (int32_t i = 0; i < output_tensor_info; i++) {
+                for (int32_t i = 0; i < GetElementNum(); i++) {
                     const uint8_t* val_uint8 = static_cast<const uint8_t*>(data);
                     float val_float = (val_uint8[i] - quant.zero_point) * quant.scale;
                     data_fp32_[i] = val_float;
                 }
             } else {
 #pragma omp parallel
-                for (int32_t i = 0; i < output_tensor_info; i++) {
+                for (int32_t i = 0; i < GetElementNum(); i++) {
                     const int8_t* val_int8 = static_cast<const int8_t*>(data);
                     float val_float = (val_int8[i] - quant.zero_point) * quant.scale;
                     data_fp32_[i] = val_float;
