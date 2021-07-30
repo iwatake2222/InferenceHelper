@@ -154,26 +154,26 @@ void InferenceHelper::PreProcessByOpenCV(const InputTensorInfo& input_tensor_inf
     }
 
     /* Resize image */
-    if (input_tensor_info.image_info.crop_width == input_tensor_info.tensor_dims.width && input_tensor_info.image_info.crop_height == input_tensor_info.tensor_dims.height) {
+    if (input_tensor_info.image_info.crop_width == input_tensor_info.GetWidth() && input_tensor_info.image_info.crop_height == input_tensor_info.GetHeight()) {
         /* do nothing */
     } else {
-        cv::resize(img_src, img_src, cv::Size(input_tensor_info.tensor_dims.width, input_tensor_info.tensor_dims.height));
+        cv::resize(img_src, img_src, cv::Size(input_tensor_info.GetWidth(), input_tensor_info.GetHeight()));
     }
 
     /* Convert color type */
-    if (input_tensor_info.image_info.channel == input_tensor_info.tensor_dims.channel) {
+    if (input_tensor_info.image_info.channel == input_tensor_info.GetChannel()) {
         if (input_tensor_info.image_info.channel == 3 && input_tensor_info.image_info.swap_color) {
             cv::cvtColor(img_src, img_src, cv::COLOR_BGR2RGB);
         }
-    } else if (input_tensor_info.image_info.channel == 3 && input_tensor_info.tensor_dims.channel == 1) {
+    } else if (input_tensor_info.image_info.channel == 3 && input_tensor_info.GetChannel() == 1) {
         cv::cvtColor(img_src, img_src, (input_tensor_info.image_info.is_bgr) ? cv::COLOR_BGR2GRAY : cv::COLOR_RGB2GRAY);
-    } else if (input_tensor_info.image_info.channel == 1 && input_tensor_info.tensor_dims.channel == 3) {
+    } else if (input_tensor_info.image_info.channel == 1 && input_tensor_info.GetChannel() == 3) {
         cv::cvtColor(img_src, img_src, cv::COLOR_GRAY2BGR);
     }
 
     if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
         /* Normalize image */
-        if (input_tensor_info.tensor_dims.channel == 3) {
+        if (input_tensor_info.GetChannel() == 3) {
 #if 1
             img_src.convertTo(img_src, CV_32FC3);
             cv::subtract(img_src, cv::Scalar(cv::Vec<float, 3>(input_tensor_info.normalize.mean)), img_src);
@@ -216,3 +216,4 @@ void InferenceHelper::PreProcessByOpenCV(const InputTensorInfo& input_tensor_inf
     exit(-1);
 }
 #endif
+

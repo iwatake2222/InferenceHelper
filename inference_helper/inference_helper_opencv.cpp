@@ -110,6 +110,24 @@ int32_t InferenceHelperOpenCV::Initialize(const std::string& model_filename, std
         ConvertNormalizeParameters(input_tensor_info);
     }
 
+    /* Check if tensor info is set */
+    for (const auto& input_tensor_info : input_tensor_info_list) {
+        for (const auto& dim : input_tensor_info.tensor_dims) {
+            if (dim <= 0) {
+                PRINT_E("Invalid tensor size\n");
+                return kRetErr;
+            }
+        }
+    }
+    for (const auto& output_tensor_info : output_tensor_info_list) {
+        for (const auto& dim : output_tensor_info.tensor_dims) {
+            if (dim <= 0) {
+                PRINT_E("Invalid tensor size\n");
+                return kRetErr;
+            }
+        }
+    }
+
     return kRetOk;
 };
 
@@ -136,29 +154,29 @@ int32_t InferenceHelperOpenCV::PreProcess(const std::vector<InputTensorInfo>& in
             }
 
             /* Resize image */
-            if (input_tensor_info.image_info.crop_width == input_tensor_info.tensor_dims.width && input_tensor_info.image_info.crop_height == input_tensor_info.tensor_dims.height) {
+            if (input_tensor_info.image_info.crop_width == input_tensor_info.GetWidth() && input_tensor_info.image_info.crop_height == input_tensor_info.GetHeight()) {
                 /* do nothing */
             } else {
-                cv::resize(img_src, img_src, cv::Size(input_tensor_info.tensor_dims.width, input_tensor_info.tensor_dims.height));
+                cv::resize(img_src, img_src, cv::Size(input_tensor_info.GetWidth(), input_tensor_info.GetHeight()));
             }
 
             /* Convert color type */
-            if (input_tensor_info.image_info.channel == input_tensor_info.tensor_dims.channel) {
+            if (input_tensor_info.image_info.channel == input_tensor_info.GetChannel()) {
                 if (input_tensor_info.image_info.channel == 3 && input_tensor_info.image_info.swap_color) {
                     cv::cvtColor(img_src, img_src, cv::COLOR_BGR2RGB);
                 }
-            } else if (input_tensor_info.image_info.channel == 3 && input_tensor_info.tensor_dims.channel == 1) {
+            } else if (input_tensor_info.image_info.channel == 3 && input_tensor_info.GetChannel() == 1) {
                 cv::cvtColor(img_src, img_src, (input_tensor_info.image_info.is_bgr) ? cv::COLOR_BGR2GRAY : cv::COLOR_RGB2GRAY);
-            } else if (input_tensor_info.image_info.channel == 1 && input_tensor_info.tensor_dims.channel == 3) {
+            } else if (input_tensor_info.image_info.channel == 1 && input_tensor_info.GetChannel() == 3) {
                 cv::cvtColor(img_src, img_src, cv::COLOR_GRAY2BGR);
             } else {
-                PRINT_E("Unsupported color conversion (%d, %d)\n", input_tensor_info.image_info.channel, input_tensor_info.tensor_dims.channel);
+                PRINT_E("Unsupported color conversion (%d, %d)\n", input_tensor_info.image_info.channel, input_tensor_info.GetChannel());
                 return kRetErr;
             }
 
             if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
                 /* Normalize image */
-                if (input_tensor_info.tensor_dims.channel == 3) {
+                if (input_tensor_info.GetChannel() == 3) {
 #if 1
                     img_src.convertTo(img_src, CV_32FC3);
                     cv::subtract(img_src, cv::Scalar(cv::Vec<float, 3>(input_tensor_info.normalize.mean)), img_src);
@@ -169,7 +187,7 @@ int32_t InferenceHelperOpenCV::PreProcess(const std::vector<InputTensorInfo>& in
                     cv::subtract(img_src, cv::Scalar(cv::Vec<float, 3>(input_tensor_info.normalize.mean)), img_src);
                     cv::divide(img_src, cv::Scalar(cv::Vec<float, 3>(input_tensor_info.normalize.norm)), img_src);
 #endif
-                } else if (input_tensor_info.tensor_dims.channel == 1) {
+                } else if (input_tensor_info.GetChannel() == 1) {
 #if 1
                     img_src.convertTo(img_src, CV_32FC1);
                     cv::subtract(img_src, cv::Scalar(cv::Vec<float, 1>(input_tensor_info.normalize.mean)), img_src);
@@ -180,7 +198,7 @@ int32_t InferenceHelperOpenCV::PreProcess(const std::vector<InputTensorInfo>& in
                     cv::divide(img_src, cv::Scalar(cv::Vec<float, 1>(input_tensor_info.normalize.norm)), img_src);
 #endif
                 } else {
-                    PRINT_E("Unsupported channel num (%d)\n", input_tensor_info.tensor_dims.channel);
+                    PRINT_E("Unsupported channel num (%d)\n", input_tensor_info.GetChannel());
                     return kRetErr;
                 }
                 /* Convert to 4-dimensional Mat in NCHW */
@@ -196,9 +214,9 @@ int32_t InferenceHelperOpenCV::PreProcess(const std::vector<InputTensorInfo>& in
         } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {
             cv::Mat img_src;
             if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
-                img_src = cv::Mat(cv::Size(input_tensor_info.tensor_dims.width, input_tensor_info.tensor_dims.height), (input_tensor_info.tensor_dims.channel == 3) ? CV_32FC3 : CV_32FC1, input_tensor_info.data);
+                img_src = cv::Mat(cv::Size(input_tensor_info.GetWidth(), input_tensor_info.GetHeight()), (input_tensor_info.GetChannel() == 3) ? CV_32FC3 : CV_32FC1, input_tensor_info.data);
             } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
-                img_src = cv::Mat(cv::Size(input_tensor_info.tensor_dims.width, input_tensor_info.tensor_dims.height), (input_tensor_info.tensor_dims.channel == 3) ? CV_8UC3 : CV_8UC1, input_tensor_info.data);
+                img_src = cv::Mat(cv::Size(input_tensor_info.GetWidth(), input_tensor_info.GetHeight()), (input_tensor_info.GetChannel() == 3) ? CV_8UC3 : CV_8UC1, input_tensor_info.data);
             } else {
                 PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
                 return kRetErr;
@@ -239,10 +257,11 @@ int32_t InferenceHelperOpenCV::Process(std::vector<OutputTensorInfo>& output_ten
     }
     for (int32_t i = 0; i < static_cast<int32_t>(out_mat_list_.size()); i++) {
         output_tensor_info_list[i].data = out_mat_list_[i].data;
-        output_tensor_info_list[i].tensor_dims.batch = 1;
-        output_tensor_info_list[i].tensor_dims.width = out_mat_list_[i].cols;
-        output_tensor_info_list[i].tensor_dims.height = out_mat_list_[i].rows;
-        output_tensor_info_list[i].tensor_dims.channel = out_mat_list_[i].channels();
+        output_tensor_info_list[i].tensor_dims.clear();
+        output_tensor_info_list[i].tensor_dims.push_back(1);
+        output_tensor_info_list[i].tensor_dims.push_back(out_mat_list_[i].channels());
+        output_tensor_info_list[i].tensor_dims.push_back(out_mat_list_[i].rows);
+        output_tensor_info_list[i].tensor_dims.push_back(out_mat_list_[i].cols);
     }
 
     return kRetOk;
