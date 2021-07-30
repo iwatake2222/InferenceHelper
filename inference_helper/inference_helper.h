@@ -35,25 +35,69 @@ public:
     };
 
 public:
-    TensorInfo() 
+    TensorInfo()
         : name("")
         , id(-1)
         , tensor_type(kTensorTypeNone)
-        , tensor_dims({ -1, -1, -1, -1 })
+        , is_nchw(true)
     {}
     ~TensorInfo() {}
 
+    int32_t GetElementNum() const
+    {
+        int32_t element_num = 1;
+        for (const auto& dim : tensor_dims) {
+            element_num *= dim;
+        }
+        return element_num;
+    }
+
+    int32_t GetBatch() const
+    {
+        if (tensor_dims.size() <= 0) return -1;
+        return tensor_dims[0];
+    }
+    
+    int32_t GetChannel() const
+    {
+        if (is_nchw) {
+            if (tensor_dims.size() <= 1) return -1;
+            return tensor_dims[1];
+        } else {
+            if (tensor_dims.size() <= 3) return -1;
+            return tensor_dims[3];
+        }
+    }
+
+    int32_t GetHeight() const
+    {
+        if (is_nchw) {
+            if (tensor_dims.size() <= 2) return -1;
+            return tensor_dims[2];
+        } else {
+            if (tensor_dims.size() <= 1) return -1;
+            return tensor_dims[1];
+        }
+    }
+
+    int32_t GetWidth() const
+    {
+        if (is_nchw) {
+            if (tensor_dims.size() <= 3) return -1;
+            return tensor_dims[3];
+        } else {
+            if (tensor_dims.size() <= 2) return -1;
+            return tensor_dims[2];
+        }
+    }
+
 public:
-    std::string name;           // [In] Set the name_ of tensor
-    int32_t     id;             // [Out] Do not modify (Used in InferenceHelper)
-    int32_t     tensor_type;    // [In] The type of tensor (e.g. kTensorTypeFp32)
-    struct {
-        int32_t batch;  // 0
-        int32_t width;  // 1
-        int32_t height; // 2
-        int32_t channel; // 3
-    } tensor_dims;              // InputTensorInfo: [In] The dimentions of tensor. (If -1 is set at initialize, the size is updated from model info.)
-                                // OutputTensorInfo: [Out] The dimentions of tensor is set from model information
+    std::string          name;           // [In] Set the name_ of tensor
+    int32_t              id;             // [Out] Do not modify (Used in InferenceHelper)
+    int32_t              tensor_type;    // [In] The type of tensor (e.g. kTensorTypeFp32)
+    std::vector<int32_t> tensor_dims;    // InputTensorInfo:   [In] The dimentions of tensor. (If -1 is set at initialize, the size is updated from model info.)
+                                         // OutputTensorInfo: [Out] The dimentions of tensor is set from model information
+    bool                 is_nchw;         // NCHW or NHWC
 };
 
 class InputTensorInfo : public TensorInfo {
@@ -72,11 +116,12 @@ public:
         , normalize({ 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f })
     {}
 
-    InputTensorInfo(std::string name_, int32_t tensor_type_)
+    InputTensorInfo(std::string name_, int32_t tensor_type_, bool is_nchw_ = true)
         : InputTensorInfo()
     {
         name = name_;
         tensor_type = tensor_type_;
+        is_nchw = is_nchw_;
     }
 
     ~InputTensorInfo() {}
@@ -112,11 +157,12 @@ public:
         , data_fp32_(nullptr)
     {}
 
-    OutputTensorInfo(std::string name_, int32_t tensor_type_)
+    OutputTensorInfo(std::string name_, int32_t tensor_type_, bool is_nchw_ = true)
         : OutputTensorInfo()
     {
         name = name_;
         tensor_type = tensor_type_;
+        is_nchw = is_nchw;
     }
     
     ~OutputTensorInfo() {
@@ -127,21 +173,19 @@ public:
 
     float* GetDataAsFloat() {       /* Returned pointer should be with const, but returning pointer without const is convenient to create cv::Mat */
         if (tensor_type == kTensorTypeUint8 || tensor_type == kTensorTypeInt8) {
-            int32_t data_num = 1;
-            data_num = std::abs(tensor_dims.batch * tensor_dims.channel * tensor_dims.height * tensor_dims.width);
             if (data_fp32_ == nullptr) {
-                data_fp32_ = new float[data_num];
+                data_fp32_ = new float[GetElementNum()];
             }
             if (tensor_type == kTensorTypeUint8) {
 #pragma omp parallel
-                for (int32_t i = 0; i < data_num; i++) {
+                for (int32_t i = 0; i < output_tensor_info; i++) {
                     const uint8_t* val_uint8 = static_cast<const uint8_t*>(data);
                     float val_float = (val_uint8[i] - quant.zero_point) * quant.scale;
                     data_fp32_[i] = val_float;
                 }
             } else {
 #pragma omp parallel
-                for (int32_t i = 0; i < data_num; i++) {
+                for (int32_t i = 0; i < output_tensor_info; i++) {
                     const int8_t* val_int8 = static_cast<const int8_t*>(data);
                     float val_float = (val_int8[i] - quant.zero_point) * quant.scale;
                     data_fp32_[i] = val_float;
