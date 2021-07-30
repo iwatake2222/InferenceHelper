@@ -247,11 +247,11 @@ int32_t InferenceHelperTensorRt::PreProcess(const std::vector<InputTensorInfo>& 
                 PRINT_E("Crop is not supported\n");
                 return  kRetErr;
             }
-            if ((input_tensor_info.image_info.crop_width != input_tensor_info.tensor_dims.width) || (input_tensor_info.image_info.crop_height != input_tensor_info.tensor_dims.height)) {
+            if ((input_tensor_info.image_info.crop_width != input_tensor_info.GetWidth()) || (input_tensor_info.image_info.crop_height != input_tensor_info.GetHeight())) {
                 PRINT_E("Resize is not supported\n");
                 return  kRetErr;
             }
-            if (input_tensor_info.image_info.channel != input_tensor_info.tensor_dims.channel) {
+            if (input_tensor_info.image_info.channel != input_tensor_info.GetChannel()) {
                 PRINT_E("Color conversion is not supported\n");
                 return  kRetErr;
             }
@@ -266,14 +266,14 @@ int32_t InferenceHelperTensorRt::PreProcess(const std::vector<InputTensorInfo>& 
                     return  kRetErr;
                 }
 #pragma omp parallel for num_threads(num_threads_)
-                for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
-                    for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
+                for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
+                    for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
 #if 1
-                        dst[c * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height + i] = 
-                            (src[i * input_tensor_info.tensor_dims.channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
+                        dst[c * input_tensor_info.GetWidth() * input_tensor_info.GetHeight() + i] = 
+                            (src[i * input_tensor_info.GetChannel() + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
 #else
-                        dst[c * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height + i] = 
-                            (src[i * input_tensor_info.tensor_dims.channel + c] / 255.0f - input_tensor_info.normalize.mean[c]) / input_tensor_info.normalize.norm[c];
+                        dst[c * input_tensor_info.GetWidth() * input_tensor_info.GetHeight() + i] = 
+                            (src[i * input_tensor_info.GetChannel() + c] / 255.0f - input_tensor_info.normalize.mean[c]) / input_tensor_info.normalize.norm[c];
 #endif
                     }
                 }
@@ -286,9 +286,9 @@ int32_t InferenceHelperTensorRt::PreProcess(const std::vector<InputTensorInfo>& 
                     return  kRetErr;
                 }
 #pragma omp parallel for num_threads(num_threads_)
-                for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
-                    for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
-                        dst[c * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height + i] = src[i * input_tensor_info.tensor_dims.channel + c];
+                for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
+                    for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
+                        dst[c * input_tensor_info.GetWidth() * input_tensor_info.GetHeight() + i] = src[i * input_tensor_info.GetChannel() + c];
                     }
                 }
             } else {
@@ -301,9 +301,9 @@ int32_t InferenceHelperTensorRt::PreProcess(const std::vector<InputTensorInfo>& 
                 uint8_t *dst = (uint8_t*)(buffer_list_cpu_[input_tensor_info.id].first);
                 uint8_t *src = (uint8_t*)(input_tensor_info.data);
 #pragma omp parallel for num_threads(num_threads_)
-                for (int32_t c = 0; c < input_tensor_info.tensor_dims.channel; c++) {
-                    for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height; i++) {
-                        dst[c * input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height + i] = src[i * input_tensor_info.tensor_dims.channel + c];
+                for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
+                    for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
+                        dst[c * input_tensor_info.GetWidth() * input_tensor_info.GetHeight() + i] = src[i * input_tensor_info.GetChannel() + c];
                     }
                 }
         } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) {
@@ -388,15 +388,22 @@ int32_t InferenceHelperTensorRt::AllocateBuffers(std::vector<InputTensorInfo>& i
                 int32_t id = engine_->getBindingIndex(input_tensor_info.name.c_str());
                 if (id == i) {
                     input_tensor_info.id = id;
-                    for (int32_t i = 0; i < dims.nbDims; i++) {
-                        if (((i == 0) && (input_tensor_info.tensor_dims.batch == dims.d[i]))
-                            || ((i == 1) && (input_tensor_info.tensor_dims.channel == dims.d[i]))
-                            || ((i == 2) && (input_tensor_info.tensor_dims.height == dims.d[i]))
-                            || ((i == 3) && (input_tensor_info.tensor_dims.width == dims.d[i]))) {
-                            /* OK */
-                        } else {
-                            PRINT_E("Input Tensor size doesn't match\n");
+                    if (input_tensor_info.tensor_dims.empty()) {
+                        /* tensor size is not assigned. so get from the model */
+                        for (int32_t i = 0; i < dims.nbDims; i++) {
+                            input_tensor_info.tensor_dims.push_back(dims.d[i]);
+                        }
+                    } else {
+                        /* tensor size is assigned. so check if it's the same as size defined in the model */
+                        if (static_cast<int32_t>(input_tensor_info.tensor_dims.size()) != dims.nbDims) {
+                            PRINT_E("Input Tensor dims doesn't match\n");
                             return kRetErr;
+                        }
+                        for (int32_t i = 0; i < dims.nbDims; i++) {
+                            if (input_tensor_info.tensor_dims[i] != dims.d[i]) {
+                                PRINT_E("Input Tensor size doesn't match\n");
+                                return kRetErr;
+                            }
                         }
                     }
                     if (((input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) && (data_type == nvinfer1::DataType::kINT8))
@@ -414,12 +421,25 @@ int32_t InferenceHelperTensorRt::AllocateBuffers(std::vector<InputTensorInfo>& i
                 int32_t id = engine_->getBindingIndex(output_tensor_info.name.c_str());
                 if (id == i) {
                     output_tensor_info.id = id;
-                    for (int32_t i = 0; i < dims.nbDims; i++) {
-                        if (i == 0) output_tensor_info.tensor_dims.batch = dims.d[i];
-                        if (i == 1) output_tensor_info.tensor_dims.channel = dims.d[i];
-                        if (i == 2) output_tensor_info.tensor_dims.height = dims.d[i];
-                        if (i == 3) output_tensor_info.tensor_dims.width = dims.d[i];
+                    if (output_tensor_info.tensor_dims.empty()) {
+                        /* tensor size is not assigned. so get from the model */
+                        for (int32_t i = 0; i < dims.nbDims; i++) {
+                            output_tensor_info.tensor_dims.push_back(dims.d[i]);
+                        }
+                    } else {
+                        /* tensor size is assigned. so check if it's the same as size defined in the model */
+                        if (static_cast<int32_t>(output_tensor_info.tensor_dims.size()) != dims.nbDims) {
+                            PRINT_E("Output Tensor dims doesn't match\n");
+                            return kRetErr;
+                        }
+                        for (int32_t i = 0; i < dims.nbDims; i++) {
+                            if (output_tensor_info.tensor_dims[i] != dims.d[i]) {
+                                PRINT_E("Output Tensor size doesn't match\n");
+                                return kRetErr;
+                            }
+                        }
                     }
+
                     if (((output_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) && (data_type == nvinfer1::DataType::kINT8))
                         || ((output_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) && (data_type == nvinfer1::DataType::kFLOAT))
                         || ((output_tensor_info.tensor_type == TensorInfo::kTensorTypeInt32) && (data_type == nvinfer1::DataType::kINT32))) {

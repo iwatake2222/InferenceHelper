@@ -43,7 +43,6 @@ private:
     void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
 
 private:
-    bool    is_nhwc_;
     int32_t num_threads_;
     std::unique_ptr<ArmnnWrapper> armnn_wrapper_;
 

@@ -97,8 +97,8 @@ int32_t InferenceHelperMnn::Initialize(const std::string& model_filename, std::v
             return kRetErr;
         }
         if ((input_tensor->channel() != -1) && (input_tensor->height() != -1) && (input_tensor->width() != -1)) {
-            if (input_tensor_info.tensor_dims.channel != -1) {
-                if ((input_tensor->channel() == input_tensor_info.tensor_dims.channel) && (input_tensor->height() == input_tensor_info.tensor_dims.height) && (input_tensor->width() == input_tensor_info.tensor_dims.width)) {
+            if (input_tensor_info.GetChannel() != -1) {
+                if ((input_tensor->channel() == input_tensor_info.GetChannel()) && (input_tensor->height() == input_tensor_info.GetHeight()) && (input_tensor->width() == input_tensor_info.GetWidth())) {
                     /* OK */
                 } else {
                     PRINT_E("Incorrect input tensor size\n");
@@ -106,15 +106,16 @@ int32_t InferenceHelperMnn::Initialize(const std::string& model_filename, std::v
                 }
             } else {
                 PRINT("Input tensor size is set from the model\n");
-                input_tensor_info.tensor_dims.channel = input_tensor->channel();
-                input_tensor_info.tensor_dims.height = input_tensor->height();
-                input_tensor_info.tensor_dims.width = input_tensor->width();
+                input_tensor_info.tensor_dims.clear();
+                for (int32_t dim = 0; dim < input_tensor->dimensions(); dim++) {
+                    input_tensor_info.tensor_dims.push_back(input_tensor->length(dim));
+                }
             }
         } else {
-            if (input_tensor_info.tensor_dims.channel != -1) {
+            if (input_tensor_info.GetChannel() != -1) {
                 PRINT("Input tensor size is resized\n");
                 /* In case the input size  is not fixed */
-                net_->resizeTensor(input_tensor, { 1, input_tensor_info.tensor_dims.channel, input_tensor_info.tensor_dims.height, input_tensor_info.tensor_dims.width });
+                net_->resizeTensor(input_tensor, { 1, input_tensor_info.GetChannel(), input_tensor_info.GetHeight(), input_tensor_info.GetWidth() });
                 net_->resizeSession(session_);
             } else {
                 PRINT_E("Model input size is not set\n");
@@ -136,6 +137,24 @@ int32_t InferenceHelperMnn::Initialize(const std::string& model_filename, std::v
         ConvertNormalizeParameters(input_tensor_info);
     }
 
+
+    /* Check if tensor info is set */
+    for (const auto& input_tensor_info : input_tensor_info_list) {
+        for (const auto& dim : input_tensor_info.tensor_dims) {
+            if (dim <= 0) {
+                PRINT_E("Invalid tensor size\n");
+                return kRetErr;
+            }
+        }
+    }
+    //for (const auto& output_tensor_info : output_tensor_info_list) {
+    //    for (const auto& dim : output_tensor_info.tensor_dims) {
+    //        if (dim <= 0) {
+    //            PRINT_E("Invalid tensor size\n");
+    //            return kRetErr;
+    //        }
+    //    }
+    //}
 
     return kRetOk;
 };
@@ -167,24 +186,24 @@ int32_t InferenceHelperMnn::PreProcess(const std::vector<InputTensorInfo>& input
 
             MNN::CV::ImageProcess::Config image_processconfig;
             /* Convert color type */
-            if ((input_tensor_info.image_info.channel == 3) && (input_tensor_info.tensor_dims.channel == 3)) {
+            if ((input_tensor_info.image_info.channel == 3) && (input_tensor_info.GetChannel() == 3)) {
                 image_processconfig.sourceFormat = (input_tensor_info.image_info.is_bgr) ? MNN::CV::BGR : MNN::CV::RGB;
                 if (input_tensor_info.image_info.swap_color) {
                     image_processconfig.destFormat = (input_tensor_info.image_info.is_bgr) ? MNN::CV::RGB : MNN::CV::BGR;
                 } else {
                     image_processconfig.destFormat = (input_tensor_info.image_info.is_bgr) ? MNN::CV::BGR : MNN::CV::RGB;
                 }
-            } else if ((input_tensor_info.image_info.channel == 1) && (input_tensor_info.tensor_dims.channel == 1)) {
+            } else if ((input_tensor_info.image_info.channel == 1) && (input_tensor_info.GetChannel() == 1)) {
                 image_processconfig.sourceFormat = MNN::CV::GRAY;
                 image_processconfig.destFormat = MNN::CV::GRAY;
-            } else if ((input_tensor_info.image_info.channel == 3) && (input_tensor_info.tensor_dims.channel == 1)) {
+            } else if ((input_tensor_info.image_info.channel == 3) && (input_tensor_info.GetChannel() == 1)) {
                 image_processconfig.sourceFormat = (input_tensor_info.image_info.is_bgr) ? MNN::CV::BGR : MNN::CV::RGB;
                 image_processconfig.destFormat = MNN::CV::GRAY;
-            } else if ((input_tensor_info.image_info.channel == 1) && (input_tensor_info.tensor_dims.channel == 3)) {
+            } else if ((input_tensor_info.image_info.channel == 1) && (input_tensor_info.GetChannel() == 3)) {
                 image_processconfig.sourceFormat = MNN::CV::GRAY;
                 image_processconfig.destFormat = MNN::CV::BGR;
             } else {
-                PRINT_E("Unsupported color conversion (%d, %d)\n", input_tensor_info.image_info.channel, input_tensor_info.tensor_dims.channel);
+                PRINT_E("Unsupported color conversion (%d, %d)\n", input_tensor_info.image_info.channel, input_tensor_info.GetChannel());
                 return kRetErr;
             }
 
@@ -195,7 +214,7 @@ int32_t InferenceHelperMnn::PreProcess(const std::vector<InputTensorInfo>& input
             /* Resize image */
             image_processconfig.filterType = MNN::CV::BILINEAR;
             MNN::CV::Matrix trans;
-            trans.setScale(static_cast<float>(input_tensor_info.image_info.crop_width) / input_tensor_info.tensor_dims.width, static_cast<float>(input_tensor_info.image_info.crop_height) / input_tensor_info.tensor_dims.height);
+            trans.setScale(static_cast<float>(input_tensor_info.image_info.crop_width) / input_tensor_info.GetWidth(), static_cast<float>(input_tensor_info.image_info.crop_height) / input_tensor_info.GetHeight());
 
             /* Do pre-process */
             std::shared_ptr<MNN::CV::ImageProcess> pretreat(MNN::CV::ImageProcess::create(image_processconfig));
@@ -209,11 +228,11 @@ int32_t InferenceHelperMnn::PreProcess(const std::vector<InputTensorInfo>& input
                 tensor.reset(new MNN::Tensor(input_tensor, MNN::Tensor::CAFFE));
             }
             if (tensor->getType().code == halide_type_float) {
-                for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height * input_tensor_info.tensor_dims.channel; i++) {
+                for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight() * input_tensor_info.GetChannel(); i++) {
                     tensor->host<float>()[i] = static_cast<float*>(input_tensor_info.data)[i];
                 }
             } else {
-                for (int32_t i = 0; i < input_tensor_info.tensor_dims.width * input_tensor_info.tensor_dims.height * input_tensor_info.tensor_dims.channel; i++) {
+                for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight() * input_tensor_info.GetChannel(); i++) {
                     tensor->host<uint8_t>()[i] = static_cast<uint8_t*>(input_tensor_info.data)[i];
                 }
             }
@@ -253,10 +272,11 @@ int32_t InferenceHelperMnn::Process(std::vector<OutputTensorInfo>& output_tensor
             return kRetErr;
         }
         
-        output_tensor_info.tensor_dims.batch = (std::max)(outputUser->batch(), 1);
-        output_tensor_info.tensor_dims.channel = (std::max)(outputUser->channel(), 1);
-        output_tensor_info.tensor_dims.height = (std::max)(outputUser->height(), 1);
-        output_tensor_info.tensor_dims.width = (std::max)(outputUser->width(), 1);
+        output_tensor_info.tensor_dims.clear();
+        for (int32_t dim = 0; dim < outputUser->dimensions(); dim++) {
+            output_tensor_info.tensor_dims.push_back(outputUser->length(dim));
+        }
+
         out_mat_list_.push_back(std::move(outputUser));	// store data in member variable so that data keep exist
     }
 
