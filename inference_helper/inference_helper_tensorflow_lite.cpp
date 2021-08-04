@@ -411,10 +411,11 @@ int32_t InferenceHelperTensorflowLite::GetInputTensorInfo(InputTensorInfo& tenso
             if (!is_model_size_fixed && !is_size_assigned) {
                 PRINT_E("Model input size is not set\n");
                 return kRetErr;
-            } if (is_model_size_fixed && is_size_assigned) {
+            }
+            if (is_model_size_fixed && is_size_assigned) {
                 bool is_size_ok = true;
-                if (tensor_info.tensor_dims.size() == tensor->dims->size) {
-                    for (int32_t d = 0; d < tensor_info.tensor_dims.size(); d++) {
+                if (static_cast<int32_t>(tensor_info.tensor_dims.size()) == tensor->dims->size) {
+                    for (int32_t d = 0; d < static_cast<int32_t>(tensor_info.tensor_dims.size()); d++) {
                         if (tensor_info.tensor_dims[d] != tensor->dims->data[d]) is_size_ok = false;
                     }
                 } else {
@@ -422,22 +423,21 @@ int32_t InferenceHelperTensorflowLite::GetInputTensorInfo(InputTensorInfo& tenso
                 }
                 if (!is_size_ok) {
                     PRINT_E("Invalid input size\n");
-                    return kRetErr;
+                    //return kRetErr;
+                    /* Try to resize tensor size */
+                    is_model_size_fixed = false;
                 }
-            } if (is_model_size_fixed && !is_size_assigned) {
+            }
+            if (is_model_size_fixed && !is_size_assigned) {
                 PRINT("Input tensor size is set from the model\n");
                 tensor_info.tensor_dims.clear();
                 for (int32_t d = 0; d < tensor->dims->size; d++) {
                     tensor_info.tensor_dims.push_back(tensor->dims->data[d]);
                 }
-            } if (!is_model_size_fixed && is_size_assigned) {
+            }
+            if (!is_model_size_fixed && is_size_assigned) {
                 PRINT("[WARNING] ResizeInputTensor is not tested\n");
-                std::vector<int32_t> dims;
-                dims.push_back(tensor_info.GetBatch());
-                dims.push_back(tensor_info.GetHeight());
-                dims.push_back(tensor_info.GetWidth());
-                dims.push_back(tensor_info.GetChannel());
-                interpreter_->ResizeInputTensor(i, dims);
+                interpreter_->ResizeInputTensor(i, tensor_info.tensor_dims);
                 if (interpreter_->AllocateTensors() != kTfLiteOk) {
                     PRINT_E("Failed to allocate tensors\n");
                     return kRetErr;
