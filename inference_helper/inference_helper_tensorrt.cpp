@@ -222,10 +222,10 @@ int InferenceHelperTensorRt::Finalize(void)
         case nvinfer1::DataType::kFLOAT:
         case nvinfer1::DataType::kHALF:
         case nvinfer1::DataType::kINT32:
-            delete[] (float*)(buffer_list_cpu_reserved_[i].first);
+            delete[] (float*)(buffer_list_cpu_[i].first);
             break;
         case nvinfer1::DataType::kINT8:
-            delete[] (int*)(buffer_list_cpu_reserved_[i].first);
+            delete[] (int*)(buffer_list_cpu_[i].first);
             break;
         default:
             return kRetErr;
