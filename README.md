@@ -1,6 +1,13 @@
 # InferenceHelper
+<p align="center">
+  <img src="00_doc/logo.png" />
+</p>
+
 - This is a helper class for deep learning frameworks especially for inference
 - This class provides an interface to use various deep learnig frameworks, so that you can use the same application code
+
+![GitHub](https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white)
+![GitHub](https://img.shields.io/github/license/iwatake2222/InferenceHelper)
 
 ![Class Diagram](00_doc/class_diagram.png) 
 
