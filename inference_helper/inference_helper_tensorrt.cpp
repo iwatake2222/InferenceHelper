@@ -98,6 +98,11 @@ int32_t InferenceHelperTensorRt::Initialize(const std::string& model_filename, s
     if (model_filename.find(".onnx") != std::string::npos) {
         is_onnx_model = true;
         trt_model_filename = trt_model_filename.replace(trt_model_filename.find(".onnx"), std::string(".onnx").length(), ".trt\0");
+        std::ifstream ifs(trt_model_filename);
+        if (ifs.is_open()) {
+            is_onnx_model = false;
+            is_trt_model = true;
+        }
     } else if (trt_model_filename.find(".trt") != std::string::npos) {
         is_trt_model = true;
     } else {
@@ -108,7 +113,7 @@ int32_t InferenceHelperTensorRt::Initialize(const std::string& model_filename, s
     /* create runtime and engine from model file */
     if (is_trt_model) {
         std::string buffer;
-        std::ifstream stream(model_filename, std::ios::binary);
+        std::ifstream stream(trt_model_filename, std::ios::binary);
         if (stream) {
             stream >> std::noskipws;
             copy(std::istream_iterator<char>(stream), std::istream_iterator<char>(), back_inserter(buffer));
@@ -117,12 +122,12 @@ int32_t InferenceHelperTensorRt::Initialize(const std::string& model_filename, s
         engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(buffer.data(), buffer.size(), NULL), samplesCommon::InferDeleter());
         stream.close();
         if (!engine_) {
-            PRINT_E("Failed to create engine (%s)\n", model_filename.c_str());
+            PRINT_E("Failed to create engine (%s)\n", trt_model_filename.c_str());
             return kRetErr;
         }
         context_ = std::shared_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext(), samplesCommon::InferDeleter());
         if (!context_) {
-            PRINT_E("Failed to create context (%s)\n", model_filename.c_str());
+            PRINT_E("Failed to create context (%s)\n", trt_model_filename.c_str());
             return kRetErr;
         }
     } else if (is_onnx_model) {
