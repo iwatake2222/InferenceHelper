@@ -61,7 +61,11 @@ int32_t InferenceHelperOpenCV::SetCustomOps(const std::vector<std::pair<const ch
 int32_t InferenceHelperOpenCV::Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
     /*** Create network ***/
-    net_ = cv::dnn::readNetFromONNX(model_filename);
+    try {
+        net_ = cv::dnn::readNetFromONNX(model_filename);
+    } catch (std::exception& e) {
+        PRINT_E("%s\n", e.what());
+    }
     if (net_.empty() == true) {
         PRINT_E("Failed to create inference engine (%s)\n", model_filename.c_str());
         return kRetErr;
