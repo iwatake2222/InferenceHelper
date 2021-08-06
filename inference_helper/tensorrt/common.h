@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ using namespace plugin;
 #define FN_NAME __func__
 #endif
 
-#if (!defined(__ANDROID__) && defined(__aarch64__)) || defined(__QNX__)
+#if defined(__aarch64__) || defined(__QNX__)
 #define ENABLE_DLA_API 1
 #endif
 
@@ -79,21 +79,23 @@ using namespace plugin;
     {                                                                                                                  \
         if (!(status))                                                                                                 \
         {                                                                                                              \
-            sample::gLogError << errMsg << " Error in " << __FILE__ << ", function " << FN_NAME << "(), line "         \
-                              << __LINE__ << std::endl;                                                                \
+            sample::gLogError << errMsg << " Error in " << __FILE__ << ", function " << FN_NAME << "(), line " << __LINE__     \
+                      << std::endl;                                                                                    \
             return val;                                                                                                \
         }                                                                                                              \
     } while (0)
 
-#define ASSERT(condition)                                                                                              \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (!(condition))                                                                                              \
-        {                                                                                                              \
-            sample::gLogError << "Assertion failure: " << #condition << std::endl;                                     \
-            abort();                                                                                                   \
-        }                                                                                                              \
+#undef ASSERT
+#define ASSERT(condition)                                                   \
+    do                                                                      \
+    {                                                                       \
+        if (!(condition))                                                   \
+        {                                                                   \
+            sample::gLogError << "Assertion failure: " << #condition << std::endl;  \
+            abort();                                                        \
+        }                                                                   \
     } while (0)
+
 
 #define CHECK_RETURN(status, val) CHECK_RETURN_W_MSG(status, val, "")
 
@@ -123,15 +125,15 @@ constexpr long double operator"" _KiB(long double val)
 
 // These is necessary if we want to be able to write 1_GiB instead of 1.0_GiB.
 // Since the return type is signed, -1_GiB will work as expected.
-constexpr long long int operator"" _GiB(long long unsigned int val)
+constexpr long long int operator"" _GiB(unsigned long long val)
 {
     return val * (1 << 30);
 }
-constexpr long long int operator"" _MiB(long long unsigned int val)
+constexpr long long int operator"" _MiB(unsigned long long val)
 {
     return val * (1 << 20);
 }
-constexpr long long int operator"" _KiB(long long unsigned int val)
+constexpr long long int operator"" _KiB(unsigned long long val)
 {
     return val * (1 << 10);
 }
@@ -144,7 +146,7 @@ struct SimpleProfiler : public nvinfer1::IProfiler
         int count{0};
     };
 
-    virtual void reportLayerTime(const char* layerName, float ms)
+    virtual void reportLayerTime(const char* layerName, float ms) noexcept
     {
         mProfile[layerName].count++;
         mProfile[layerName].time += ms;
@@ -222,9 +224,10 @@ private:
     std::map<std::string, Record> mProfile;
 };
 
-// Locate path to file, given its filename or filepath suffix and possible dirs it might lie in
-// Function will also walk back MAX_DEPTH dirs from CWD to check for such a file path
-inline std::string locateFile(const std::string& filepathSuffix, const std::vector<std::string>& directories)
+//! Locate path to file, given its filename or filepath suffix and possible dirs it might lie in.
+//! Function will also walk back MAX_DEPTH dirs from CWD to check for such a file path.
+inline std::string locateFile(
+    const std::string& filepathSuffix, const std::vector<std::string>& directories, bool reportError = true)
 {
     const int MAX_DEPTH{10};
     bool found{false};
@@ -241,14 +244,19 @@ inline std::string locateFile(const std::string& filepathSuffix, const std::vect
 #endif
         }
         else
+        {
             filepath = dir + filepathSuffix;
+        }
 
         for (int i = 0; i < MAX_DEPTH && !found; i++)
         {
-            std::ifstream checkFile(filepath);
+            const std::ifstream checkFile(filepath);
             found = checkFile.is_open();
             if (found)
+            {
                 break;
+            }
+
             filepath = "../" + filepath; // Try again in parent dir
         }
 
@@ -260,14 +268,20 @@ inline std::string locateFile(const std::string& filepathSuffix, const std::vect
         filepath.clear();
     }
 
+    // Could not find the file
     if (filepath.empty())
     {
-        std::string directoryList = std::accumulate(directories.begin() + 1, directories.end(), directories.front(),
+        const std::string dirList = std::accumulate(directories.begin() + 1, directories.end(), directories.front(),
             [](const std::string& a, const std::string& b) { return a + "\n\t" + b; });
-        std::cout << "Could not find " << filepathSuffix << " in data directories:\n\t" << directoryList << std::endl;
-        std::cout << "&&&& FAILED" << std::endl;
-        exit(EXIT_FAILURE);
+        std::cout << "Could not find " << filepathSuffix << " in data directories:\n\t" << dirList << std::endl;
+
+        if (reportError)
+        {
+            std::cout << "&&&& FAILED" << std::endl;
+            exit(EXIT_FAILURE);
+        }
     }
+
     return filepath;
 }
 
@@ -296,22 +310,23 @@ inline T swapEndianness(const T& value)
     return *reinterpret_cast<T*>(bytes);
 }
 
-class HostMemory : public IHostMemory
+class HostMemory
 {
 public:
     HostMemory() = delete;
-    void* data() const noexcept override
+    virtual void* data() const noexcept
     {
         return mData;
     }
-    std::size_t size() const noexcept override
+    virtual std::size_t size() const noexcept
     {
         return mSize;
     }
-    DataType type() const noexcept override
+    virtual DataType type() const noexcept
     {
         return mType;
     }
+    virtual ~HostMemory() {}
 
 protected:
     HostMemory(std::size_t size, DataType type)
@@ -333,10 +348,9 @@ public:
     {
         mData = new ElemType[size];
     };
-    void destroy() noexcept override
+    ~TypedHostMemory() noexcept
     {
         delete[](ElemType*) mData;
-        delete this;
     }
     ElemType* raw() noexcept
     {
@@ -370,37 +384,51 @@ struct InferDeleter
     template <typename T>
     void operator()(T* obj) const
     {
-        if (obj)
-        {
-            obj->destroy();
-        }
+        delete obj;
     }
 };
 
 template <typename T>
-inline std::shared_ptr<T> infer_object(T* obj)
+using SampleUniquePtr = std::unique_ptr<T, InferDeleter>;
+
+static auto StreamDeleter = [](cudaStream_t* pStream)
+    {
+        if (pStream)
+        {
+            cudaStreamDestroy(*pStream);
+            delete pStream;
+        }
+    };
+
+inline std::unique_ptr<cudaStream_t, decltype(StreamDeleter)> makeCudaStream()
+{
+    std::unique_ptr<cudaStream_t, decltype(StreamDeleter)> pStream(new cudaStream_t, StreamDeleter);
+    if (cudaStreamCreate(pStream.get()) != cudaSuccess)
+    {
+        pStream.reset(nullptr);
+    }
+
+    return pStream;
+}
+
+template <typename T>
+std::shared_ptr<T> infer_object(T* obj)
 {
     if (!obj)
     {
-        throw std::runtime_error("Failed to create object");
+        throw std::runtime_error(std::string("Failed to create object"));
     }
-    return std::shared_ptr<T>(obj, InferDeleter());
+    return std::shared_ptr<T>(obj);
 }
 
+//! Return vector of indices that puts magnitudes of sequence in descending order.
 template <class Iter>
-inline std::vector<size_t> argsort(Iter begin, Iter end, bool reverse = false)
+std::vector<size_t> argMagnitudeSort(Iter begin, Iter end)
 {
-    std::vector<size_t> inds(end - begin);
-    std::iota(inds.begin(), inds.end(), 0);
-    if (reverse)
-    {
-        std::sort(inds.begin(), inds.end(), [&begin](size_t i1, size_t i2) { return begin[i2] < begin[i1]; });
-    }
-    else
-    {
-        std::sort(inds.begin(), inds.end(), [&begin](size_t i1, size_t i2) { return begin[i1] < begin[i2]; });
-    }
-    return inds;
+    std::vector<size_t> indices(end - begin);
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.end(), [&begin](size_t i, size_t j) { return std::abs(begin[j]) < std::abs(begin[i]); });
+    return indices;
 }
 
 inline bool readReferenceFile(const std::string& fileName, std::vector<std::string>& refVector)
@@ -422,12 +450,13 @@ inline bool readReferenceFile(const std::string& fileName, std::vector<std::stri
     return true;
 }
 
-template <typename result_vector_t>
-inline std::vector<std::string> classify(
-    const std::vector<std::string>& refVector, const result_vector_t& output, const size_t topK)
+template <typename T>
+std::vector<std::string> classify(
+    const std::vector<std::string>& refVector, const std::vector<T>& output, const size_t topK)
 {
-    auto inds = samplesCommon::argsort(output.cbegin(), output.cend(), true);
+    const auto inds = samplesCommon::argMagnitudeSort(output.cbegin(), output.cend());
     std::vector<std::string> result;
+    result.reserve(topK);
     for (size_t k = 0; k < topK; ++k)
     {
         result.push_back(refVector[inds[k]]);
@@ -435,18 +464,17 @@ inline std::vector<std::string> classify(
     return result;
 }
 
-// Returns top K indices, not values.
+// Returns indices of highest K magnitudes in v.
 template <typename T>
-inline std::vector<size_t> topK(const std::vector<T> inp, const size_t k)
+std::vector<size_t> topKMagnitudes(const std::vector<T>& v, const size_t k)
 {
-    std::vector<size_t> result;
-    std::vector<size_t> inds = samplesCommon::argsort(inp.cbegin(), inp.cend(), true);
-    result.assign(inds.begin(), inds.begin() + k);
-    return result;
+    std::vector<size_t> indices = samplesCommon::argMagnitudeSort(v.cbegin(), v.cend());
+    indices.resize(k);
+    return indices;
 }
 
 template <typename T>
-inline bool readASCIIFile(const std::string& fileName, const size_t size, std::vector<T>& out)
+bool readASCIIFile(const std::string& fileName, const size_t size, std::vector<T>& out)
 {
     std::ifstream infile(fileName);
     if (!infile.is_open())
@@ -462,7 +490,7 @@ inline bool readASCIIFile(const std::string& fileName, const size_t size, std::v
 }
 
 template <typename T>
-inline bool writeASCIIFile(const std::string& fileName, const std::vector<T>& in)
+bool writeASCIIFile(const std::string& fileName, const std::vector<T>& in)
 {
     std::ofstream outfile(fileName);
     if (!outfile.is_open())
@@ -527,7 +555,7 @@ inline void setAllTensorScales(INetworkDefinition* network, float inScales = 2.0
             // Optional inputs are nullptr here and are from RNN layers.
             if (input != nullptr && !input->dynamicRangeIsSet())
             {
-                ASSERT(input->setDynamicRange(-inScales, inScales));
+                input->setDynamicRange(-inScales, inScales);
             }
         }
     }
@@ -547,26 +575,31 @@ inline void setAllTensorScales(INetworkDefinition* network, float inScales = 2.0
                 // Pooling must have the same input and output scales.
                 if (layer->getType() == LayerType::kPOOLING)
                 {
-                    ASSERT(output->setDynamicRange(-inScales, inScales));
+                    output->setDynamicRange(-inScales, inScales);
                 }
                 else
                 {
-                    ASSERT(output->setDynamicRange(-outScales, outScales));
+                    output->setDynamicRange(-outScales, outScales);
                 }
             }
         }
     }
 }
 
-inline void setDummyInt8Scales(const IBuilderConfig* c, INetworkDefinition* n)
+inline void setAllDynamicRanges(INetworkDefinition* network, float inRange = 2.0f, float outRange = 4.0f)
 {
-    // Set dummy tensor scales if Int8 mode is requested.
+    return setAllTensorScales(network, inRange, outRange);
+}
+
+inline void setDummyInt8DynamicRanges(const IBuilderConfig* c, INetworkDefinition* n)
+{
+    // Set dummy per-tensor dynamic range if Int8 mode is requested.
     if (c->getFlag(BuilderFlag::kINT8))
     {
         sample::gLogWarning
-            << "Int8 calibrator not provided. Generating dummy per tensor scales. Int8 accuracy is not guaranteed."
+            << "Int8 calibrator not provided. Generating dummy per-tensor dynamic range. Int8 accuracy is not guaranteed."
             << std::endl;
-        setAllTensorScales(n);
+        setAllDynamicRanges(n);
     }
 }
 
@@ -584,11 +617,10 @@ inline void enableDLA(IBuilder* builder, IBuilderConfig* config, int useDLACore,
         {
             config->setFlag(BuilderFlag::kGPU_FALLBACK);
         }
-        if (!builder->getInt8Mode() && !config->getFlag(BuilderFlag::kINT8))
+        if (!config->getFlag(BuilderFlag::kINT8))
         {
             // User has not requested INT8 Mode.
             // By default run in FP16 mode. FP32 mode is not permitted.
-            builder->setFp16Mode(true);
             config->setFlag(BuilderFlag::kFP16);
         }
         config->setDefaultDeviceType(DeviceType::kDLA);
@@ -608,7 +640,7 @@ inline int parseDLA(int argc, char** argv)
     return -1;
 }
 
-inline unsigned int getElementSize(nvinfer1::DataType t)
+inline uint32_t getElementSize(nvinfer1::DataType t) noexcept
 {
     switch (t)
     {
@@ -618,7 +650,6 @@ inline unsigned int getElementSize(nvinfer1::DataType t)
     case nvinfer1::DataType::kBOOL:
     case nvinfer1::DataType::kINT8: return 1;
     }
-    throw std::runtime_error("Invalid DataType.");
     return 0;
 }
 
@@ -627,7 +658,7 @@ inline int64_t volume(const nvinfer1::Dims& d)
     return std::accumulate(d.d, d.d + d.nbDims, 1, std::multiplies<int64_t>());
 }
 
-inline unsigned int elementSize(DataType t)
+inline uint32_t elementSize(DataType t) noexcept
 {
     switch (t)
     {
@@ -668,7 +699,7 @@ struct BBox
 };
 
 template <int C, int H, int W>
-inline void readPPMFile(const std::string& filename, samplesCommon::PPM<C, H, W>& ppm)
+void readPPMFile(const std::string& filename, samplesCommon::PPM<C, H, W>& ppm)
 {
     ppm.fileName = filename;
     std::ifstream infile(filename, std::ifstream::binary);
@@ -694,7 +725,7 @@ inline void readPPMFile(const std::string& filename, vPPM& ppm, std::vector<std:
 }
 
 template <int C, int H, int W>
-inline void writePPMFileWithBBox(const std::string& filename, PPM<C, H, W>& ppm, const BBox& bbox)
+void writePPMFileWithBBox(const std::string& filename, PPM<C, H, W>& ppm, const BBox& bbox)
 {
     std::ofstream outfile("./" + filename, std::ofstream::binary);
     assert(!outfile.fail());
@@ -702,11 +733,13 @@ inline void writePPMFileWithBBox(const std::string& filename, PPM<C, H, W>& ppm,
             << "\n"
             << ppm.w << " " << ppm.h << "\n"
             << ppm.max << "\n";
+
     auto round = [](float x) -> int { return int(std::floor(x + 0.5f)); };
     const int x1 = std::min(std::max(0, round(int(bbox.x1))), W - 1);
     const int x2 = std::min(std::max(0, round(int(bbox.x2))), W - 1);
     const int y1 = std::min(std::max(0, round(int(bbox.y1))), H - 1);
     const int y2 = std::min(std::max(0, round(int(bbox.y2))), H - 1);
+
     for (int x = x1; x <= x2; ++x)
     {
         // bbox top border
@@ -718,6 +751,7 @@ inline void writePPMFileWithBBox(const std::string& filename, PPM<C, H, W>& ppm,
         ppm.buffer[(y2 * ppm.w + x) * 3 + 1] = 0;
         ppm.buffer[(y2 * ppm.w + x) * 3 + 2] = 0;
     }
+
     for (int y = y1; y <= y2; ++y)
     {
         // bbox left border
@@ -729,6 +763,7 @@ inline void writePPMFileWithBBox(const std::string& filename, PPM<C, H, W>& ppm,
         ppm.buffer[(y * ppm.w + x2) * 3 + 1] = 0;
         ppm.buffer[(y * ppm.w + x2) * 3 + 2] = 0;
     }
+
     outfile.write(reinterpret_cast<char*>(ppm.buffer), ppm.w * ppm.h * 3);
 }
 
@@ -902,6 +937,41 @@ inline void loadLibrary(const std::string& path)
         sample::gLogError << "Could not load plugin library: " << path << ", due to: " << dlerror() << std::endl;
 #endif
     }
+}
+
+inline int32_t getSMVersion()
+{
+    int32_t deviceIndex = 0;
+    CHECK(cudaGetDevice(&deviceIndex));
+
+    int32_t major, minor;
+    CHECK(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, deviceIndex));
+    CHECK(cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, deviceIndex));
+
+    return ((major << 8) | minor);
+}
+
+inline bool isSMSafe()
+{
+    const int32_t smVersion = getSMVersion();
+    return smVersion == 0x0700 || smVersion == 0x0702 || smVersion == 0x0705;
+}
+
+inline bool isDataTypeSupported(DataType dataType)
+{
+    auto builder = SampleUniquePtr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(sample::gLogger.getTRTLogger()));
+    if (!builder)
+    {
+        return false;
+    }
+
+    if ((dataType == DataType::kINT8 && !builder->platformHasFastInt8())
+        || (dataType == DataType::kHALF && !builder->platformHasFastFp16()))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 } // namespace samplesCommon

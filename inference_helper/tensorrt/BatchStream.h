@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/*
- * Editor:
- * iwatake (2020/09/06)
- */
-
 #ifndef BATCH_STREAM_H
 #define BATCH_STREAM_H
 
 #include "NvInfer.h"
 #include "common.h"
 #include <algorithm>
-#include <assert.h>
 #include <stdio.h>
 #include <vector>
 
@@ -42,6 +35,119 @@ public:
     virtual nvinfer1::Dims getDims() const = 0;
 };
 
+class MNISTBatchStream : public IBatchStream
+{
+public:
+    MNISTBatchStream(int batchSize, int maxBatches, const std::string& dataFile, const std::string& labelsFile,
+        const std::vector<std::string>& directories)
+        : mBatchSize{batchSize}
+        , mMaxBatches{maxBatches}
+        , mDims{3, {1, 28, 28}} //!< We already know the dimensions of MNIST images.
+    {
+        readDataFile(locateFile(dataFile, directories));
+        readLabelsFile(locateFile(labelsFile, directories));
+    }
+
+    void reset(int firstBatch) override
+    {
+        mBatchCount = firstBatch;
+    }
+
+    bool next() override
+    {
+        if (mBatchCount >= mMaxBatches)
+        {
+            return false;
+        }
+        ++mBatchCount;
+        return true;
+    }
+
+    void skip(int skipCount) override
+    {
+        mBatchCount += skipCount;
+    }
+
+    float* getBatch() override
+    {
+        return mData.data() + (mBatchCount * mBatchSize * samplesCommon::volume(mDims));
+    }
+
+    float* getLabels() override
+    {
+        return mLabels.data() + (mBatchCount * mBatchSize);
+    }
+
+    int getBatchesRead() const override
+    {
+        return mBatchCount;
+    }
+
+    int getBatchSize() const override
+    {
+        return mBatchSize;
+    }
+
+    nvinfer1::Dims getDims() const override
+    {
+        return Dims{4, {mBatchSize, mDims.d[0], mDims.d[1], mDims.d[2]}};
+    }
+
+private:
+    void readDataFile(const std::string& dataFilePath)
+    {
+        std::ifstream file{dataFilePath.c_str(), std::ios::binary};
+
+        int magicNumber, numImages, imageH, imageW;
+        file.read(reinterpret_cast<char*>(&magicNumber), sizeof(magicNumber));
+        // All values in the MNIST files are big endian.
+        magicNumber = samplesCommon::swapEndianness(magicNumber);
+        ASSERT(magicNumber == 2051 && "Magic Number does not match the expected value for an MNIST image set");
+
+        // Read number of images and dimensions
+        file.read(reinterpret_cast<char*>(&numImages), sizeof(numImages));
+        file.read(reinterpret_cast<char*>(&imageH), sizeof(imageH));
+        file.read(reinterpret_cast<char*>(&imageW), sizeof(imageW));
+
+        numImages = samplesCommon::swapEndianness(numImages);
+        imageH = samplesCommon::swapEndianness(imageH);
+        imageW = samplesCommon::swapEndianness(imageW);
+
+        // The MNIST data is made up of unsigned bytes, so we need to cast to float and normalize.
+        int numElements = numImages * imageH * imageW;
+        std::vector<uint8_t> rawData(numElements);
+        file.read(reinterpret_cast<char*>(rawData.data()), numElements * sizeof(uint8_t));
+        mData.resize(numElements);
+        std::transform(
+            rawData.begin(), rawData.end(), mData.begin(), [](uint8_t val) { return static_cast<float>(val) / 255.f; });
+    }
+
+    void readLabelsFile(const std::string& labelsFilePath)
+    {
+        std::ifstream file{labelsFilePath.c_str(), std::ios::binary};
+        int magicNumber, numImages;
+        file.read(reinterpret_cast<char*>(&magicNumber), sizeof(magicNumber));
+        // All values in the MNIST files are big endian.
+        magicNumber = samplesCommon::swapEndianness(magicNumber);
+        ASSERT(magicNumber == 2049 && "Magic Number does not match the expected value for an MNIST labels file");
+
+        file.read(reinterpret_cast<char*>(&numImages), sizeof(numImages));
+        numImages = samplesCommon::swapEndianness(numImages);
+
+        std::vector<uint8_t> rawLabels(numImages);
+        file.read(reinterpret_cast<char*>(rawLabels.data()), numImages * sizeof(uint8_t));
+        mLabels.resize(numImages);
+        std::transform(
+            rawLabels.begin(), rawLabels.end(), mLabels.begin(), [](uint8_t val) { return static_cast<float>(val); });
+    }
+
+    int mBatchSize{0};
+    int mBatchCount{0}; //!< The batch that will be read on the next invocation of next()
+    int mMaxBatches{0};
+    Dims mDims{};
+    std::vector<float> mData{};
+    std::vector<float> mLabels{};
+};
 
 class BatchStream : public IBatchStream
 {
@@ -55,16 +161,16 @@ public:
         , mDataDir(directories)
     {
         FILE* file = fopen(locateFile(mPrefix + std::string("0") + mSuffix, mDataDir).c_str(), "rb");
-        assert(file != nullptr);
+        ASSERT(file != nullptr);
         int d[4];
         size_t readSize = fread(d, sizeof(int), 4, file);
-        assert(readSize == 4);
+        ASSERT(readSize == 4);
         mDims.nbDims = 4;  // The number of dimensions.
         mDims.d[0] = d[0]; // Batch Size
         mDims.d[1] = d[1]; // Channels
         mDims.d[2] = d[2]; // Height
         mDims.d[3] = d[3]; // Width
-        assert(mDims.d[0] > 0 && mDims.d[1] > 0 && mDims.d[2] > 0 && mDims.d[3] > 0);
+        ASSERT(mDims.d[0] > 0 && mDims.d[1] > 0 && mDims.d[2] > 0 && mDims.d[3] > 0);
         fclose(file);
 
         mImageSize = mDims.d[1] * mDims.d[2] * mDims.d[3];
@@ -115,7 +221,7 @@ public:
 
         for (int csize = 1, batchPos = 0; batchPos < mBatchSize; batchPos += csize, mFileBatchPos += csize)
         {
-            assert(mFileBatchPos > 0 && mFileBatchPos <= mDims.d[0]);
+            ASSERT(mFileBatchPos > 0 && mFileBatchPos <= mDims.d[0]);
             if (mFileBatchPos == mDims.d[0] && !update())
             {
                 return false;
@@ -197,12 +303,12 @@ private:
 
             int d[4];
             size_t readSize = fread(d, sizeof(int), 4, file);
-            assert(readSize == 4);
-            assert(mDims.d[0] == d[0] && mDims.d[1] == d[1] && mDims.d[2] == d[2] && mDims.d[3] == d[3]);
+            ASSERT(readSize == 4);
+            ASSERT(mDims.d[0] == d[0] && mDims.d[1] == d[1] && mDims.d[2] == d[2] && mDims.d[3] == d[3]);
             size_t readInputCount = fread(getFileBatch(), sizeof(float), mDims.d[0] * mImageSize, file);
-            assert(readInputCount == size_t(mDims.d[0] * mImageSize));
+            ASSERT(readInputCount == size_t(mDims.d[0] * mImageSize));
             size_t readLabelCount = fread(getFileLabels(), sizeof(float), mDims.d[0], file);
-            assert(readLabelCount == 0 || readLabelCount == size_t(mDims.d[0]));
+            ASSERT(readLabelCount == 0 || readLabelCount == size_t(mDims.d[0]));
 
             fclose(file);
         }
@@ -216,13 +322,7 @@ private:
             }
 
             sample::gLogInfo << "Batch #" << mFileCount << std::endl;
-            /* Modified by iwatake: the parametes should be defined in caller */
-            // file.seekg(((mBatchCount * mBatchSize)) * 7);
-            for (int i = 1; i <= mBatchCount * mBatchSize; i++)
-            {
-                std::string sName;
-                std::getline(file, sName);
-            }
+            file.seekg(((mBatchCount * mBatchSize)) * 7);
 
             for (int i = 1; i <= mBatchSize; i++)
             {
@@ -235,17 +335,18 @@ private:
 
             mFileCount++;
 
-            /* Modified by iwatake: the parametes should be defined in caller */
-            std::vector<samplesCommon::PPM<CAL_IMAGE_C, CAL_IMAGE_H, CAL_IMAGE_W>> ppms(fNames.size());
+            const int imageC = 3;
+            const int imageH = 300;
+            const int imageW = 300;
+            std::vector<samplesCommon::PPM<imageC, imageH, imageW>> ppms(fNames.size());
             for (uint32_t i = 0; i < fNames.size(); ++i)
             {
                 readPPMFile(locateFile(fNames[i], mDataDir), ppms[i]);
             }
 
             std::vector<float> data(samplesCommon::volume(mDims));
-            /* Modified by iwatake: the parametes should be defined in caller */
-            const float scale = CAL_SCALE;
-            const float bias = CAL_BIAS;
+            const float scale = 2.0 / 255.0;
+            const float bias = 1.0;
             long int volChl = mDims.d[2] * mDims.d[3];
 
             // Normalize input data
