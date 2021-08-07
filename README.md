@@ -14,7 +14,7 @@
 ## Supported frameworks
 - TensorFlow Lite
 - TensorFlow Lite with delegate (XNNPACK, GPU, EdgeTPU, NNAPI)
-- TensorRT
+- TensorRT (GPU, DLA)
 - OpenCV(dnn)
 - ncnn
 - MNN

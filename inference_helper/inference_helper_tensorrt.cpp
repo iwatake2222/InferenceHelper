@@ -71,6 +71,8 @@ limitations under the License.
 #endif
 
 /*** Function ***/
+InferenceHelperTensorRt::~InferenceHelperTensorRt() = default;
+
 InferenceHelperTensorRt::InferenceHelperTensorRt()
 {
     num_threads_ = 1;
@@ -112,7 +114,7 @@ int32_t InferenceHelperTensorRt::Initialize(const std::string& model_filename, s
     }
 
     /*** create runtime ***/
-    runtime_ = std::shared_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(sample::gLogger.getTRTLogger()), samplesCommon::InferDeleter());
+    runtime_ = std::unique_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(sample::gLogger.getTRTLogger()));
     if (!runtime_) {
         PRINT_E("Failed to create runtime (%s)\n", model_filename.c_str());
         return kRetErr;
@@ -128,7 +130,7 @@ int32_t InferenceHelperTensorRt::Initialize(const std::string& model_filename, s
             copy(std::istream_iterator<char>(stream), std::istream_iterator<char>(), back_inserter(buffer));
         }
 
-        engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(buffer.data(), buffer.size()), samplesCommon::InferDeleter());
+        engine_ = std::unique_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(buffer.data(), buffer.size()));
         stream.close();
         if (!engine_) {
             PRINT_E("Failed to create engine (%s)\n", trt_model_filename.c_str());
@@ -136,12 +138,12 @@ int32_t InferenceHelperTensorRt::Initialize(const std::string& model_filename, s
         }
     } else if (is_onnx_model) {
         /* Create a TensorRT model from another format */
-        auto builder = std::shared_ptr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(sample::gLogger.getTRTLogger()), samplesCommon::InferDeleter());
+        auto builder = std::unique_ptr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(sample::gLogger.getTRTLogger()));
         const auto explicitBatch = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
-        auto network = std::shared_ptr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(explicitBatch), samplesCommon::InferDeleter());
-        auto config = std::shared_ptr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig(), samplesCommon::InferDeleter());
+        auto network = std::unique_ptr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(explicitBatch));
+        auto config = std::unique_ptr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
 
-        auto parser = std::shared_ptr<nvonnxparser::IParser>(nvonnxparser::createParser(*network, sample::gLogger.getTRTLogger()), samplesCommon::InferDeleter());
+        auto parser = std::unique_ptr<nvonnxparser::IParser>(nvonnxparser::createParser(*network, sample::gLogger.getTRTLogger()));
         if (!parser->parseFromFile(model_filename.c_str(), (int)nvinfer1::ILogger::Severity::kWARNING)) {
             PRINT_E("Failed to parse onnx file (%s)", model_filename.c_str());
             return kRetErr;
@@ -172,13 +174,13 @@ int32_t InferenceHelperTensorRt::Initialize(const std::string& model_filename, s
             samplesCommon::enableDLA(builder.get(), config.get(), dla_core_);
         }
 
-        auto plan = std::shared_ptr<nvinfer1::IHostMemory>(builder->buildSerializedNetwork(*network, *config), samplesCommon::InferDeleter());
+        auto plan = std::unique_ptr<nvinfer1::IHostMemory>(builder->buildSerializedNetwork(*network, *config));
         if (!plan) {
             PRINT_E("Failed to create plan (%s)\n", model_filename.c_str());
             return kRetErr;
         }
 
-        engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(plan->data(), plan->size()), samplesCommon::InferDeleter());
+        engine_ = std::unique_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(plan->data(), plan->size()));
         if (!engine_) {
             PRINT_E("Failed to create engine (%s)\n", model_filename.c_str());
             return kRetErr;
@@ -191,7 +193,7 @@ int32_t InferenceHelperTensorRt::Initialize(const std::string& model_filename, s
     }
 
 
-    context_ = std::shared_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext(), samplesCommon::InferDeleter());
+    context_ = std::unique_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext());
     if (!context_) {
         PRINT_E("Failed to create context (%s)\n", model_filename.c_str());
         return kRetErr;
