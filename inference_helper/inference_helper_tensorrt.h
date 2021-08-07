@@ -42,6 +42,9 @@ public:
     int32_t Finalize(void) override;
     int32_t PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list) override;
     int32_t Process(std::vector<OutputTensorInfo>& output_tensor_info_list) override;
+    void    SetDlaCore(int32_t dla_core) {
+        dla_core_ = dla_core;
+    }
 
 private:
     int32_t AllocateBuffers(std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list);
@@ -49,6 +52,7 @@ private:
     
 private:
     int32_t num_threads_;
+    int32_t dla_core_;
     std::shared_ptr<nvinfer1::IRuntime> runtime_;
     std::shared_ptr<nvinfer1::ICudaEngine> engine_;
     std::shared_ptr<nvinfer1::IExecutionContext> context_;

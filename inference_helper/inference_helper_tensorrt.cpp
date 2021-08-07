@@ -42,17 +42,17 @@ limitations under the License.
 
 /* Setting */
 #define USE_FP16
-// #define USE_INT8
+// #define USE_INT8_WITHOUT_CALIBRATION
+// #define USE_INT8_WITH_CALIBRATION
 
 #define OPT_MAX_WORK_SPACE_SIZE (1 << 30)
 #define OPT_AVG_TIMING_ITERATIONS 4
 #define OPT_MIN_TIMING_ITERATIONS 2
 
-#ifdef USE_INT8
+#ifdef USE_INT8_WITH_CALIBRATION
 /* ★ Modify the following (use the same parameter as the model. Also, ppm must be the same size but not normalized.) */
-#define CAL_DIR        "../../InferenceHelper/inference_helper/tensorrt//calibration/sample_ppm"
+#define CAL_DIR        "../../InferenceHelper/inference_helper/tensorrt/calibration/sample_ppm"
 #define CAL_LIST_FILE  "list.txt"
-#define CAL_INPUT_NAME "data"
 #define CAL_BATCH_SIZE 10
 #define CAL_NB_BATCHES 2
 #define CAL_IMAGE_C    3
@@ -74,6 +74,7 @@ limitations under the License.
 InferenceHelperTensorRt::InferenceHelperTensorRt()
 {
     num_threads_ = 1;
+    dla_core_ = -1;
 }
 
 int32_t InferenceHelperTensorRt::SetNumThreads(const int32_t num_threads)
@@ -90,7 +91,7 @@ int32_t InferenceHelperTensorRt::SetCustomOps(const std::vector<std::pair<const 
 
 int32_t InferenceHelperTensorRt::Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
-    /* check model format */
+    /*** check model format ***/
     bool is_trt_model = false;
     bool is_onnx_model = false;
     // bool isUffModel = false;	// todo
@@ -110,79 +111,90 @@ int32_t InferenceHelperTensorRt::Initialize(const std::string& model_filename, s
         return kRetErr;
     }
 
-    /* create runtime and engine from model file */
+    /*** create runtime ***/
+    runtime_ = std::shared_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(sample::gLogger.getTRTLogger()), samplesCommon::InferDeleter());
+    if (!runtime_) {
+        PRINT_E("Failed to create runtime (%s)\n", model_filename.c_str());
+        return kRetErr;
+    }
+
+    /*** create engine from model file ***/
     if (is_trt_model) {
+        /* Just load TensorRT model (serialized model) */
         std::string buffer;
         std::ifstream stream(trt_model_filename, std::ios::binary);
         if (stream) {
             stream >> std::noskipws;
             copy(std::istream_iterator<char>(stream), std::istream_iterator<char>(), back_inserter(buffer));
         }
-        runtime_ = std::shared_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(sample::gLogger.getTRTLogger()), samplesCommon::InferDeleter());
-        engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(buffer.data(), buffer.size(), NULL), samplesCommon::InferDeleter());
+
+        engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(buffer.data(), buffer.size()), samplesCommon::InferDeleter());
         stream.close();
         if (!engine_) {
             PRINT_E("Failed to create engine (%s)\n", trt_model_filename.c_str());
             return kRetErr;
         }
-        context_ = std::shared_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext(), samplesCommon::InferDeleter());
-        if (!context_) {
-            PRINT_E("Failed to create context (%s)\n", trt_model_filename.c_str());
-            return kRetErr;
-        }
     } else if (is_onnx_model) {
-        /* create a TensorRT model from another format */
+        /* Create a TensorRT model from another format */
         auto builder = std::shared_ptr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(sample::gLogger.getTRTLogger()), samplesCommon::InferDeleter());
-#if 0
-        /* For older version of JetPack */
-        auto network = std::shared_ptr<nvinfer1::INetworkDefinition>(builder->createNetwork(), samplesCommon::InferDeleter());
-#else
         const auto explicitBatch = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
         auto network = std::shared_ptr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(explicitBatch), samplesCommon::InferDeleter());
-#endif
         auto config = std::shared_ptr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig(), samplesCommon::InferDeleter());
 
-        auto parser_onnx = std::shared_ptr<nvonnxparser::IParser>(nvonnxparser::createParser(*network, sample::gLogger.getTRTLogger()), samplesCommon::InferDeleter());
-        if (!parser_onnx->parseFromFile(model_filename.c_str(), (int)nvinfer1::ILogger::Severity::kWARNING)) {
+        auto parser = std::shared_ptr<nvonnxparser::IParser>(nvonnxparser::createParser(*network, sample::gLogger.getTRTLogger()), samplesCommon::InferDeleter());
+        if (!parser->parseFromFile(model_filename.c_str(), (int)nvinfer1::ILogger::Severity::kWARNING)) {
             PRINT_E("Failed to parse onnx file (%s)", model_filename.c_str());
             return kRetErr;
         }
 
-        builder->setMaxBatchSize(1);
+        // builder->setMaxBatchSize(1);
         config->setMaxWorkspaceSize(OPT_MAX_WORK_SPACE_SIZE);
-        config->setAvgTimingIterations(OPT_AVG_TIMING_ITERATIONS);
-        config->setMinTimingIterations(OPT_MIN_TIMING_ITERATIONS) ;
+        // config->setAvgTimingIterations(OPT_AVG_TIMING_ITERATIONS);
+        // config->setMinTimingIterations(OPT_MIN_TIMING_ITERATIONS) ;
 
 #if defined(USE_FP16)
         config->setFlag(nvinfer1::BuilderFlag::kFP16);
-#elif defined(USE_INT8)
+#elif defined(USE_INT8_WITHOUT_CALIBRATION)
+        config->setFlag(nvinfer1::BuilderFlag::kINT8);
+        samplesCommon::setAllDynamicRanges(network.get(), 2.5f, 2.5f);
+#elif defined(USE_INT8_WITH_CALIBRATION)
         config->setFlag(nvinfer1::BuilderFlag::kINT8);
         std::vector<std::string> data_dirs;
         data_dirs.push_back(CAL_DIR);
-        nvinfer1::DimsNCHW image_dims{CAL_BATCH_SIZE, CAL_IMAGE_C, CAL_IMAGE_H, CAL_IMAGE_W};
+        nvinfer1::Dims4  image_dims{CAL_BATCH_SIZE, CAL_IMAGE_C, CAL_IMAGE_H, CAL_IMAGE_W};
         BatchStream calibration_stream(CAL_BATCH_SIZE, CAL_NB_BATCHES, image_dims, CAL_LIST_FILE, data_dirs);
-        auto calibrator = std::unique_ptr<nvinfer1::IInt8Calibrator>(new Int8EntropyCalibrator2<BatchStream>(calibration_stream, 0, "my_model", CAL_INPUT_NAME));
+        auto calibrator = std::unique_ptr<nvinfer1::IInt8Calibrator>(new Int8EntropyCalibrator2<BatchStream>(calibration_stream, 0, "_cal.txt", input_tensor_info_list[0].name.c_str()));
         config->setInt8Calibrator(calibrator.get());
 #endif 
 
-        engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(builder->buildEngineWithConfig(*network, *config), samplesCommon::InferDeleter());
+        if (dla_core_ >= 0) {
+            PRINT("Use DLA: %d\n", dla_core_);
+            samplesCommon::enableDLA(builder.get(), config.get(), dla_core_);
+        }
+
+        auto plan = std::shared_ptr<nvinfer1::IHostMemory>(builder->buildSerializedNetwork(*network, *config), samplesCommon::InferDeleter());
+        if (!plan) {
+            PRINT_E("Failed to create plan (%s)\n", model_filename.c_str());
+            return kRetErr;
+        }
+
+        engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(plan->data(), plan->size()), samplesCommon::InferDeleter());
         if (!engine_) {
             PRINT_E("Failed to create engine (%s)\n", model_filename.c_str());
             return kRetErr;
         }
-        context_ = std::shared_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext(), samplesCommon::InferDeleter());
-        if (!context_) {
-            PRINT_E("Failed to create context (%s)\n", model_filename.c_str());
-            return kRetErr;
-        }
-#if 1
+
         /* save serialized model for next time */
-        nvinfer1::IHostMemory* trt_model_stream = engine_->serialize();
         std::ofstream ofs(std::string(trt_model_filename), std::ios::out | std::ios::binary);
-        ofs.write((char*)(trt_model_stream->data()), trt_model_stream->size());
+        ofs.write((char*)(plan->data()), plan->size());
         ofs.close();
-        trt_model_stream->destroy();
-#endif
+    }
+
+
+    context_ = std::shared_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext(), samplesCommon::InferDeleter());
+    if (!context_) {
+        PRINT_E("Failed to create context (%s)\n", model_filename.c_str());
+        return kRetErr;
     }
 
     /* Allocate host/device buffers and assign to tensor info */
@@ -213,7 +225,6 @@ int32_t InferenceHelperTensorRt::Initialize(const std::string& model_filename, s
     for (auto& input_tensor_info : input_tensor_info_list) {
         ConvertNormalizeParameters(input_tensor_info);
     }
-
 
     return kRetOk;
 }

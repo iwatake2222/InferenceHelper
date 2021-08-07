@@ -13,6 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+
+/*
+ * Editor:
+ * iwatake (2021/08/06)
+ */
+
+
 #ifndef BATCH_STREAM_H
 #define BATCH_STREAM_H
 
@@ -322,7 +330,8 @@ private:
             }
 
             sample::gLogInfo << "Batch #" << mFileCount << std::endl;
-            file.seekg(((mBatchCount * mBatchSize)) * 7);
+            /* Modified by iwatake: the parametes should be defined in caller */
+            // file.seekg(((mBatchCount * mBatchSize)) * 7);
 
             for (int i = 1; i <= mBatchSize; i++)
             {
@@ -335,18 +344,23 @@ private:
 
             mFileCount++;
 
-            const int imageC = 3;
-            const int imageH = 300;
-            const int imageW = 300;
-            std::vector<samplesCommon::PPM<imageC, imageH, imageW>> ppms(fNames.size());
+            /* Modified by iwatake: the parametes should be defined in caller */
+            // const int imageC = 3;
+            // const int imageH = 300;
+            // const int imageW = 300;
+            // std::vector<samplesCommon::PPM<imageC, imageH, imageW>> ppms(fNames.size());
+            std::vector<samplesCommon::PPM<CAL_IMAGE_C, CAL_IMAGE_H, CAL_IMAGE_W>> ppms(fNames.size());
             for (uint32_t i = 0; i < fNames.size(); ++i)
             {
                 readPPMFile(locateFile(fNames[i], mDataDir), ppms[i]);
             }
 
             std::vector<float> data(samplesCommon::volume(mDims));
-            const float scale = 2.0 / 255.0;
-            const float bias = 1.0;
+            /* Modified by iwatake: the parametes should be defined in caller */
+            const float scale = CAL_SCALE;
+            const float bias = CAL_BIAS;
+            // const float scale = 2.0 / 255.0;
+            // const float bias = 1.0;
             long int volChl = mDims.d[2] * mDims.d[3];
 
             // Normalize input data
