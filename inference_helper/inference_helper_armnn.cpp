@@ -428,16 +428,19 @@ int32_t InferenceHelperArmnn::PreProcess(const std::vector<InputTensorInfo>& inp
 {
     int32_t buffer_index = 0;
     for (const auto& input_tensor_info : input_tensor_info_list) {
+        const int32_t img_width = input_tensor_info.GetWidth();
+        const int32_t img_height = input_tensor_info.GetHeight();
+        const int32_t img_channel = input_tensor_info.GetChannel();
         if (input_tensor_info.data_type == InputTensorInfo::kDataTypeImage) {
             if ((input_tensor_info.image_info.width != input_tensor_info.image_info.crop_width) || (input_tensor_info.image_info.height != input_tensor_info.image_info.crop_height)) {
                 PRINT_E("Crop is not supported\n");
                 return  kRetErr;
             }
-            if ((input_tensor_info.image_info.crop_width != input_tensor_info.GetWidth()) || (input_tensor_info.image_info.crop_height != input_tensor_info.GetHeight())) {
+            if ((input_tensor_info.image_info.crop_width != img_width) || (input_tensor_info.image_info.crop_height != img_height)) {
                 PRINT_E("Resize is not supported\n");
                 return  kRetErr;
             }
-            if (input_tensor_info.image_info.channel != input_tensor_info.GetChannel()) {
+            if (input_tensor_info.image_info.channel != img_channel) {
                 PRINT_E("Color conversion is not supported\n");
                 return  kRetErr;
             }
@@ -448,18 +451,18 @@ int32_t InferenceHelperArmnn::PreProcess(const std::vector<InputTensorInfo>& inp
                 uint8_t *src = (uint8_t*)(input_tensor_info.data);
                 if (input_tensor_info.is_nchw) {
 #pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
-                        for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
-                            dst[c * input_tensor_info.GetWidth() * input_tensor_info.GetHeight() + i] = 
-                                (src[i * input_tensor_info.GetChannel() + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
+                    for (int32_t c = 0; c < img_channel; c++) {
+                        for (int32_t i = 0; i < img_width * img_height; i++) {
+                            dst[c * img_width * img_height + i] = 
+                                (src[i * img_channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
                         }
                     }
                 } else {
 #pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
-                        for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
-                            dst[i * input_tensor_info.GetChannel() + c] = 
-                                (src[i * input_tensor_info.GetChannel() + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
+                    for (int32_t c = 0; c < img_channel; c++) {
+                        for (int32_t i = 0; i < img_width * img_height; i++) {
+                            dst[i * img_channel + c] = 
+                                (src[i * img_channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
                         }
                     }
                 }
@@ -469,16 +472,16 @@ int32_t InferenceHelperArmnn::PreProcess(const std::vector<InputTensorInfo>& inp
 
                 if (input_tensor_info.is_nchw) {
 #pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
-                        for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
-                            dst[c * input_tensor_info.GetWidth() * input_tensor_info.GetHeight() + i] = src[i * input_tensor_info.GetChannel() + c];
+                    for (int32_t c = 0; c < img_channel; c++) {
+                        for (int32_t i = 0; i < img_width * img_height; i++) {
+                            dst[c * img_width * img_height + i] = src[i * img_channel + c];
                         }
                     }
                 } else {
 #pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
-                        for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
-                            dst[i * input_tensor_info.GetChannel() + c] = src[i * input_tensor_info.GetChannel() + c];
+                    for (int32_t c = 0; c < img_channel; c++) {
+                        for (int32_t i = 0; i < img_width * img_height; i++) {
+                            dst[i * img_channel + c] = src[i * img_channel + c];
                         }
                     }
                 }
@@ -492,23 +495,23 @@ int32_t InferenceHelperArmnn::PreProcess(const std::vector<InputTensorInfo>& inp
             uint8_t *src = (uint8_t*)(input_tensor_info.data);
             if (input_tensor_info.is_nchw) {
 #pragma omp parallel for num_threads(num_threads_)
-                for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
-                    for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
-                        dst[c * input_tensor_info.GetWidth() * input_tensor_info.GetHeight() + i] = src[i * input_tensor_info.GetChannel() + c];
+                for (int32_t c = 0; c < img_channel; c++) {
+                    for (int32_t i = 0; i < img_width * img_height; i++) {
+                        dst[c * img_width * img_height + i] = src[i * img_channel + c];
                     }
                 }
             } else {
-                memcpy(dst, src, input_tensor_info.GetBatch() * input_tensor_info.GetChannel() * input_tensor_info.GetHeight() * input_tensor_info.GetWidth());
+                memcpy(dst, src, input_tensor_info.GetBatch() * img_channel * img_height * img_width);
             }
         } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) {
             uint8_t *dst = (uint8_t*)(armnn_wrapper_->list_buffer_in_[buffer_index]);
             uint8_t *src = (uint8_t*)(input_tensor_info.data);
             if (input_tensor_info.is_nchw) {
-                memcpy(dst, src, input_tensor_info.GetBatch() * input_tensor_info.GetChannel() * input_tensor_info.GetHeight() * input_tensor_info.GetWidth());
+                memcpy(dst, src, input_tensor_info.GetBatch() * img_channel * img_height * img_width);
             } else {
-                for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
-                    for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
-                        dst[i * input_tensor_info.GetChannel() + c] = src[c * input_tensor_info.GetWidth() * input_tensor_info.GetHeight() + i];
+                for (int32_t c = 0; c < img_channel; c++) {
+                    for (int32_t i = 0; i < img_width * img_height; i++) {
+                        dst[i * img_channel + c] = src[c * img_width * img_height + i];
                     }
                 }
             }

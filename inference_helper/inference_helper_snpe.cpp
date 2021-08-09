@@ -152,16 +152,19 @@ int32_t InferenceHelperSnpe::PreProcess(const std::vector<InputTensorInfo>& inpu
     }
 
     for (const auto& input_tensor_info : input_tensor_info_list) {
+        const int32_t img_width = input_tensor_info.GetWidth();
+        const int32_t img_height = input_tensor_info.GetHeight();
+        const int32_t img_channel = input_tensor_info.GetChannel();
         if (input_tensor_info.data_type == InputTensorInfo::kDataTypeImage) {
             if ((input_tensor_info.image_info.width != input_tensor_info.image_info.crop_width) || (input_tensor_info.image_info.height != input_tensor_info.image_info.crop_height)) {
                 PRINT_E("Crop is not supported\n");
                 return  kRetErr;
             }
-            if ((input_tensor_info.image_info.crop_width != input_tensor_info.GetWidth()) || (input_tensor_info.image_info.crop_height != input_tensor_info.GetHeight())) {
+            if ((input_tensor_info.image_info.crop_width != img_width) || (input_tensor_info.image_info.crop_height != img_height)) {
                 PRINT_E("Resize is not supported\n");
                 return  kRetErr;
             }
-            if (input_tensor_info.image_info.channel != input_tensor_info.GetChannel()) {
+            if (input_tensor_info.image_info.channel != img_channel) {
                 PRINT_E("Color conversion is not supported\n");
                 return  kRetErr;
             }
@@ -173,12 +176,12 @@ int32_t InferenceHelperSnpe::PreProcess(const std::vector<InputTensorInfo>& inpu
             } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
                 float* dst = reinterpret_cast<float*> (&application_input_buffers_.at(input_tensor_info.name)[0]);
 #pragma omp parallel for num_threads(num_threads_)
-                for (int32_t i = 0; i < input_tensor_info.GetWidth() * input_tensor_info.GetHeight(); i++) {
-                    for (int32_t c = 0; c < input_tensor_info.GetChannel(); c++) {
+                for (int32_t i = 0; i < img_width * img_height; i++) {
+                    for (int32_t c = 0; c < img_channel; c++) {
 #if 1
-                        dst[i * input_tensor_info.GetChannel() + c] = (src[i * input_tensor_info.GetChannel() + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
+                        dst[i * img_channel + c] = (src[i * img_channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
 #else
-                        dst[i * input_tensor_info.GetChannel() + c] = (src[i * input_tensor_info.GetChannel() + c] / 255.0f - input_tensor_info.normalize.mean[c]) / input_tensor_info.normalize.norm[c];
+                        dst[i * img_channel + c] = (src[i * img_channel + c] / 255.0f - input_tensor_info.normalize.mean[c]) / input_tensor_info.normalize.norm[c];
 #endif
                     }
                 }
