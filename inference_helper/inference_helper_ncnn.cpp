@@ -28,13 +28,13 @@ limitations under the License.
 #include "net.h"
 
 /* for My modules */
-#include "common_helper.h"
+#include "inference_helper_log.h"
 #include "inference_helper_ncnn.h"
 
 /*** Macro ***/
 #define TAG "InferenceHelperNcnn"
-#define PRINT(...)   COMMON_HELPER_PRINT(TAG, __VA_ARGS__)
-#define PRINT_E(...) COMMON_HELPER_PRINT_E(TAG, __VA_ARGS__)
+#define PRINT(...)   INFERENCE_HELPER_LOG_PRINT(TAG, __VA_ARGS__)
+#define PRINT_E(...) INFERENCE_HELPER_LOG_PRINT_E(TAG, __VA_ARGS__)
 
 /*** Function ***/
 InferenceHelperNcnn::InferenceHelperNcnn()

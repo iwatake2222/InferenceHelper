@@ -74,13 +74,9 @@ https://github.com/iwatake2222/InferenceHelper_Sample
 - Extract `snpe-1.51.0.zip` , then place `lib` and `include` folders to `third_party/snpe`
 
 ## Project settings in CMake
-- Add InferenceHelper and CommonHelper to your project
+- Add InferenceHelper to your project
     ```cmake
     set(INFERENCE_HELPER_DIR ${CMAKE_CURRENT_LIST_DIR}/../../InferenceHelper/)
-    # add_subdirectory(${INFERENCE_HELPER_DIR}/common_helper common_helper)
-    target_include_directories(${LibraryName} PUBLIC ${INFERENCE_HELPER_DIR}/common_helper)
-    target_link_libraries(${LibraryName} CommonHelper)
-
     add_subdirectory(${INFERENCE_HELPER_DIR}/inference_helper inference_helper)
     target_include_directories(${LibraryName} PUBLIC ${INFERENCE_HELPER_DIR}/inference_helper)
     target_link_libraries(${LibraryName} InferenceHelper)

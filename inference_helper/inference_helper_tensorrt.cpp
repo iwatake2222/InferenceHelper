@@ -32,13 +32,13 @@ limitations under the License.
 #include "tensorrt/common.h"
 
 /* for My modules */
-#include "common_helper.h"
+#include "inference_helper_log.h"
 #include "inference_helper_tensorrt.h"
 
 /*** Macro ***/
 #define TAG "InferenceHelperTensorRt"
-#define PRINT(...)   COMMON_HELPER_PRINT(TAG, __VA_ARGS__)
-#define PRINT_E(...) COMMON_HELPER_PRINT_E(TAG, __VA_ARGS__)
+#define PRINT(...)   INFERENCE_HELPER_LOG_PRINT(TAG, __VA_ARGS__)
+#define PRINT_E(...) INFERENCE_HELPER_LOG_PRINT_E(TAG, __VA_ARGS__)
 
 /* Setting */
 #define USE_FP16

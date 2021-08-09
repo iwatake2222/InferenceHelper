@@ -17,7 +17,7 @@ set(INFERENCE_HELPER_ENABLE_SNPE off CACHE BOOL "With SNPE? [on/off]")
 set(INFERENCE_HELPER_ENABLE_ARMNN off CACHE BOOL "With ARMNN? [on/off]")
 
 # Create library
-set(SRC inference_helper.h inference_helper.cpp)
+set(SRC inference_helper.h inference_helper.cpp inference_helper_log.h)
 
 if(INFERENCE_HELPER_ENABLE_OPENCV)
     set(SRC ${SRC} inference_helper_opencv.h inference_helper_opencv.cpp)
@@ -50,10 +50,6 @@ if(INFERENCE_HELPER_ENABLE_ARMNN)
 endif()
 
 add_library(${LibraryName} ${SRC})
-
-add_subdirectory(../common_helper common_helper)
-target_include_directories(${LibraryName} PUBLIC ../common_helper)
-target_link_libraries(${LibraryName} CommonHelper)
 
 # For TensorInfo (Pre process calculation)
 if(INFERENCE_HELPER_ENABLE_PRE_PROCESS_BY_OPENCV)
