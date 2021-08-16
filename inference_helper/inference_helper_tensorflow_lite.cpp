@@ -40,6 +40,10 @@ limitations under the License.
 #include "tensorflow/lite/delegates/xnnpack/xnnpack_delegate.h"
 #endif
 
+#ifdef INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI
+#include "tensorflow/lite/delegates/nnapi/nnapi_delegate.h"
+#endif
+
 /* for My modules */
 #include "inference_helper_log.h"
 #include "inference_helper_tensorflow_lite.h"
