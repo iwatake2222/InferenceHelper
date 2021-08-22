@@ -60,9 +60,27 @@ int32_t InferenceHelperOpenCV::SetCustomOps(const std::vector<std::pair<const ch
 
 int32_t InferenceHelperOpenCV::Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
+    /*** check model format ***/
+    bool is_onnx_model = false;
+    bool is_darknet_model = false;
+    std::string model_filename_darknet_weight = model_filename;
+    if (model_filename.find(".onnx") != std::string::npos) {
+        is_onnx_model = true;
+    } else if (model_filename.find(".cfg") != std::string::npos) {
+        is_darknet_model = true;
+        model_filename_darknet_weight = model_filename_darknet_weight.replace(model_filename_darknet_weight.find(".cfg"), std::string(".weights").length(), ".weights");
+    } else {
+        PRINT_E("unsupoprted file format (%s)\n", model_filename.c_str());
+        return kRetErr;
+    }
+
     /*** Create network ***/
     try {
-        net_ = cv::dnn::readNetFromONNX(model_filename);
+        if (is_onnx_model) {
+            net_ = cv::dnn::readNetFromONNX(model_filename);
+        } else if (is_darknet_model) {
+            net_ = cv::dnn::readNetFromDarknet(model_filename, model_filename_darknet_weight);
+        }
     } catch (std::exception& e) {
         PRINT_E("%s\n", e.what());
     }
@@ -205,8 +223,14 @@ int32_t InferenceHelperOpenCV::PreProcess(const std::vector<InputTensorInfo>& in
                     PRINT_E("Unsupported channel num (%d)\n", input_tensor_info.GetChannel());
                     return kRetErr;
                 }
-                /* Convert to 4-dimensional Mat in NCHW */
-                img_blob = cv::dnn::blobFromImage(img_src);
+                if (input_tensor_info.is_nchw) {
+                    /* Convert to 4-dimensional Mat in NCHW */
+                    img_blob = cv::dnn::blobFromImage(img_src);
+                } else {
+                    const std::vector<int> sizes = { 1, img_src.rows, img_src.cols, img_src.channels() };
+                    cv::Mat mat(sizes, CV_32F, img_src.data);
+                    img_blob = mat.clone();
+                }
             } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
                 /* Convert to 4-dimensional Mat in NCHW */
                 img_blob = cv::dnn::blobFromImage(img_src);
@@ -252,7 +276,11 @@ int32_t InferenceHelperOpenCV::Process(std::vector<OutputTensorInfo>& output_ten
         outNameList.push_back(output_tensor_info.name);
     }
     out_mat_list_.clear();
-    net_.forward(out_mat_list_, outNameList);
+    try {
+        net_.forward(out_mat_list_, outNameList);
+    } catch (std::exception& e) {
+        PRINT_E("Error at forward: %s\n", e.what());
+    }
 
     /*** Retrieve the results ***/
     if (out_mat_list_.size() != output_tensor_info_list.size()) {
