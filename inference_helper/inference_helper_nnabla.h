@@ -24,7 +24,16 @@ limitations under the License.
 #include <memory>
 
 /* for nnabla */
-
+namespace nbla {
+    class Variable;
+    class Context;
+    namespace utils {
+        namespace nnp {
+            class Nnp;
+            class Executor;
+        }
+    }
+}
 
 /* for My modules */
 #include "inference_helper.h"
@@ -41,9 +50,18 @@ public:
     int32_t Process(std::vector<OutputTensorInfo>& output_tensor_info_list) override;
 
 private:
+    void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
+    void DisplayModelInfo();
+    int32_t CheckTensorInfo(TensorInfo& tensor_info, const std::shared_ptr<nbla::Variable> variable);
+    int32_t AllocateBuffers(std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list);
+    std::shared_ptr<nbla::Variable> GetInputVariable(int32_t index);
+    std::shared_ptr<nbla::Variable> GetOutputVariable(int32_t index);
 
 private:
     int32_t num_threads_;
+    std::shared_ptr<nbla::Context> ctx_;
+    std::shared_ptr<nbla::utils::nnp::Nnp> nnp_;
+    std::shared_ptr<nbla::utils::nnp::Executor> executor_;
 };
 
 #endif

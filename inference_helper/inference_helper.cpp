@@ -132,6 +132,7 @@ InferenceHelper* InferenceHelper::Create(const InferenceHelper::HelperType helpe
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_NNABLA
     case kNnabla:
+    case kNnablaCuda:
         PRINT("Use NNabla\n");
         p = new InferenceHelperNnabla();
         break;

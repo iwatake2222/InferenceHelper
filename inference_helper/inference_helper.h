@@ -236,6 +236,7 @@ public:
         kSnpe,
         kArmnn,
         kNnabla,
+        kNnablaCuda,
     } HelperType;
 
 public:
