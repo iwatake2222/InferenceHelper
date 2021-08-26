@@ -28,8 +28,11 @@ limitations under the License.
 #include <nbla/logger.hpp>
 #include <nbla_utils/nnp.hpp>
 
-//#include <nbla/cuda/cudnn/init.hpp>
-//#include <nbla/cuda/init.hpp>
+#ifdef INFERENCE_HELPER_ENABLE_NNABLA_CUDA
+#include <nbla/cuda/cudnn/init.hpp>
+#include <nbla/cuda/init.hpp>
+#include <cuda_runtime_api.h>
+#endif
 
 /* for My modules */
 #include "inference_helper_log.h"
@@ -66,13 +69,18 @@ int32_t InferenceHelperNnabla::SetCustomOps(const std::vector<std::pair<const ch
 int32_t InferenceHelperNnabla::Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
     try {
+        ctx_cpu_.reset(new nbla::Context{ {"cpu:float"}, "CpuCachedArray", "0" });
         if (helper_type_ == kNnabla) {
-            ctx_.reset(new nbla::Context{ {"cpu:float"}, "CpuCachedArray", "0" });
-        } else if (helper_type_ == kNnablaCuda) {
-            //nbla::init_cudnn();
-            //ctx_.reset(new nbla::Context{ {"cudnn:float", "cuda:float", "cpu:float" }, "CudaCachedArray", "0"});
+            nnp_.reset(new nbla::utils::nnp::Nnp(*ctx_cpu_));
         }
-        nnp_.reset(new nbla::utils::nnp::Nnp(*ctx_));
+#ifdef INFERENCE_HELPER_ENABLE_NNABLA_CUDA
+        else if (helper_type_ == kNnablaCuda) {
+            nbla::init_cudnn();
+            ctx_gpu_.reset(new nbla::Context{ {"cudnn:float", "cuda:float", "cpu:float" }, "CudaCachedArray", "0"});
+            nnp_.reset(new nbla::utils::nnp::Nnp(*ctx_gpu_));
+        }
+#endif
+
         nnp_->add(model_filename);
         const auto executor_name = nnp_->get_executor_names()[0];
         PRINT("Model filename = %s, executor name = %s\n", model_filename.c_str(), executor_name.c_str());
@@ -127,7 +135,7 @@ int32_t InferenceHelperNnabla::PreProcess(const std::vector<InputTensorInfo>& in
 
             /* Normalize image */
             if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
-                float* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<float>(*ctx_);
+                float* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<float>(*ctx_cpu_);
                 uint8_t* src = (uint8_t*)(input_tensor_info.data);
                 if (input_tensor_info.is_nchw == true) {
                     /* convert NHWC to NCHW */
@@ -147,7 +155,7 @@ int32_t InferenceHelperNnabla::PreProcess(const std::vector<InputTensorInfo>& in
                     }
                 }
             } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
-                uint8_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<uint8_t>(*ctx_);
+                uint8_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<uint8_t>(*ctx_cpu_);
                 uint8_t* src = (uint8_t*)(input_tensor_info.data);
                 if (input_tensor_info.is_nchw == true) {
                     /* convert NHWC to NCHW */
@@ -162,7 +170,7 @@ int32_t InferenceHelperNnabla::PreProcess(const std::vector<InputTensorInfo>& in
                     std::copy(src, src + input_tensor_info.GetElementNum(), dst);
                 }
             } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
-                uint8_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<uint8_t>(*ctx_);
+                uint8_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<uint8_t>(*ctx_cpu_);
                 uint8_t* src = (uint8_t*)(input_tensor_info.data);
                 if (input_tensor_info.is_nchw == true) {
                     /* convert NHWC to NCHW */
@@ -186,7 +194,7 @@ int32_t InferenceHelperNnabla::PreProcess(const std::vector<InputTensorInfo>& in
             }
         } else if ((input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw)) {
             if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8 || input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
-                uint8_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<uint8_t>(*ctx_);
+                uint8_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<uint8_t>(*ctx_cpu_);
                 uint8_t* src = static_cast<uint8_t*>(input_tensor_info.data);
                 if ( (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw && input_tensor_info.is_nchw) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc && !input_tensor_info.is_nchw)) {
                     std::copy(src, src + input_tensor_info.GetElementNum(), dst);
@@ -208,7 +216,7 @@ int32_t InferenceHelperNnabla::PreProcess(const std::vector<InputTensorInfo>& in
                     }
                 }
             } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
-                float* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<float>(*ctx_);
+                float* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<float>(*ctx_cpu_);
                 float* src = static_cast<float*>(input_tensor_info.data);
                 if ((input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw && input_tensor_info.is_nchw) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc && !input_tensor_info.is_nchw)) {
                     std::copy(src, src + input_tensor_info.GetElementNum(), dst);
@@ -230,7 +238,7 @@ int32_t InferenceHelperNnabla::PreProcess(const std::vector<InputTensorInfo>& in
                     }
                 }
             } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt32) {
-                int32_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<int32_t>(*ctx_);
+                int32_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<int32_t>(*ctx_cpu_);
                 int32_t* src = static_cast<int32_t*>(input_tensor_info.data);
                 if ((input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw && input_tensor_info.is_nchw) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc && !input_tensor_info.is_nchw)) {
                     std::copy(src, src + input_tensor_info.GetElementNum(), dst);
@@ -266,7 +274,42 @@ int32_t InferenceHelperNnabla::PreProcess(const std::vector<InputTensorInfo>& in
 int32_t InferenceHelperNnabla::Process(std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
     try {
+#ifdef INFERENCE_HELPER_ENABLE_NNABLA_CUDA
+        if (helper_type_ == kNnablaCuda) {
+            nbla::cuda_device_synchronize("0");
+        }
+#endif
         executor_->execute();
+
+#ifdef INFERENCE_HELPER_ENABLE_NNABLA_CUDA
+        if (helper_type_ == kNnablaCuda) {
+            nbla::cuda_device_synchronize("0");
+            
+
+            /* todo: Do I really need this?  they don't use cudaMemcpy in sample code (mnist_runtime.cpp) */
+            for (auto& tensor_info : output_tensor_info_list) {
+                const auto& variable = GetOutputVariable(tensor_info.id);
+                switch (tensor_info.tensor_type) {
+                default:
+                case TensorInfo::kTensorTypeFp32:
+                    cudaMemcpy(tensor_info.data, variable->cast_data_and_get_pointer<float>(*ctx_gpu_), tensor_info.GetElementNum() * 4, cudaMemcpyDeviceToHost);
+                    break;
+                case TensorInfo::kTensorTypeInt32:
+                    cudaMemcpy(tensor_info.data, variable->cast_data_and_get_pointer<int32_t>(*ctx_gpu_), tensor_info.GetElementNum() * 4, cudaMemcpyDeviceToHost);
+                    break;
+                case TensorInfo::kTensorTypeInt8:
+                    cudaMemcpy(tensor_info.data, variable->cast_data_and_get_pointer<int8_t>(*ctx_gpu_), tensor_info.GetElementNum() * 1, cudaMemcpyDeviceToHost);
+                    break;
+                case TensorInfo::kTensorTypeUint8:
+                    cudaMemcpy(tensor_info.data, variable->cast_data_and_get_pointer<uint8_t>(*ctx_gpu_), tensor_info.GetElementNum() * 1, cudaMemcpyDeviceToHost);
+                    break;
+                case TensorInfo::kTensorTypeInt64:
+                    cudaMemcpy(tensor_info.data, variable->cast_data_and_get_pointer<int64_t>(*ctx_gpu_), tensor_info.GetElementNum() * 8, cudaMemcpyDeviceToHost);
+                    break;
+                }
+            }
+        }
+#endif
     } catch (std::exception& e) {
         PRINT_E("Exception: %s\n", e.what());
         return kRetErr;
@@ -370,7 +413,7 @@ int32_t InferenceHelperNnabla::AllocateBuffers(std::vector<InputTensorInfo>& inp
             PRINT_E("Input tensor info is not correct (%s)\n", tensor_info.name.c_str());
             return kRetErr;
         }
-        tensor_info.data = variable->cast_data_and_get_pointer<float>(*ctx_);
+        tensor_info.data = variable->cast_data_and_get_pointer<float>(*ctx_cpu_);
     }
     for (auto& tensor_info : output_tensor_info_list) {
         const auto& variable = GetOutputVariable(tensor_info.id);
@@ -378,7 +421,7 @@ int32_t InferenceHelperNnabla::AllocateBuffers(std::vector<InputTensorInfo>& inp
             PRINT_E("Output tensor info is not correct (%s)\n", tensor_info.name.c_str());
             return kRetErr;
         }
-        tensor_info.data = variable->cast_data_and_get_pointer<float>(*ctx_);
+        tensor_info.data = variable->cast_data_and_get_pointer<float>(*ctx_cpu_);
     }
 
     return kRetOk;

@@ -49,7 +49,7 @@ limitations under the License.
 #ifdef INFERENCE_HELPER_ENABLE_ARMNN
 #include "inference_helper_armnn.h"
 #endif
-#ifdef INFERENCE_HELPER_ENABLE_NNABLA
+#if defined(INFERENCE_HELPER_ENABLE_NNABLA) || defined(INFERENCE_HELPER_ENABLE_NNABLA_CUDA)
 #include "inference_helper_nnabla.h"
 #endif
 
@@ -132,8 +132,13 @@ InferenceHelper* InferenceHelper::Create(const InferenceHelper::HelperType helpe
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_NNABLA
     case kNnabla:
-    case kNnablaCuda:
         PRINT("Use NNabla\n");
+        p = new InferenceHelperNnabla();
+        break;
+#endif
+#ifdef INFERENCE_HELPER_ENABLE_NNABLA_CUDA
+    case kNnablaCuda:
+        PRINT("Use NNabla_CUDA\n");
         p = new InferenceHelperNnabla();
         break;
 #endif

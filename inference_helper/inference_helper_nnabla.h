@@ -59,7 +59,8 @@ private:
 
 private:
     int32_t num_threads_;
-    std::shared_ptr<nbla::Context> ctx_;
+    std::shared_ptr<nbla::Context> ctx_cpu_;
+    std::shared_ptr<nbla::Context> ctx_gpu_;
     std::shared_ptr<nbla::utils::nnp::Nnp> nnp_;
     std::shared_ptr<nbla::utils::nnp::Executor> executor_;
 };
