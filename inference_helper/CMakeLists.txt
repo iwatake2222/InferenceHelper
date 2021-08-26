@@ -15,6 +15,7 @@ set(INFERENCE_HELPER_ENABLE_NCNN off CACHE BOOL "With Ncnn? [on/off]")
 set(INFERENCE_HELPER_ENABLE_MNN off CACHE BOOL "With Mnn? [on/off]")
 set(INFERENCE_HELPER_ENABLE_SNPE off CACHE BOOL "With SNPE? [on/off]")
 set(INFERENCE_HELPER_ENABLE_ARMNN off CACHE BOOL "With ARMNN? [on/off]")
+set(INFERENCE_HELPER_ENABLE_NNABLA off CACHE BOOL "With NNabla? [on/off]")
 
 # Create library
 set(SRC inference_helper.h inference_helper.cpp inference_helper_log.h)
@@ -41,12 +42,16 @@ if(INFERENCE_HELPER_ENABLE_MNN)
 endif()
 
 if(INFERENCE_HELPER_ENABLE_SNPE)
-	set(SRC ${SRC} inference_helper_snpe.h inference_helper_snpe.cpp)
-	set(SRC ${SRC} snpe/CreateUserBuffer.cpp snpe/CreateUserBuffer.hpp snpe/Util.cpp snpe/Util.hpp snpe/udlExample.cpp snpe/udlExample.hpp)
+    set(SRC ${SRC} inference_helper_snpe.h inference_helper_snpe.cpp)
+    set(SRC ${SRC} snpe/CreateUserBuffer.cpp snpe/CreateUserBuffer.hpp snpe/Util.cpp snpe/Util.hpp snpe/udlExample.cpp snpe/udlExample.hpp)
 endif()
 
 if(INFERENCE_HELPER_ENABLE_ARMNN)
-	set(SRC ${SRC} inference_helper_armnn.h inference_helper_armnn.cpp)
+    set(SRC ${SRC} inference_helper_armnn.h inference_helper_armnn.cpp)
+endif()
+
+if(INFERENCE_HELPER_ENABLE_NNABLA)
+    set(SRC ${SRC} inference_helper_nnabla.h inference_helper_nnabla.cpp)
 endif()
 
 add_library(${LibraryName} ${SRC})
@@ -161,3 +166,10 @@ if(INFERENCE_HELPER_ENABLE_ARMNN)
     add_definitions(-DINFERENCE_HELPER_ENABLE_ARMNN)
 endif()
 
+# For NNABLA
+if(INFERENCE_HELPER_ENABLE_NNABLA)
+    include(${THIRD_PARTY_DIR}/cmakes/nnabla.cmake)
+    target_include_directories(${LibraryName} PUBLIC ${NNABLA_INC})
+    target_link_libraries(${LibraryName} ${NNABLA_LIB})
+    add_definitions(-DINFERENCE_HELPER_ENABLE_NNABLA)
+endif()

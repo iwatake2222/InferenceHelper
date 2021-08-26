@@ -49,6 +49,9 @@ limitations under the License.
 #ifdef INFERENCE_HELPER_ENABLE_ARMNN
 #include "inference_helper_armnn.h"
 #endif
+#ifdef INFERENCE_HELPER_ENABLE_NNABLA
+#include "inference_helper_nnabla.h"
+#endif
 
 /*** Macro ***/
 #define TAG "InferenceHelper"
@@ -125,6 +128,12 @@ InferenceHelper* InferenceHelper::Create(const InferenceHelper::HelperType helpe
     case kArmnn:
         PRINT("Use ARMNN\n");
         p = new InferenceHelperArmnn();
+        break;
+#endif
+#ifdef INFERENCE_HELPER_ENABLE_NNABLA
+    case kNnabla:
+        PRINT("Use NNabla\n");
+        p = new InferenceHelperNnabla();
         break;
 #endif
     default:

@@ -235,6 +235,7 @@ public:
         kMnn,
         kSnpe,
         kArmnn,
+        kNnabla,
     } HelperType;
 
 public:
