@@ -43,9 +43,6 @@ public:
     int32_t Process(std::vector<OutputTensorInfo>& output_tensor_info_list) override;
 
 private:
-    void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
-
-private:
     std::unique_ptr<MNN::Interpreter> net_;
     MNN::Session* session_;
     std::vector<std::unique_ptr<MNN::Tensor>> out_mat_list_;

@@ -159,11 +159,11 @@ int32_t InferenceHelperNnabla::PreProcess(const std::vector<InputTensorInfo>& in
                 int32_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<int32_t>(*ctx_cpu_);
                 PreProcessBlob<int32_t>(num_threads_, input_tensor_info, dst);
             } else {
-                PRINT_E("Unsupported data_type (%d)\n", input_tensor_info.data_type);
+                PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
                 return kRetErr;
             }
         } else {
-            PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
+            PRINT_E("Unsupported data_type (%d)\n", input_tensor_info.data_type);
             return kRetErr;
         }
     }
@@ -225,8 +225,8 @@ void InferenceHelperNnabla::DisplayModelInfo()
         const auto& cg_variable = variable.variable->variable();
         PRINT("  %s:\n", variable.variable_name.c_str());
         PRINT("      size: %d\n", static_cast<int32_t>(cg_variable->size()));
-        for (auto i = 0; i < cg_variable->shape().size(); i++) {
-            PRINT("      shape[%d]: %d\n", static_cast<int32_t>(i), static_cast<int32_t>(cg_variable->shape()[i]));
+        for (int32_t i = 0; i < static_cast<int32_t>(cg_variable->shape().size()); i++) {
+            PRINT("      shape[%d]: %d\n", i, static_cast<int32_t>(cg_variable->shape()[i]));
         }
     }
 
@@ -235,8 +235,8 @@ void InferenceHelperNnabla::DisplayModelInfo()
         const auto& cg_variable = variable.variable->variable();
         PRINT("  %s:\n", variable.variable_name.c_str());
         PRINT("      size: %d\n", static_cast<int32_t>(cg_variable->size()));
-        for (auto i = 0; i < cg_variable->shape().size(); i++) {
-            PRINT("      shape[%d]: %d\n", static_cast<int32_t>(i), static_cast<int32_t>(cg_variable->shape()[i]));
+        for (int32_t i = 0; i < static_cast<int32_t>(cg_variable->shape().size()); i++) {
+            PRINT("      shape[%d]: %d\n", i, static_cast<int32_t>(cg_variable->shape()[i]));
         }
     }
 }
@@ -261,7 +261,7 @@ int32_t InferenceHelperNnabla::AllocateBuffers(std::vector<InputTensorInfo>& inp
             if (tensor_info.name == variable.variable_name) break;
             index++;
         }
-        if (index < variable_list.size()) {
+        if (index < static_cast<int32_t>(variable_list.size())) {
             tensor_info.id = index;
         } else {
             PRINT_E("Input tensor name doesn't exist in the model (%s)\n", tensor_info.name.c_str());
@@ -275,7 +275,7 @@ int32_t InferenceHelperNnabla::AllocateBuffers(std::vector<InputTensorInfo>& inp
             if (tensor_info.name == variable.variable_name) break;
             index++;
         }
-        if (index < variable_list.size()) {
+        if (index < static_cast<int32_t>(variable_list.size())) {
             tensor_info.id = index;
         } else {
             PRINT_E("Output tensor name doesn't exist in the model (%s)\n", tensor_info.name.c_str());
@@ -314,11 +314,11 @@ int32_t InferenceHelperNnabla::CheckTensorInfo(TensorInfo& tensor_info, const sh
             tensor_info.tensor_dims.push_back(static_cast<int32_t>(shape[i]));
         }
     } else {
-        if (tensor_info.tensor_dims.size() != ndim) {
+        if (tensor_info.tensor_dims.size() != static_cast<size_t>(ndim)) {
             PRINT_E("Input Tensor dims doesn't match\n");
             return kRetErr;
         }
-        for (int32_t i = 0; i < ndim; i++) {
+        for (auto i = 0; i < ndim; i++) {
             if (tensor_info.tensor_dims[i] != shape[i]) {
                 PRINT_E("Input Tensor size doesn't match\n");
                 return kRetErr;

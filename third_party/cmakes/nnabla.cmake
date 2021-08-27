@@ -24,10 +24,10 @@ else()
     set(NNABLA_INC ${CMAKE_CURRENT_LIST_DIR}/../nnabla_prebuilt/x64_linux/include)
         set(NNABLA_LIB
             ${CMAKE_CURRENT_LIST_DIR}/../nnabla_prebuilt/x64_linux/lib/libnnabla.so
-            ${CMAKE_CURRENT_LIST_DIR}/../nnabla_prebuilt/x64_linux/lib/nnabla_utils.so
+            ${CMAKE_CURRENT_LIST_DIR}/../nnabla_prebuilt/x64_linux/lib/libnnabla_utils.so
         )
         if(INFERENCE_HELPER_ENABLE_NNABLA_CUDA)
-            set(NNABLA_LIB ${NNABLA_LIB} ${CMAKE_CURRENT_LIST_DIR}/../nnabla_prebuilt/x64_linux/lib/nnabla_cuda_110_8.so)
+            set(NNABLA_LIB ${NNABLA_LIB} ${CMAKE_CURRENT_LIST_DIR}/../nnabla_prebuilt/x64_linux/lib/libnnabla_cuda_110_8.so)
         endif()
     elseif(${BUILD_SYSTEM} STREQUAL "armv7")
         message(FATAL_ERROR "[nnabla] unsupported platform")
@@ -35,10 +35,10 @@ else()
         set(NNABLA_INC ${CMAKE_CURRENT_LIST_DIR}/../nnabla_prebuilt/aarch64/include)
         set(NNABLA_LIB
             ${CMAKE_CURRENT_LIST_DIR}/../nnabla_prebuilt/aarch64/lib/libnnabla.so
-            ${CMAKE_CURRENT_LIST_DIR}/../nnabla_prebuilt/aarch64/lib/nnabla_utils.so
+            ${CMAKE_CURRENT_LIST_DIR}/../nnabla_prebuilt/aarch64/lib/libnnabla_utils.so
         )
         if(INFERENCE_HELPER_ENABLE_NNABLA_CUDA)
-            set(NNABLA_LIB ${NNABLA_LIB} ${CMAKE_CURRENT_LIST_DIR}/../nnabla_prebuilt/aarch64/lib/nnabla_cuda_110_8.so)
+            set(NNABLA_LIB ${NNABLA_LIB} ${CMAKE_CURRENT_LIST_DIR}/../nnabla_prebuilt/aarch64/lib/libnnabla_cuda_110_8.so)
         endif()
     else()
         message(FATAL_ERROR "[nnabla] unsupported platform")

@@ -52,7 +52,6 @@ private:
     std::unique_ptr<zdl::SNPE::SNPE> CreateSnpe(const std::string& model_filename, bool use_user_supplied_buffers);
     int32_t GetTensorInfo(std::unique_ptr<zdl::SNPE::SNPE> const& snpe, const std::string& name, std::vector<int32_t>& dims);
     int32_t GetAllTensorInfo(std::unique_ptr<zdl::SNPE::SNPE> const& snpe, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list);
-    void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
 
 private:
     int32_t num_threads_;

@@ -48,8 +48,7 @@ public:
 
 private:
     int32_t AllocateBuffers(std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list);
-    void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
-    
+
 private:
     int32_t num_threads_;
     int32_t dla_core_;

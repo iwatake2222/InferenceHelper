@@ -41,9 +41,6 @@ public:
     int32_t Process(std::vector<OutputTensorInfo>& output_tensor_info_list) override;
 
 private:
-    void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
-
-private:
     std::unique_ptr<ncnn::Net> net_;
     std::vector<std::pair<std::string, ncnn::Mat>> in_mat_list_;	// <name, mat>
     std::vector<ncnn::Mat> out_mat_list_;

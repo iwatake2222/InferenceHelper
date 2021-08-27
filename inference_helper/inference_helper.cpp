@@ -276,7 +276,11 @@ void InferenceHelper::PreProcessImage(int32_t num_thread, const InputTensorInfo&
 #pragma omp parallel for num_threads(num_thread)
         for (int32_t i = 0; i < img_width * img_height; i++) {
             for (int32_t c = 0; c < img_channel; c++) {
+#if 1
                 dst[i * img_channel + c] = (src[i * img_channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
+#else
+                dst[i * img_channel + c] = (src[i * img_channel + c] / 255.0f - input_tensor_info.normalize.mean[c]) / input_tensor_info.normalize.norm[c];
+#endif
             }
         }
     }

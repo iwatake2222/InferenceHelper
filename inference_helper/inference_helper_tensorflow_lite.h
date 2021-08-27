@@ -45,7 +45,6 @@ public:
 private:
     int32_t GetInputTensorInfo(InputTensorInfo& tensor_info);
     int32_t GetOutputTensorInfo(OutputTensorInfo& tensor_info);
-    void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
     void DisplayModelInfo(const tflite::Interpreter& interpreter);
 
     int32_t SetBufferToTensor(int32_t index, void *data);

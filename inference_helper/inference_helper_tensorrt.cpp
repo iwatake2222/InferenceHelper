@@ -279,63 +279,36 @@ int32_t InferenceHelperTensorRt::PreProcess(const std::vector<InputTensorInfo>& 
 
             /* Normalize image */
             if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
-                /* convert NHWC to NCHW */
                 float *dst = (float*)(buffer_list_cpu_[input_tensor_info.id].first);
-                uint8_t *src = (uint8_t*)(input_tensor_info.data);
-                if (buffer_list_cpu_[input_tensor_info.id].second != 4 * input_tensor_info.image_info.width * input_tensor_info.image_info.height * input_tensor_info.image_info.channel) {
-                    PRINT_E("Data size doesn't match\n");
-                    return  kRetErr;
-                }
-#pragma omp parallel for num_threads(num_threads_)
-                for (int32_t c = 0; c < img_channel; c++) {
-                    for (int32_t i = 0; i < img_width * img_height; i++) {
-#if 1
-                        dst[c * img_width * img_height + i] = 
-                            (src[i * img_channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
-#else
-                        dst[c * img_width * img_height + i] = 
-                            (src[i * img_channel + c] / 255.0f - input_tensor_info.normalize.mean[c]) / input_tensor_info.normalize.norm[c];
-#endif
-                    }
-                }
+                PreProcessImage(num_threads_, input_tensor_info, dst);
             } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
-                /* convert NHWC to NCHW */
                 uint8_t *dst = (uint8_t*)(buffer_list_cpu_[input_tensor_info.id].first);
-                uint8_t *src = (uint8_t*)(input_tensor_info.data);
-                if (buffer_list_cpu_[input_tensor_info.id].second != 1 * input_tensor_info.image_info.width * input_tensor_info.image_info.height * input_tensor_info.image_info.channel) {
-                    PRINT_E("Data size doesn't match\n");
-                    return  kRetErr;
-                }
-#pragma omp parallel for num_threads(num_threads_)
-                for (int32_t c = 0; c < img_channel; c++) {
-                    for (int32_t i = 0; i < img_width * img_height; i++) {
-                        dst[c * img_width * img_height + i] = src[i * img_channel + c];
-                    }
-                }
+                PreProcessImage(num_threads_, input_tensor_info, dst);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
+                int8_t *dst = (int8_t*)(buffer_list_cpu_[input_tensor_info.id].first);
+                PreProcessImage(num_threads_, input_tensor_info, dst);
             } else {
                 PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
                 return kRetErr;
             }
-
-        } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {
-                /* convert NHWC to NCHW */
+        } else if ((input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw)) {
+            if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
+                float *dst = (float*)(buffer_list_cpu_[input_tensor_info.id].first);
+                PreProcessBlob<float>(num_threads_, input_tensor_info, dst);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8 || input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
                 uint8_t *dst = (uint8_t*)(buffer_list_cpu_[input_tensor_info.id].first);
-                uint8_t *src = (uint8_t*)(input_tensor_info.data);
-#pragma omp parallel for num_threads(num_threads_)
-                for (int32_t c = 0; c < img_channel; c++) {
-                    for (int32_t i = 0; i < img_width * img_height; i++) {
-                        dst[c * img_width * img_height + i] = src[i * img_channel + c];
-                    }
-                }
-        } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) {
-            uint8_t *dst = (uint8_t*)(buffer_list_cpu_[input_tensor_info.id].first);
-            uint8_t *src = (uint8_t*)(input_tensor_info.data);
-            memcpy(dst, src, buffer_list_cpu_[input_tensor_info.id].second);
+                PreProcessBlob<uint8_t>(num_threads_, input_tensor_info, dst);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt32) {
+                int32_t *dst = (int32_t*)(buffer_list_cpu_[input_tensor_info.id].first);
+                PreProcessBlob<int32_t>(num_threads_, input_tensor_info, dst);
+            } else {
+                PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
+                return kRetErr;
+            }
         } else {
-            PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
+            PRINT_E("Unsupported data_type (%d)\n", input_tensor_info.data_type);
             return kRetErr;
         }
-
     }
     return kRetOk;
 }
@@ -480,26 +453,4 @@ int32_t InferenceHelperTensorRt::AllocateBuffers(std::vector<InputTensorInfo>& i
     }
 
     return kRetOk;
-}
-
-void InferenceHelperTensorRt::ConvertNormalizeParameters(InputTensorInfo& tensor_info)
-{
-    if (tensor_info.data_type != InputTensorInfo::kDataTypeImage) return;
-
-#if 0
-    /* Convert to speeden up normalization:  ((src / 255) - mean) / norm  = src * 1 / (255 * norm) - (mean / norm) */
-    for (int32_t i = 0; i < 3; i++) {
-        tensor_info.normalize.mean[i] /= tensor_info.normalize.norm[i];
-        tensor_info.normalize.norm[i] *= 255.0f;
-        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
-    }
-#endif
-#if 1
-    /* Convert to speeden up normalization:  ((src / 255) - mean) / norm = (src  - (mean * 255))  * (1 / (255 * norm)) */
-    for (int32_t i = 0; i < 3; i++) {
-        tensor_info.normalize.mean[i] *= 255.0f;
-        tensor_info.normalize.norm[i] *= 255.0f;
-        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
-    }
-#endif
 }

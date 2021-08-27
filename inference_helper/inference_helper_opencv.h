@@ -41,9 +41,6 @@ public:
     int32_t Process(std::vector<OutputTensorInfo>& output_tensor_info_list) override;
 
 private:
-    void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
-
-private:
     cv::dnn::Net net_;
     std::vector<cv::Mat> in_mat_list_;
     std::vector<cv::Mat> out_mat_list_;     // store data as member variable so that an user can refer the results

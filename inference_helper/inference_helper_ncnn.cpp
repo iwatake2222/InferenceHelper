@@ -198,26 +198,3 @@ int32_t InferenceHelperNcnn::Process(std::vector<OutputTensorInfo>& output_tenso
 
     return kRetOk;
 }
-
-void InferenceHelperNcnn::ConvertNormalizeParameters(InputTensorInfo& tensor_info)
-{
-    if (tensor_info.data_type != InputTensorInfo::kDataTypeImage) return;
-
-#if 0
-    /* Convert to speeden up normalization:  ((src / 255) - mean) / norm  = src * 1 / (255 * norm) - (mean / norm) */
-    for (int32_t i = 0; i < 3; i++) {
-        tensor_info.normalize.mean[i] /= tensor_info.normalize.norm[i];
-        tensor_info.normalize.norm[i] *= 255.0f;
-        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
-    }
-#endif
-#if 1
-    /* Convert to speeden up normalization:  ((src / 255) - mean) / norm = (src  - (mean * 255))  * (1 / (255 * norm)) */
-    for (int32_t i = 0; i < 3; i++) {
-        tensor_info.normalize.mean[i] *= 255.0f;
-        tensor_info.normalize.norm[i] *= 255.0f;
-        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
-    }
-#endif
-}
-
