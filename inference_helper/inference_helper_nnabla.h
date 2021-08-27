@@ -50,7 +50,6 @@ public:
     int32_t Process(std::vector<OutputTensorInfo>& output_tensor_info_list) override;
 
 private:
-    void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
     void DisplayModelInfo();
     int32_t CheckTensorInfo(TensorInfo& tensor_info, const std::shared_ptr<nbla::Variable> variable);
     int32_t AllocateBuffers(std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list);

@@ -253,6 +253,16 @@ public:
     virtual int32_t Process(std::vector<OutputTensorInfo>& output_tensor_info_list) = 0;
 
 protected:
+    void ConvertNormalizeParameters(InputTensorInfo& tensor_info);
+
+    void PreProcessImage(int32_t num_thread, const InputTensorInfo& input_tensor_info, float* dst);
+    void PreProcessImage(int32_t num_thread, const InputTensorInfo& input_tensor_info, uint8_t* dst);
+    void PreProcessImage(int32_t num_thread, const InputTensorInfo& input_tensor_info, int8_t* dst);
+
+    template<typename T>
+    void PreProcessBlob(int32_t num_thread, const InputTensorInfo& input_tensor_info, T *dst);
+
+protected:
     HelperType helper_type_;
 };
 

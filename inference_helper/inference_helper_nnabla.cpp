@@ -113,6 +113,7 @@ int32_t InferenceHelperNnabla::Finalize(void)
     return kRetErr;
 }
 
+
 int32_t InferenceHelperNnabla::PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list)
 {
     for (const auto& input_tensor_info : input_tensor_info_list) {
@@ -136,129 +137,27 @@ int32_t InferenceHelperNnabla::PreProcess(const std::vector<InputTensorInfo>& in
             /* Normalize image */
             if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
                 float* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<float>(*ctx_cpu_);
-                uint8_t* src = (uint8_t*)(input_tensor_info.data);
-                if (input_tensor_info.is_nchw == true) {
-                    /* convert NHWC to NCHW */
-#pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t c = 0; c < img_channel; c++) {
-                        for (int32_t i = 0; i < img_width * img_height; i++) {
-                            dst[c * img_width * img_height + i] = (src[i * img_channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
-                        }
-                    }
-                } else {
-                    /* convert NHWC to NHWC */
-#pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t i = 0; i < img_width * img_height; i++) {
-                        for (int32_t c = 0; c < img_channel; c++) {
-                            dst[i * img_channel + c] = (src[i * img_channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
-                        }
-                    }
-                }
+                PreProcessImage(num_threads_, input_tensor_info, dst);
             } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
                 uint8_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<uint8_t>(*ctx_cpu_);
-                uint8_t* src = (uint8_t*)(input_tensor_info.data);
-                if (input_tensor_info.is_nchw == true) {
-                    /* convert NHWC to NCHW */
-#pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t c = 0; c < img_channel; c++) {
-                        for (int32_t i = 0; i < img_width * img_height; i++) {
-                            dst[c * img_width * img_height + i] = src[i * img_channel + c];
-                        }
-                    }
-                } else {
-                    /* convert NHWC to NHWC */
-                    std::copy(src, src + input_tensor_info.GetElementNum(), dst);
-                }
+                PreProcessImage(num_threads_, input_tensor_info, dst);
             } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
-                uint8_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<uint8_t>(*ctx_cpu_);
-                uint8_t* src = (uint8_t*)(input_tensor_info.data);
-                if (input_tensor_info.is_nchw == true) {
-                    /* convert NHWC to NCHW */
-#pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t c = 0; c < img_channel; c++) {
-                        for (int32_t i = 0; i < img_width * img_height; i++) {
-                            dst[c * img_width * img_height + i] = src[i * img_channel + c] - 128;
-                        }
-                    }
-                } else {
-#pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t i = 0; i < img_width * img_height; i++) {
-                        for (int32_t c = 0; c < img_channel; c++) {
-                            dst[i * img_channel + c] = src[i * img_channel + c] - 128;
-                        }
-                    }
-                }
+                int8_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<int8_t>(*ctx_cpu_);
+                PreProcessImage(num_threads_, input_tensor_info, dst);
             } else {
                 PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
                 return kRetErr;
             }
         } else if ((input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw)) {
-            if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8 || input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
-                uint8_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<uint8_t>(*ctx_cpu_);
-                uint8_t* src = static_cast<uint8_t*>(input_tensor_info.data);
-                if ( (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw && input_tensor_info.is_nchw) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc && !input_tensor_info.is_nchw)) {
-                    std::copy(src, src + input_tensor_info.GetElementNum(), dst);
-                } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) {
-                    /* NCHW -> NHWC */
-#pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t i = 0; i < img_width * img_height; i++) {
-                        for (int32_t c = 0; c < img_channel; c++) {
-                            dst[i * img_channel + c] = src[c * (img_width * img_height) + i];
-                        }
-                    }
-                } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {
-                    /* NHWC -> NCHW */
-#pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t i = 0; i < img_width * img_height; i++) {
-                        for (int32_t c = 0; c < img_channel; c++) {
-                            dst[c * (img_width * img_height) + i] = src[i * img_channel + c];
-                        }
-                    }
-                }
-            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
+            if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
                 float* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<float>(*ctx_cpu_);
-                float* src = static_cast<float*>(input_tensor_info.data);
-                if ((input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw && input_tensor_info.is_nchw) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc && !input_tensor_info.is_nchw)) {
-                    std::copy(src, src + input_tensor_info.GetElementNum(), dst);
-                } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) {
-                    /* NCHW -> NHWC */
-#pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t i = 0; i < img_width * img_height; i++) {
-                        for (int32_t c = 0; c < img_channel; c++) {
-                            dst[i * img_channel + c] = src[c * (img_width * img_height) + i];
-                        }
-                    }
-                } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {
-                    /* NHWC -> NCHW */
-#pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t i = 0; i < img_width * img_height; i++) {
-                        for (int32_t c = 0; c < img_channel; c++) {
-                            dst[c * (img_width * img_height) + i] = src[i * img_channel + c];
-                        }
-                    }
-                }
+                PreProcessBlob<float>(num_threads_, input_tensor_info, dst);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8 || input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
+                uint8_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<uint8_t>(*ctx_cpu_);
+                PreProcessBlob<uint8_t>(num_threads_, input_tensor_info, dst);
             } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt32) {
                 int32_t* dst = GetInputVariable(input_tensor_info.id)->cast_data_and_get_pointer<int32_t>(*ctx_cpu_);
-                int32_t* src = static_cast<int32_t*>(input_tensor_info.data);
-                if ((input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw && input_tensor_info.is_nchw) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc && !input_tensor_info.is_nchw)) {
-                    std::copy(src, src + input_tensor_info.GetElementNum(), dst);
-                } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) {
-                    /* NCHW -> NHWC */
-#pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t i = 0; i < img_width * img_height; i++) {
-                        for (int32_t c = 0; c < img_channel; c++) {
-                            dst[i * img_channel + c] = src[c * (img_width * img_height) + i];
-                        }
-                    }
-                } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {
-                    /* NHWC -> NCHW */
-#pragma omp parallel for num_threads(num_threads_)
-                    for (int32_t i = 0; i < img_width * img_height; i++) {
-                        for (int32_t c = 0; c < img_channel; c++) {
-                            dst[c * (img_width * img_height) + i] = src[i * img_channel + c];
-                        }
-                    }
-                }
+                PreProcessBlob<int32_t>(num_threads_, input_tensor_info, dst);
             } else {
                 PRINT_E("Unsupported data_type (%d)\n", input_tensor_info.data_type);
                 return kRetErr;
@@ -317,28 +216,6 @@ int32_t InferenceHelperNnabla::Process(std::vector<OutputTensorInfo>& output_ten
     return kRetOk;
 }
 
-
-void InferenceHelperNnabla::ConvertNormalizeParameters(InputTensorInfo& tensor_info)
-{
-    if (tensor_info.data_type != InputTensorInfo::kDataTypeImage) return;
-
-#if 0
-    /* Convert to speeden up normalization:  ((src / 255) - mean) / norm  = src * 1 / (255 * norm) - (mean / norm) */
-    for (int32_t i = 0; i < 3; i++) {
-        tensor_info.normalize.mean[i] /= tensor_info.normalize.norm[i];
-        tensor_info.normalize.norm[i] *= 255.0f;
-        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
-    }
-#endif
-#if 1
-    /* Convert to speeden up normalization:  ((src / 255) - mean) / norm = (src  - (mean * 255))  * (1 / (255 * norm)) */
-    for (int32_t i = 0; i < 3; i++) {
-        tensor_info.normalize.mean[i] *= 255.0f;
-        tensor_info.normalize.norm[i] *= 255.0f;
-        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
-    }
-#endif
-}
 
 
 void InferenceHelperNnabla::DisplayModelInfo()

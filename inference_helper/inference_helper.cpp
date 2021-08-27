@@ -232,3 +232,130 @@ void InferenceHelper::PreProcessByOpenCV(const InputTensorInfo& input_tensor_inf
 }
 #endif
 
+
+
+void InferenceHelper::ConvertNormalizeParameters(InputTensorInfo& tensor_info)
+{
+    if (tensor_info.data_type != InputTensorInfo::kDataTypeImage) return;
+
+#if 0
+    /* Convert to speeden up normalization:  ((src / 255) - mean) / norm  = src * 1 / (255 * norm) - (mean / norm) */
+    for (int32_t i = 0; i < 3; i++) {
+        tensor_info.normalize.mean[i] /= tensor_info.normalize.norm[i];
+        tensor_info.normalize.norm[i] *= 255.0f;
+        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
+    }
+#endif
+#if 1
+    /* Convert to speeden up normalization:  ((src / 255) - mean) / norm = (src  - (mean * 255))  * (1 / (255 * norm)) */
+    for (int32_t i = 0; i < 3; i++) {
+        tensor_info.normalize.mean[i] *= 255.0f;
+        tensor_info.normalize.norm[i] *= 255.0f;
+        tensor_info.normalize.norm[i] = 1.0f / tensor_info.normalize.norm[i];
+    }
+#endif
+}
+
+
+void InferenceHelper::PreProcessImage(int32_t num_thread, const InputTensorInfo& input_tensor_info, float* dst)
+{
+    const int32_t img_width = input_tensor_info.GetWidth();
+    const int32_t img_height = input_tensor_info.GetHeight();
+    const int32_t img_channel = input_tensor_info.GetChannel();
+    uint8_t* src = (uint8_t*)(input_tensor_info.data);
+    if (input_tensor_info.is_nchw == true) {
+        /* convert NHWC to NCHW */
+#pragma omp parallel for num_threads(num_thread)
+        for (int32_t c = 0; c < img_channel; c++) {
+            for (int32_t i = 0; i < img_width * img_height; i++) {
+                dst[c * img_width * img_height + i] = (src[i * img_channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
+            }
+        }
+    } else {
+        /* convert NHWC to NHWC */
+#pragma omp parallel for num_threads(num_thread)
+        for (int32_t i = 0; i < img_width * img_height; i++) {
+            for (int32_t c = 0; c < img_channel; c++) {
+                dst[i * img_channel + c] = (src[i * img_channel + c] - input_tensor_info.normalize.mean[c]) * input_tensor_info.normalize.norm[c];
+            }
+        }
+    }
+}
+
+void InferenceHelper::PreProcessImage(int32_t num_thread, const InputTensorInfo& input_tensor_info, uint8_t* dst)
+{
+    const int32_t img_width = input_tensor_info.GetWidth();
+    const int32_t img_height = input_tensor_info.GetHeight();
+    const int32_t img_channel = input_tensor_info.GetChannel();
+    uint8_t* src = (uint8_t*)(input_tensor_info.data);
+    if (input_tensor_info.is_nchw == true) {
+        /* convert NHWC to NCHW */
+#pragma omp parallel for num_threads(num_thread)
+        for (int32_t c = 0; c < img_channel; c++) {
+            for (int32_t i = 0; i < img_width * img_height; i++) {
+                dst[c * img_width * img_height + i] = src[i * img_channel + c];
+            }
+        }
+    } else {
+        /* convert NHWC to NHWC */
+        std::copy(src, src + input_tensor_info.GetElementNum(), dst);
+    }
+}
+
+void InferenceHelper::PreProcessImage(int32_t num_thread, const InputTensorInfo& input_tensor_info, int8_t* dst)
+{
+    const int32_t img_width = input_tensor_info.GetWidth();
+    const int32_t img_height = input_tensor_info.GetHeight();
+    const int32_t img_channel = input_tensor_info.GetChannel();
+    uint8_t* src = (uint8_t*)(input_tensor_info.data);
+    if (input_tensor_info.is_nchw == true) {
+        /* convert NHWC to NCHW */
+#pragma omp parallel for num_threads(num_thread)
+        for (int32_t c = 0; c < img_channel; c++) {
+            for (int32_t i = 0; i < img_width * img_height; i++) {
+                dst[c * img_width * img_height + i] = src[i * img_channel + c] - 128;
+            }
+        }
+    } else {
+#pragma omp parallel for num_threads(num_thread)
+        for (int32_t i = 0; i < img_width * img_height; i++) {
+            for (int32_t c = 0; c < img_channel; c++) {
+                dst[i * img_channel + c] = src[i * img_channel + c] - 128;
+            }
+        }
+    }
+}
+
+template<typename T>
+void InferenceHelper::PreProcessBlob(int32_t num_thread, const InputTensorInfo& input_tensor_info, T* dst)
+{
+    const int32_t img_width = input_tensor_info.GetWidth();
+    const int32_t img_height = input_tensor_info.GetHeight();
+    const int32_t img_channel = input_tensor_info.GetChannel();
+    T* src = static_cast<T*>(input_tensor_info.data);
+    if ((input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw && input_tensor_info.is_nchw) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc && !input_tensor_info.is_nchw)) {
+        std::copy(src, src + input_tensor_info.GetElementNum(), dst);
+    } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw) {
+        /* NCHW -> NHWC */
+#pragma omp parallel for num_threads(num_thread)
+        for (int32_t i = 0; i < img_width * img_height; i++) {
+            for (int32_t c = 0; c < img_channel; c++) {
+                dst[i * img_channel + c] = src[c * (img_width * img_height) + i];
+            }
+        }
+    } else if (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) {
+        /* NHWC -> NCHW */
+#pragma omp parallel for num_threads(num_thread)
+        for (int32_t i = 0; i < img_width * img_height; i++) {
+            for (int32_t c = 0; c < img_channel; c++) {
+                dst[c * (img_width * img_height) + i] = src[i * img_channel + c];
+            }
+        }
+    }
+}
+
+template void InferenceHelper::PreProcessBlob<float>(int32_t num_thread, const InputTensorInfo& input_tensor_info, float* dst);
+template void InferenceHelper::PreProcessBlob<int32_t>(int32_t num_thread, const InputTensorInfo& input_tensor_info, int32_t* dst);
+template void InferenceHelper::PreProcessBlob<int64_t>(int32_t num_thread, const InputTensorInfo& input_tensor_info, int64_t* dst);
+template void InferenceHelper::PreProcessBlob<uint8_t>(int32_t num_thread, const InputTensorInfo& input_tensor_info, uint8_t* dst);
+template void InferenceHelper::PreProcessBlob<int8_t>(int32_t num_thread, const InputTensorInfo& input_tensor_info, int8_t* dst);
