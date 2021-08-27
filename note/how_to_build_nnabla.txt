@@ -1,0 +1,54 @@
+sudo apt install libarchive-dev  libhdf5-dev
+sudo add-apt-repository ppa:maarten-fonville/protobuf
+sudo apt install protobuf-compiler libprotoc-dev libprotobuf-dev
+curl -L https://github.com/google/protobuf/archive/v3.1.0.tar.gz -o protobuf-v3.1.0.tar.gz
+tar xvf protobuf-v3.1.0.tar.gz
+cd protobuf-3.1.0
+mkdir build && cd build
+cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -Dprotobuf_BUILD_TESTS=OFF ../cmake
+make
+sudo make install
+cd ~/
+git clone https://github.com/sony/nnabla
+mkdir -p nnabla/build && cd nnabla/build
+cmake .. -DBUILD_CPP_UTILS=ON -DBUILD_PYTHON_PACKAGE=OFF -DNNABLA_UTILS_WITH_HDF5=ON
+make -j4
+ls lib
+
+
+
+
+sudo apt install python-yaml
+sudo -H pip install pyyaml mako
+sudo pip install prettytable Mako pyaml dateutils --upgrade
+git clone https://github.com/sony/nnabla-ext-cuda
+cd nnabla-ext-cuda
+
+nano ../src/nbla/cuda/CMakeLists.txt
+
+diff --git a/src/nbla/cuda/CMakeLists.txt b/src/nbla/cuda/CMakeLists.txt
+index 10f13a8..e58520a 100644
+--- a/src/nbla/cuda/CMakeLists.txt
++++ b/src/nbla/cuda/CMakeLists.txt
+@@ -27,7 +27,8 @@ set(NBLA_CUDA_INCLUDE_DIRS ${CUDA_INCLUDE_DIRS})
+ list(APPEND NBLA_CUDA_LINKER_LIBS
+   ${CUDA_CUDA_LIBRARY}
+   ${CUDA_CUDART_LIBRARY}
+-  ${CUDA_CUBLAS_LIBRARIES}
++  # ${CUDA_CUBLAS_LIBRARIES}
++  /usr/local/cuda/lib64/libcublas.so
+   ${CUDA_curand_LIBRARY}
+   ${CUDA_CUFFT_LIBRARIES}
+   )
+
+
+pip install -U -r python/requirements.txt
+mkdir build && cd build
+cmake .. -DNNABLA_DIR=/home/pi/nnabla -DCPPLIB_LIBRARY=/home/pi/nnabla/build/lib/libnnabla.so ..
+make -j4
+
+
+
+
+Use headerfile (include directory) in nnabla-cpplib-cuda_110_8-1.20.1-win64.zip
+It works even for Jetson Xavier NX

@@ -44,6 +44,12 @@ This project utilizes the following OSS (Open Source Software):
    - https://github.com/Arm-software/armnn
    - Copyright (c) 2017 ARM Limited.
 
+- NNabla
+   - https://github.com/sony/nnabla
+   - https://github.com/sony/nnabla-ext-cuda
+   - Copyright 2018,2019,2020,2021 Sony Corporation.
+   - Licensed under the Apache License, Version 2.0
+
 --------------------------------------------------------------------
 Terms of the Apache License, Version 2.0:
 

@@ -16,10 +16,13 @@
 - TensorFlow Lite with delegate (XNNPACK, GPU, EdgeTPU, NNAPI)
 - TensorRT (GPU, DLA)
 - OpenCV(dnn)
+- OpenCV(dnn) with GPU
 - ncnn
 - MNN
 - SNPE (Snapdragon Neural Processing Engine SDK (Qualcomm Neural Processing SDK for AI v1.51.0))
 - Arm NN
+- NNabla
+- NNabla with CUDA
 
 ## Supported targets
 - Windows 10 (Visual Studio 2017 x64, Visual Studio 2019 x64)
@@ -40,6 +43,8 @@
 | MNN                       | OK                       | OK            | OK            | OK               | OK                |
 | SNPE                      | not supported            | not supported | not tested    | OK               | OK                |
 | Arm NN                    | not supported            | OK            | not supported | OK               | not supported     |
+| NNabla                    | OK                       | note tested   | not supported | OK               | not tested        |
+| NNabla + CUDA             | OK                       | note tested   | not supported | OK               | not tested        |
 | Note                      | Visual Studio 2017, 2019 | Xubuntu 18.04 | Raspberry Pi  | Jetson Xavier NX | Pixel 4a          |
 
 
@@ -59,8 +64,11 @@ https://github.com/iwatake2222/InferenceHelper_Sample
     - Download prebuilt libraries (third_party.zip) from https://github.com/iwatake2222/InferenceHelper/releases/ 
     - Extract it to `third_party`
 
-### For Tensorflow Lite
-- After adding or cloning this repository, you need to download header files
+### Extra steps
+You need some extra steps if you use the frameworks listed below
+
+#### Extra steps: Tensorflow Lite
+- Download header files
     ```
     git submodule init
     git submodule update
@@ -69,9 +77,25 @@ https://github.com/iwatake2222/InferenceHelper_Sample
     tensorflow/lite/tools/make/download_dependencies.sh
     ```
 
-### For SNPE
-- After adding or cloning this repository, you need to download library from https://developer.qualcomm.com/software/qualcomm-neural-processing-sdk/tools
+#### Extra steps: SNPE
+- Download library from https://developer.qualcomm.com/software/qualcomm-neural-processing-sdk/tools
 - Extract `snpe-1.51.0.zip` , then place `lib` and `include` folders to `third_party/snpe`
+
+#### Extra steps: NNabla
+- Prepare library:
+    - If you use pre-built library:
+        - Download library from https://nnabla.org/ja/install/#cpplib_list
+        - Extract `nnabla-cpplib-1.20.1-xxx.zip` or `nnabla-cpplib-cuda_xxx-1.20.1-xxx.zip` into `third_party/nnabla_prebuilt/xxx`
+    - If you build library by yourself:
+        - Follow the instruction:
+            - https://github.com/sony/nnabla/blob/master/doc/build/build_cpp_utils.md
+            - https://github.com/sony/nnabla-ext-cuda/blob/master/doc/build/build.md
+        - Copy the generated library files into `third_party/nnabla_prebuilt/xxx`
+- For Windows users:
+    - Extract `archive.dll` (`libarchive-v3.5.2-win64.zip`) to the same folder as executable file
+        - https://github.com/libarchive/libarchive/releases
+    - You will get exception error if you run the project with `Debug` mode in Visual Studio
+        - use `Release` or `ReleaseWithDebug` mode
 
 ## Project settings in CMake
 - Add InferenceHelper to your project
@@ -109,6 +133,10 @@ https://github.com/iwatake2222/InferenceHelper_Sample
     cmake .. -DINFERENCE_HELPER_ENABLE_SNPE=on
     # Arm NN
     cmake .. -DINFERENCE_HELPER_ENABLE_ARMNN=on
+    # NNabla
+    cmake .. -DINFERENCE_HELPER_ENABLE_NNABLA=on
+    # NNabla with CUDA
+    cmake .. -DINFERENCE_HELPER_ENABLE_NNABLA_CUDA=on
     ```
 
 - Enable/Disable preprocess using OpenCV:
@@ -134,6 +162,8 @@ typedef enum {
     kMnn,
     kSnpe,
     kArmnn,
+    kNnabla,
+    kNnablaCuda,
 } HelperType;
 ```
 
