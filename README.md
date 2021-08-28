@@ -92,6 +92,7 @@ You need some extra steps if you use the frameworks listed below
             - https://github.com/sony/nnabla-ext-cuda/blob/master/doc/build/build.md
         - Copy the generated library files into `third_party/nnabla_prebuilt/xxx`
 - For Windows users:
+    - You need to install CUDA and cuDNN
     - Extract `archive.dll` (`libarchive-v3.5.2-win64.zip`) to the same folder as executable file
         - https://github.com/libarchive/libarchive/releases
     - You will get exception error if you run the project with `Debug` mode in Visual Studio

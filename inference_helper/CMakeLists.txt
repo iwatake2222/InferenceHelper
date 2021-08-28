@@ -116,6 +116,11 @@ endif()
 # For TensorRT
 if(INFERENCE_HELPER_ENABLE_TENSORRT)
     find_package(CUDA)
+    if(MSVC_VERSION)
+        # note: the following lines for my environment (Windows 10. cuDNN and TensorRT are copied into CUDA install path)
+        target_link_directories(${LibraryName} PUBLIC ${CUDA_TOOLKIT_ROOT_DIR}/bin)
+        target_link_directories(${LibraryName} PUBLIC ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
+    endif()
     if(CUDA_FOUND)
         target_link_libraries(${LibraryName}
             ${CUDA_LIBRARIES}
