@@ -162,7 +162,7 @@ public:
     {
         name = name_;
         tensor_type = tensor_type_;
-        is_nchw = is_nchw;
+        is_nchw = is_nchw_;
     }
     
     ~OutputTensorInfo() {
