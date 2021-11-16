@@ -117,9 +117,14 @@ endif()
 if(INFERENCE_HELPER_ENABLE_TENSORRT)
     find_package(CUDA)
     if(MSVC_VERSION)
-        # note: the following lines for my environment (Windows 10. cuDNN and TensorRT are copied into CUDA install path)
+        # note: the following lines for my environment (Windows 10/11. cuDNN is copied into CUDA install path)
+        # Copy TensorRT into CUDA install path
+        # or, Set environment variable(TensorRT_ROOT = C:\Program Files\NVIDIA GPU Computing Toolkit\TensorRT\TensorRT-8.2.0.6), and add %TensorRT_ROOT%\lib to path
         target_link_directories(${LibraryName} PUBLIC ${CUDA_TOOLKIT_ROOT_DIR}/bin)
         target_link_directories(${LibraryName} PUBLIC ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
+        if(NOT $ENV{TensorRT_ROOT} STREQUAL "")
+            target_link_directories(${LibraryName} PUBLIC $ENV{TensorRT_ROOT}/lib)
+        endif()
     endif()
     if(CUDA_FOUND)
         target_link_libraries(${LibraryName}
@@ -133,6 +138,9 @@ if(INFERENCE_HELPER_ENABLE_TENSORRT)
             ${CUDA_INCLUDE_DIRS}
             tensorrt
         )
+        if(NOT $ENV{TensorRT_ROOT} STREQUAL "")
+            target_include_directories(${LibraryName} PUBLIC $ENV{TensorRT_ROOT}/include)
+        endif()
         add_definitions(-DINFERENCE_HELPER_ENABLE_TENSORRT)
         message("CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}")
     else()

@@ -45,9 +45,9 @@ limitations under the License.
 // #define USE_INT8_WITHOUT_CALIBRATION
 // #define USE_INT8_WITH_CALIBRATION
 
-#define OPT_MAX_WORK_SPACE_SIZE (1 << 30)
-#define OPT_AVG_TIMING_ITERATIONS 4
-#define OPT_MIN_TIMING_ITERATIONS 2
+#define OPT_MAX_WORK_SPACE_SIZE ((size_t)1 << 30)
+#define OPT_AVG_TIMING_ITERATIONS 1
+#define OPT_MIN_TIMING_ITERATIONS 1
 
 #ifdef USE_INT8_WITH_CALIBRATION
 /* ★ Modify the following (use the same parameter as the model. Also, ppm must be the same size but not normalized.) */
@@ -152,7 +152,7 @@ int32_t InferenceHelperTensorRt::Initialize(const std::string& model_filename, s
         // builder->setMaxBatchSize(1);
         config->setMaxWorkspaceSize(OPT_MAX_WORK_SPACE_SIZE);
         // config->setAvgTimingIterations(OPT_AVG_TIMING_ITERATIONS);
-        // config->setMinTimingIterations(OPT_MIN_TIMING_ITERATIONS) ;
+        // config->setMinTimingIterations(OPT_MIN_TIMING_ITERATIONS);
 
 #if defined(USE_FP16)
         config->setFlag(nvinfer1::BuilderFlag::kFP16);
