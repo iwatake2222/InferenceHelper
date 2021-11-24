@@ -122,11 +122,13 @@ if(INFERENCE_HELPER_ENABLE_TENSORRT)
         # or, Set environment variable(TensorRT_ROOT = C:\Program Files\NVIDIA GPU Computing Toolkit\TensorRT\TensorRT-8.2.0.6), and add %TensorRT_ROOT%\lib to path
         target_link_directories(${LibraryName} PUBLIC ${CUDA_TOOLKIT_ROOT_DIR}/bin)
         target_link_directories(${LibraryName} PUBLIC ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
+    else()
+        target_link_directories(${LibraryName} PUBLIC /usr/local/cuda/lib64)
+    endif()
+    if(CUDA_FOUND)
         if(NOT $ENV{TensorRT_ROOT} STREQUAL "")
             target_link_directories(${LibraryName} PUBLIC $ENV{TensorRT_ROOT}/lib)
         endif()
-    endif()
-    if(CUDA_FOUND)
         target_link_libraries(${LibraryName}
             ${CUDA_LIBRARIES}
             nvinfer
