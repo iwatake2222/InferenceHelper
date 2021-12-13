@@ -116,18 +116,22 @@ endif()
 # For TensorRT
 if(INFERENCE_HELPER_ENABLE_TENSORRT)
     find_package(CUDA)
-    if(MSVC_VERSION)
-        # note: the following lines for my environment (Windows 10/11. cuDNN is copied into CUDA install path)
-        # Copy TensorRT into CUDA install path
-        # or, Set environment variable(TensorRT_ROOT = C:\Program Files\NVIDIA GPU Computing Toolkit\TensorRT\TensorRT-8.2.0.6), and add %TensorRT_ROOT%\lib to path
-        target_link_directories(${LibraryName} PUBLIC ${CUDA_TOOLKIT_ROOT_DIR}/bin)
-        target_link_directories(${LibraryName} PUBLIC ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
-    else()
-        target_link_directories(${LibraryName} PUBLIC /usr/local/cuda/lib64)
+    if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13.0") 
+        if(MSVC_VERSION)
+            # note: the following lines for my environment (Windows 10/11. cuDNN is copied into CUDA install path)
+            # Copy TensorRT into CUDA install path
+            # or, Set environment variable(TensorRT_ROOT = C:\Program Files\NVIDIA GPU Computing Toolkit\TensorRT\TensorRT-8.2.0.6), and add %TensorRT_ROOT%\lib to path
+            target_link_directories(${LibraryName} PUBLIC ${CUDA_TOOLKIT_ROOT_DIR}/bin)
+            target_link_directories(${LibraryName} PUBLIC ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
+        else()
+            target_link_directories(${LibraryName} PUBLIC /usr/local/cuda/lib64)
+        endif()
     endif()
     if(CUDA_FOUND)
-        if(NOT $ENV{TensorRT_ROOT} STREQUAL "")
-            target_link_directories(${LibraryName} PUBLIC $ENV{TensorRT_ROOT}/lib)
+        if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13.0") 
+            if(NOT $ENV{TensorRT_ROOT} STREQUAL "")
+                target_link_directories(${LibraryName} PUBLIC $ENV{TensorRT_ROOT}/lib)
+            endif()
         endif()
         target_link_libraries(${LibraryName}
             ${CUDA_LIBRARIES}
