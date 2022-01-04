@@ -17,6 +17,7 @@
 - TensorRT (GPU, DLA)
 - OpenCV(dnn)
 - OpenCV(dnn) with GPU
+- OpenVINO with OpenCV (xml+bin)
 - ncnn
 - MNN
 - SNPE (Snapdragon Neural Processing Engine SDK (Qualcomm Neural Processing SDK for AI v1.51.0))
@@ -33,6 +34,7 @@
 | Framework                 | Windows (x64)            | Linux (x64)   | Linux (armv7) | Linux (aarch64)  | Android (aarch64) |
 |---------------------------|--------------------------|---------------|---------------|------------------|-------------------|
 | OpenCV(dnn)               | OK                       | OK            | OK            | OK               | not tested        |
+| OpenVINO with OpenCV      | OK                       | OK            | not tested    | not tested       | not supported     |
 | TensorFlow Lite           | OK                       | OK            | OK            | OK               | OK                |
 | TensorFlow Lite + XNNPACK | OK                       | OK            | OK            | OK               | OK                |
 | TensorFlow Lite + GPU     | not supported            | OK            | OK            | OK               | OK                |
@@ -112,7 +114,7 @@ You need some extra steps if you use the frameworks listed below
     - You can enable multiple options althoguh the following example enables just one option
 
     ```sh
-    # OpenCV (dnn)
+    # OpenCV (dnn), OpenVINO
     cmake .. -DINFERENCE_HELPER_ENABLE_OPENCV=on
     # Tensorflow Lite
     cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE=on

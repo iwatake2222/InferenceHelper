@@ -63,12 +63,17 @@ int32_t InferenceHelperOpenCV::Initialize(const std::string& model_filename, std
     /*** check model format ***/
     bool is_onnx_model = false;
     bool is_darknet_model = false;
+    bool is_openvino_model = false;
     std::string model_filename_darknet_weight = model_filename;
+    std::string model_filename_openvino_weight = model_filename;
     if (model_filename.find(".onnx") != std::string::npos) {
         is_onnx_model = true;
     } else if (model_filename.find(".cfg") != std::string::npos) {
         is_darknet_model = true;
         model_filename_darknet_weight = model_filename_darknet_weight.replace(model_filename_darknet_weight.find(".cfg"), std::string(".weights").length(), ".weights");
+    } else if (model_filename.find(".xml") != std::string::npos) {
+        is_openvino_model = true;
+        model_filename_openvino_weight = model_filename_openvino_weight.replace(model_filename_openvino_weight.find(".xml"), std::string(".bin").length(), ".bin");
     } else {
         PRINT_E("unsupoprted file format (%s)\n", model_filename.c_str());
         return kRetErr;
@@ -80,6 +85,8 @@ int32_t InferenceHelperOpenCV::Initialize(const std::string& model_filename, std
             net_ = cv::dnn::readNetFromONNX(model_filename);
         } else if (is_darknet_model) {
             net_ = cv::dnn::readNetFromDarknet(model_filename, model_filename_darknet_weight);
+        } else if (is_openvino_model) {
+            net_ = cv::dnn::readNetFromModelOptimizer(model_filename, model_filename_openvino_weight);
         }
     } catch (std::exception& e) {
         PRINT_E("%s\n", e.what());
@@ -90,8 +97,12 @@ int32_t InferenceHelperOpenCV::Initialize(const std::string& model_filename, std
     }
     
     if (helper_type_ == kOpencv) {
-        net_.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
-        net_.setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
+        if (is_openvino_model) {
+            net_.setPreferableBackend(cv::dnn::DNN_BACKEND_INFERENCE_ENGINE);
+        } else {
+            net_.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
+            net_.setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
+        }
     } else if (helper_type_ == kOpencvGpu) {
         net_.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
         net_.setPreferableTarget(cv::dnn::DNN_TARGET_OPENCL);
