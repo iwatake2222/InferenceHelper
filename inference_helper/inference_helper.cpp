@@ -108,6 +108,7 @@ InferenceHelper* InferenceHelper::Create(const InferenceHelper::HelperType helpe
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_NCNN
     case kNcnn:
+    case kNcnnVulkan:
         PRINT("Use NCNN\n");
         p = new InferenceHelperNcnn();
         break;

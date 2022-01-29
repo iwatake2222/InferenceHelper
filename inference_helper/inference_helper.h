@@ -232,6 +232,7 @@ public:
         kTensorflowLiteNnapi,
         kTensorrt,
         kNcnn,
+        kNcnnVulkan,
         kMnn,
         kSnpe,
         kArmnn,
