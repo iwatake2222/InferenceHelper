@@ -65,6 +65,9 @@ int32_t InferenceHelperNcnn::Initialize(const std::string& model_filename, std::
     net_->opt.use_fp16_arithmetic = true;
     net_->opt.use_fp16_packed = true;
     net_->opt.use_fp16_storage = true;
+    if (helper_type_ == kNcnnVulkan) {
+        net_->opt.use_vulkan_compute = 1;
+    }
 
     std::string bin_filename = model_filename;
     if (model_filename.find(".param") == std::string::npos) {
@@ -113,6 +116,9 @@ int32_t InferenceHelperNcnn::Finalize(void)
     net_.reset();
     in_mat_list_.clear();
     out_mat_list_.clear();
+    if (helper_type_ == kNcnnVulkan) {
+        ncnn::destroy_gpu_instance();
+    }
     return kRetErr;
 }
 
