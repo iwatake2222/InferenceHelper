@@ -54,7 +54,9 @@ int32_t InferenceHelperNcnn::SetNumThreads(const int32_t num_threads)
 
 int32_t InferenceHelperNcnn::SetCustomOps(const std::vector<std::pair<const char*, const void*>>& custom_ops)
 {
-    PRINT("[WARNING] This method is not supported\n");
+    for (auto op : custom_ops) {
+        custom_ops_.push_back(op);
+    }
     return kRetOk;
 }
 
@@ -69,6 +71,10 @@ int32_t InferenceHelperNcnn::Initialize(const std::string& model_filename, std::
         net_->opt.use_vulkan_compute = 1;
     }
 
+    for (auto op : custom_ops_) {
+        net_->register_custom_layer(op.first, (ncnn::layer_creator_func)(op.second));
+    }
+    
     std::string bin_filename = model_filename;
     if (model_filename.find(".param") == std::string::npos) {
         PRINT_E("Invalid model param filename (%s)\n", model_filename.c_str());
