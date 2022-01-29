@@ -45,6 +45,7 @@ private:
     std::vector<std::pair<std::string, ncnn::Mat>> in_mat_list_;	// <name, mat>
     std::vector<ncnn::Mat> out_mat_list_;
     int32_t num_threads_;
+    std::vector<std::pair<const char*, const void*>> custom_ops_;
 };
 
 #endif
