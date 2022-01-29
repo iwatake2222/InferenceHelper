@@ -1,23 +1,35 @@
-if(DEFINED  ANDROID_ABI)
-    set(NCNN_LIB ${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/android/${ANDROID_ABI}/lib/libncnn.a)
-    set(NCNN_INC ${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/android/${ANDROID_ABI}/include/ncnn)
-elseif(MSVC_VERSION)
-    set(NCNN_LIB
-        $<$<CONFIG:Debug>:${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/x64_windows/lib/ncnnd.lib>
-        $<$<CONFIG:RelWithDebInfo>:${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/x64_windows/lib/ncnnRelWithDebInfo.lib>
-        $<$<CONFIG:Release>:${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/x64_windows/lib/ncnn.lib>
-        $<$<CONFIG:MinSizeRel>:${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/x64_windows/lib/ncnnMinSizeRel.lib>
-    )
-    set(NCNN_INC ${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/x64_windows/include/ncnn)
+if(MSVC_VERSION)
+    # It's better to use DLL for MSVC so that I can use Debug mode
+    set(ncnn_use_shared ON)
 else()
-    set(NCNN_LIB
-        $<$<STREQUAL:${BUILD_SYSTEM},x64_linux>:${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/x64_linux/lib/libncnn.a>
-        $<$<STREQUAL:${BUILD_SYSTEM},armv7>:${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/armv7/lib/libncnn.a>
-        $<$<STREQUAL:${BUILD_SYSTEM},aarch64>:${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/aarch64/lib/libncnn.a>
-    )
-    set(NCNN_INC
-        $<$<STREQUAL:${BUILD_SYSTEM},x64_linux>:${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/x64_linux/include/ncnn>
-        $<$<STREQUAL:${BUILD_SYSTEM},armv7>:${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/armv7/include/ncnn>
-        $<$<STREQUAL:${BUILD_SYSTEM},aarch64>:${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/aarch64/include/ncnn>
-    )
+    set(ncnn_use_shared OFF)
 endif()
+if(ncnn_use_shared)
+    set(ncnn_suffix_shared "-shared")
+else()
+    set(ncnn_suffix_shared "")
+endif()
+
+if(DEFINED ANDROID_ABI)
+    set(ncnn_DIR ${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/android-vulkan/${ANDROID_ABI}/lib/cmake/ncnn/)
+elseif(MSVC_VERSION)
+    set(ncnn_DIR  ${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/windows-vs2019${ncnn_suffix_shared}/x64/lib/cmake/ncnn/)
+    if(ncnn_use_shared)
+        file(COPY ${ncnn_DIR}/../../../bin/ncnn.dll DESTINATION ${CMAKE_BINARY_DIR})
+    endif()
+else()
+    if(${BUILD_SYSTEM} STREQUAL "armv7")
+        set(ncnn_DIR ${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/armv7/lib/cmake/ncnn/)
+    elseif(${BUILD_SYSTEM} STREQUAL "aarch64")
+        set(ncnn_DIR ${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/aarch64/lib/cmake/ncnn/)
+    else()
+        set(ncnn_DIR ${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/ubuntu-2004${ncnn_suffix_shared}/lib/cmake/ncnn/)
+    endif()
+endif()
+
+# message(FATAL_ERROR "ncnn_DIR = ${ncnn_DIR}")
+# set(CMAKE_PREFIX_PATH "${ncnn_DIR}/lib/cmake/ncnn/")
+# find_package(ncnn REQUIRED PATHS "${ncnn_DIR}/lib/cmake/ncnn/")
+find_package(ncnn REQUIRED)
+set(NCNN_LIB ncnn)
+set(NCNN_INC "")    # no need to set

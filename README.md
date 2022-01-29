@@ -79,6 +79,22 @@ You need some extra steps if you use the frameworks listed below
     tensorflow/lite/tools/make/download_dependencies.sh
     ```
 
+#### Extra steps: ncnn
+- Download official pre-built libraries
+    - `sh ./third_party/download_ncnn.sh`
+- Install Vulkan
+    - You need Vulkan even if you don't use it because the pre-built libraries require it. Otherwise you need to build libraries by yourself without VULKAN
+    - https://vulkan.lunarg.com/sdk/home
+    - Windows
+        - https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-sdk.exe
+        - It's better to check `(Optional) Debuggable Shader API Libraries -64-bit` , so that you can use Debug in Visual Studio
+    - Linux (x64)
+        ```sh
+        wget https://sdk.lunarg.com/sdk/download/latest/linux/vulkan-sdk.tar.gz
+        tar xzvf vulkan-sdk.tar.gz
+        export VULKAN_SDK=$(pwd)/1.2.198.1/x86_64
+        ```
+
 #### Extra steps: SNPE
 - Download library from https://developer.qualcomm.com/software/qualcomm-neural-processing-sdk/tools
 - Extract `snpe-1.51.0.zip` , then place `lib` and `include` folders to `third_party/snpe`
