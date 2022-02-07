@@ -1,3 +1,9 @@
 [submodule "ThirdParty/tensorflow"]
 	path = third_party/tensorflow
 	url = https://github.com/tensorflow/tensorflow
+[submodule "third_party/tensorflow_deps/abseil-cpp"]
+	path = third_party/tensorflow_deps/abseil-cpp
+	url = https://github.com/abseil/abseil-cpp
+[submodule "third_party/tensorflow_deps/flatbuffers"]
+	path = third_party/tensorflow_deps/flatbuffers
+	url = https://github.com/google/flatbuffers
