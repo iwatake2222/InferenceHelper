@@ -14,8 +14,14 @@ if(DEFINED  ANDROID_ABI)
     )
     set(TFLITE_LIB TFLITE)
 elseif(MSVC_VERSION)
-    set(TFLITE_LIB ${CMAKE_CURRENT_LIST_DIR}/../tflite_prebuilt/windows-vs2019/libtensorflowlite.so.if.lib)
+    set(TFLITE_LIB
+        $<$<CONFIG:Debug>:${CMAKE_CURRENT_LIST_DIR}/../tflite_prebuilt/windows-vs2019/debug/libtensorflowlite.so.if.lib>
+        $<$<CONFIG:RelWithDebInfo>:${CMAKE_CURRENT_LIST_DIR}/../tflite_prebuilt/windows-vs2019/libtensorflowlite.so.if.lib>
+        $<$<CONFIG:Release>:${CMAKE_CURRENT_LIST_DIR}/../tflite_prebuilt/windows-vs2019/libtensorflowlite.so.if.lib>
+        $<$<CONFIG:MinSizeRel>:${CMAKE_CURRENT_LIST_DIR}/../tflite_prebuilt/windows-vs2019/libtensorflowlite.so.if.lib>
+    )
     file(COPY ${CMAKE_CURRENT_LIST_DIR}/../tflite_prebuilt/windows-vs2019/libtensorflowlite.so DESTINATION ${CMAKE_BINARY_DIR})
+    file(COPY ${CMAKE_CURRENT_LIST_DIR}/../tflite_prebuilt/windows-vs2019/debug/libtensorflowlite.so DESTINATION ${CMAKE_BINARY_DIR}/Debug)
 else()
     if(${BUILD_SYSTEM} STREQUAL "x64_linux")
         set(TFLITE_LIB ${CMAKE_CURRENT_LIST_DIR}/../tflite_prebuilt/ubuntu/libtensorflowlite.so)

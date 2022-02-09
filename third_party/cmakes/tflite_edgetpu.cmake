@@ -3,8 +3,15 @@ set(TFLITE_EDGETPU_INC
 )
 
 if(MSVC_VERSION)
-    set(TFLITE_EDGETPU_LIB ${CMAKE_CURRENT_LIST_DIR}/../edgetpu_prebuilt/direct/windows-vs2019/edgetpu.dll.if.lib)
-    file(COPY ${CMAKE_CURRENT_LIST_DIR}/../edgetpu_prebuilt/direct/windows-vs2019/edgetpu.dll DESTINATION ${CMAKE_BINARY_DIR})
+    set(TFLITE_EDGETPU_LIB
+        $<$<CONFIG:Debug>:${CMAKE_CURRENT_LIST_DIR}/../edgetpu_prebuilt/direct/windows-vs2019/debug/edgetpu_direct_all.dll.if.lib>
+        $<$<CONFIG:RelWithDebInfo>:${CMAKE_CURRENT_LIST_DIR}/../edgetpu_prebuilt/direct/windows-vs2019/edgetpu_direct_all.dll.if.lib>
+        $<$<CONFIG:Release>:${CMAKE_CURRENT_LIST_DIR}/../edgetpu_prebuilt/direct/windows-vs2019/edgetpu_direct_all.dll.if.lib>
+        $<$<CONFIG:MinSizeRel>:${CMAKE_CURRENT_LIST_DIR}/../edgetpu_prebuilt/direct/windows-vs2019/edgetpu_direct_all.dll.if.lib>
+    )
+    file(COPY ${CMAKE_CURRENT_LIST_DIR}/../edgetpu_prebuilt/direct/windows-vs2019/edgetpu_direct_all.dll DESTINATION ${CMAKE_BINARY_DIR})
+    file(COPY ${CMAKE_CURRENT_LIST_DIR}/../edgetpu_prebuilt/direct/windows-vs2019/debug/edgetpu_direct_all.dll DESTINATION ${CMAKE_BINARY_DIR}/Debug)
+    file(COPY ${CMAKE_CURRENT_LIST_DIR}/../edgetpu_prebuilt/direct/windows-vs2019/libusb-1.0.dll DESTINATION ${CMAKE_BINARY_DIR})
 else()
     if(${BUILD_SYSTEM} STREQUAL "x64_linux")
         set(TFLITE_EDGETPU_LIB ${CMAKE_CURRENT_LIST_DIR}/../edgetpu_prebuilt/direct/k8/libedgetpu.so.1.0)
