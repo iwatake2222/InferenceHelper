@@ -70,11 +70,12 @@ int32_t InferenceHelperMnn::Initialize(const std::string& model_filename, std::v
     }
 
     MNN::ScheduleConfig scheduleConfig;
-    scheduleConfig.type = MNN_FORWARD_AUTO;
-    scheduleConfig.numThread = num_threads_;
-    // BackendConfig bnconfig;
-    // bnconfig.precision = BackendConfig::Precision_Low;
-    // config.backendConfig = &bnconfig;
+    scheduleConfig.type = MNN_FORWARD_VULKAN;
+    scheduleConfig.numThread = num_threads_;    // it seems, setting 1 has better performance on Android
+    // MNN::BackendConfig bnconfig;
+    // bnconfig.power = MNN::BackendConfig::Power_High;
+    // bnconfig.precision = MNN::BackendConfig::Precision_Low;
+    // scheduleConfig.backendConfig = &bnconfig;
     session_ = net_->createSession(scheduleConfig);
     if (!session_) {
         PRINT_E("Failed to create session\n");
