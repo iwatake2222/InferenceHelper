@@ -27,32 +27,29 @@
 - Linux (x64, armv7, aarch64)
 - Android (armeabi-v7a, arm64-v8a)
 
-## Tested Environment
-todo: Update table
+## CI Status
+| Framework                 | Windows (x64)       | Linux (x64)         | Linux (armv7)       | Linux (aarch64)     | Android (aarch64)   |
+|---------------------------|---------------------|---------------------|---------------------|---------------------|---------------------|
+| CI Status                 | badge               | badge               | badge               | badge               | Not yet             |
+| TensorFlow Lite           | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [ ] Build, [ ] Test |
+| TensorFlow Lite + XNNPACK | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [ ] Build, [ ] Test |
+| TensorFlow Lite + EdgeTPU | [x] Build, [ ] Test | [x] Build, [ ] Test | [x] Build, [ ] Test | [x] Build, [ ] Test | not supported       |
+| TensorFlow Lite + GPU     | not supported       | not supported       | not supported       | not supported       | [ ] Build, [ ] Test |
+| TensorFlow Lite + NNAPI   | not supported       | not supported       | not supported       | not supported       | [ ] Build, [ ] Test |
+| TensorRT                  | [ ] Build, [ ] Test | [ ] Build, [ ] Test | [ ] Build, [ ] Test | [ ] Build, [ ] Test | not supported       |
+| OpenCV(dnn)               | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [ ] Build, [ ] Test |
+| OpenVINO with OpenCV      | [ ] Build, [ ] Test | [ ] Build, [ ] Test | [ ] Build, [ ] Test | [ ] Build, [ ] Test | not supported       |
+| ncnn                      | [x] Build, [ ] Test | [x] Build, [x] Test | [ ] Build, [ ] Test | [ ] Build, [ ] Test | [ ] Build, [ ] Test |
+| MNN                       | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [ ] Build, [ ] Test |
+| SNPE                      | not supported       | not supported       | [ ] Build, [ ] Test | [ ] Build, [ ] Test | [ ] Build, [ ] Test |
+| Arm NN                    | not supported       | [x] Build, [x] Test | not supported       | [x] Build, [x] Test | not supported       |
+| NNabla                    | [x] Build, [x] Test | [ ] Build, [ ] Test | not supported       | [x] Build, [x] Test | not supported       |
+| NNabla + CUDA             | [ ] Build, [ ] Test | [ ] Build, [ ] Test | not supported       | [ ] Build, [ ] Test | not supported       |
 
-| Framework                 | Windows (x64)            | Linux (x64)   | Linux (armv7) | Linux (aarch64)  | Android (aarch64) |
-|---------------------------|--------------------------|---------------|---------------|------------------|-------------------|
-| OpenCV(dnn)               | OK                       | OK            | OK            | OK               | not tested        |
-| OpenVINO with OpenCV      | OK                       | OK            | not tested    | not tested       | not supported     |
-| TensorFlow Lite           | OK                       | OK            | OK            | OK               | OK                |
-| TensorFlow Lite + XNNPACK | OK                       | OK            | OK            | OK               | OK                |
-| TensorFlow Lite + GPU     | not supported            | OK            | OK            | OK               | OK                |
-| TensorFlow Lite + EdgeTPU | OK                       | not tested    | OK            | OK               | not supported     |
-| TensorFlow Lite + NNAPI   | not supported            | not supported | not supported | not supported    | OK                |
-| TensorRT                  | not tested               | not tested    | not tested    | OK               | not supported     |
-| ncnn                      | OK                       | OK            | OK            | OK               | OK                |
-| MNN                       | OK                       | OK            | OK            | OK               | OK                |
-| SNPE                      | not supported            | not supported | not tested    | OK               | OK                |
-| Arm NN                    | not supported            | OK            | not supported | OK               | not supported     |
-| NNabla                    | OK                       | note tested   | not supported | OK               | not tested        |
-| NNabla + CUDA             | OK                       | note tested   | not supported | OK               | not tested        |
-| Note                      | Visual Studio 2017, 2019 | Xubuntu 18.04 | Raspberry Pi  | Jetson Xavier NX | Pixel 4a          |
+* Blank doesn't mean that the framework is unsupported. Blank just means the framework is not tested in CI. For instance, TensorRT in Windows/Linux works and I confirmed it in my PC, but can't run it in CI. Also, some build/test (e.g. ncnn + Arm) are skipped because pre-built libraries are not provided. It may work if you build a library by yourself.
 
-
-## Sample project
-https://github.com/iwatake2222/InferenceHelper_Sample
-
-### Related projects
+## Sample projects
+- https://github.com/iwatake2222/InferenceHelper_Sample
 - https://github.com/iwatake2222/play_with_tflite
 - https://github.com/iwatake2222/play_with_tensorrt
 - https://github.com/iwatake2222/play_with_ncnn
@@ -71,8 +68,15 @@ You need some extra steps if you use the frameworks listed below
 
 ### Extra steps: OpenCV / OpenVINO
 - Install OpenCV or OpenVINO
-    - You may need to set `OpenCV_DIR` environment variable
+    - You may need to set/modify `OpenCV_DIR` and `PATH` environment variable
     - To use OpenVINO, you may need to run `C:\Program Files (x86)\Intel\openvino_2021\bin\setupvars.bat` or `source /opt/intel/openvino_2021/bin/setupvars.sh`
+
+### Extra steps: Tensorflow Lite (EdgeTPU)
+- Install the following library
+    - Linux: https://github.com/google-coral/libedgetpu/releases/download/release-grouper/edgetpu_runtime_20210726.zip
+    - Windows: https://github.com/google-coral/libedgetpu/releases/download/release-frogfish/edgetpu_runtime_20210119.zip
+        - the latest version doesn't work
+        - it may be better to delete `C:\Windows\System32\edgetpu.dll` to ensure the program uses our pre-built library
 
 ### Extra steps: ncnn
 - Install Vulkan
@@ -86,11 +90,16 @@ You need some extra steps if you use the frameworks listed below
         wget https://sdk.lunarg.com/sdk/download/latest/linux/vulkan-sdk.tar.gz
         tar xzvf vulkan-sdk.tar.gz
         export VULKAN_SDK=$(pwd)/1.2.198.1/x86_64
+        sudo apt install -y vulkan-utils libvulkan1 libvulkan-dev
         ```
 
 ### Extra steps: SNPE
 - Download library from https://developer.qualcomm.com/software/qualcomm-neural-processing-sdk/tools
 - Extract `snpe-1.51.0.zip` , then place `lib` and `include` folders to `third_party/snpe_prebuilt`
+
+### Note:
+- `Debug` mode in Visual Studio doesn't work with ncnn and NNabla because debuggable libraries are not provided
+- See `third_party/download_prebuilt_libraries.sh` and `third_party/cmakes/*` to check which libraries are being used. For instance, libraries without GPU(CUDA/Vulkan) are used to be safe. So, if you want to use GPU, modify these files.
 
 ## Project settings in CMake
 - Add InferenceHelper to your project
