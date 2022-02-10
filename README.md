@@ -92,16 +92,6 @@ You need some extra steps if you use the frameworks listed below
 - Download library from https://developer.qualcomm.com/software/qualcomm-neural-processing-sdk/tools
 - Extract `snpe-1.51.0.zip` , then place `lib` and `include` folders to `third_party/snpe_prebuilt`
 
-### Extra steps: NNabla
-- Download library from https://nnabla.org/ja/install/#cpplib_list
-- Extract `nnabla-cpplib-1.20.1-xxx.zip` or `nnabla-cpplib-cuda_xxx-1.20.1-xxx.zip` into `third_party/nnabla_prebuilt/xxx`
-- For Windows users:
-    - You need to install CUDA and cuDNN
-    - Extract `archive.dll` (`libarchive-v3.5.2-win64.zip`) to the same folder as executable file
-        - https://github.com/libarchive/libarchive/releases
-    - You will get exception error if you run the project with `Debug` mode in Visual Studio
-        - use `Release` or `ReleaseWithDebug` mode
-
 ## Project settings in CMake
 - Add InferenceHelper to your project
     ```cmake
