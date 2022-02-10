@@ -1,0 +1,2 @@
+1. Download library from https://nnabla.org/ja/install/#cpplib_list
+2. Extract nnabla-cpplib-1.20.1-xxx.zip or nnabla-cpplib-cuda_xxx-1.20.1-xxx.zip into third_party/nnabla_prebuilt/xxx

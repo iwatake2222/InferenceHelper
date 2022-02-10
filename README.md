@@ -1,4 +1,4 @@
-# InferenceHelper
+# Inference Helper
 <p align="center">
   <img src="00_doc/logo.png" />
 </p>
@@ -6,10 +6,6 @@
 - This is a helper class for deep learning frameworks especially for inference
 - This class provides an interface to use various deep learnig frameworks, so that you can use the same application code
 
-![GitHub](https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white)
-![GitHub](https://img.shields.io/github/license/iwatake2222/InferenceHelper)
-
-![Class Diagram](00_doc/class_diagram.png) 
 
 ## Supported frameworks
 - TensorFlow Lite
@@ -19,18 +15,21 @@
 - OpenCV(dnn) with GPU
 - OpenVINO with OpenCV (xml+bin)
 - ncnn
-- MNN
+- ncnn with Vulkan
+- MNN (with Vulkan)
 - SNPE (Snapdragon Neural Processing Engine SDK (Qualcomm Neural Processing SDK for AI v1.51.0))
 - Arm NN
 - NNabla
 - NNabla with CUDA
 
 ## Supported targets
-- Windows 10 (Visual Studio 2017 x64, Visual Studio 2019 x64)
+- Windows 10 (Visual Studio 2019 x64)
 - Linux (x64, armv7, aarch64)
-- Android (armv7, aarch64)
+- Android (armeabi-v7a, arm64-v8a)
 
 ## Tested Environment
+todo: Update table
+
 | Framework                 | Windows (x64)            | Linux (x64)   | Linux (armv7) | Linux (aarch64)  | Android (aarch64) |
 |---------------------------|--------------------------|---------------|---------------|------------------|-------------------|
 | OpenCV(dnn)               | OK                       | OK            | OK            | OK               | not tested        |
@@ -53,35 +52,29 @@
 ## Sample project
 https://github.com/iwatake2222/InferenceHelper_Sample
 
-## Related projects
+### Related projects
 - https://github.com/iwatake2222/play_with_tflite
 - https://github.com/iwatake2222/play_with_tensorrt
 - https://github.com/iwatake2222/play_with_ncnn
 - https://github.com/iwatake2222/play_with_mnn
 
 # Usage
+Please refer to https://github.com/iwatake2222/InferenceHelper_Sample
+
 ## Installation
 - Add this repository into your project (Using `git submodule` is recommended)
 - Download prebuilt libraries
-    - Download prebuilt libraries (third_party.zip) from https://github.com/iwatake2222/InferenceHelper/releases/ 
-    - Extract it to `third_party`
+    - `sh third_party/download_prebuilt_libraries.sh`
 
-### Extra steps
+## Extra steps
 You need some extra steps if you use the frameworks listed below
 
-#### Extra steps: Tensorflow Lite
-- Download header files
-    ```
-    git submodule init
-    git submodule update
-    cd third_party/tensorflow
-    chmod +x tensorflow/lite/tools/make/download_dependencies.sh
-    tensorflow/lite/tools/make/download_dependencies.sh
-    ```
+### Extra steps: OpenCV / OpenVINO
+- Install OpenCV or OpenVINO
+    - You may need to set `OpenCV_DIR` environment variable
+    - To use OpenVINO, you may need to run `C:\Program Files (x86)\Intel\openvino_2021\bin\setupvars.bat` or `source /opt/intel/openvino_2021/bin/setupvars.sh`
 
-#### Extra steps: ncnn
-- Download official pre-built libraries
-    - `sh ./third_party/download_ncnn.sh`
+### Extra steps: ncnn
 - Install Vulkan
     - You need Vulkan even if you don't use it because the pre-built libraries require it. Otherwise you need to build libraries by yourself without VULKAN
     - https://vulkan.lunarg.com/sdk/home
@@ -95,20 +88,13 @@ You need some extra steps if you use the frameworks listed below
         export VULKAN_SDK=$(pwd)/1.2.198.1/x86_64
         ```
 
-#### Extra steps: SNPE
+### Extra steps: SNPE
 - Download library from https://developer.qualcomm.com/software/qualcomm-neural-processing-sdk/tools
-- Extract `snpe-1.51.0.zip` , then place `lib` and `include` folders to `third_party/snpe`
+- Extract `snpe-1.51.0.zip` , then place `lib` and `include` folders to `third_party/snpe_prebuilt`
 
-#### Extra steps: NNabla
-- Prepare library:
-    - If you use pre-built library:
-        - Download library from https://nnabla.org/ja/install/#cpplib_list
-        - Extract `nnabla-cpplib-1.20.1-xxx.zip` or `nnabla-cpplib-cuda_xxx-1.20.1-xxx.zip` into `third_party/nnabla_prebuilt/xxx`
-    - If you build library by yourself:
-        - Follow the instruction:
-            - https://github.com/sony/nnabla/blob/master/doc/build/build_cpp_utils.md
-            - https://github.com/sony/nnabla-ext-cuda/blob/master/doc/build/build.md
-        - Copy the generated library files into `third_party/nnabla_prebuilt/xxx`
+### Extra steps: NNabla
+- Download library from https://nnabla.org/ja/install/#cpplib_list
+- Extract `nnabla-cpplib-1.20.1-xxx.zip` or `nnabla-cpplib-cuda_xxx-1.20.1-xxx.zip` into `third_party/nnabla_prebuilt/xxx`
 - For Windows users:
     - You need to install CUDA and cuDNN
     - Extract `archive.dll` (`libarchive-v3.5.2-win64.zip`) to the same folder as executable file
@@ -144,9 +130,9 @@ You need some extra steps if you use the frameworks listed below
     cmake .. -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI=on
     # TensorRT
     cmake .. -DINFERENCE_HELPER_ENABLE_TENSORRT=on
-    # ncnn
+    # ncnn, ncnn + vulkan
     cmake .. -DINFERENCE_HELPER_ENABLE_NCNN=on
-    # MNN
+    # MNN (+ Vulkan)
     cmake .. -DINFERENCE_HELPER_ENABLE_MNN=on
     # SNPE
     cmake .. -DINFERENCE_HELPER_ENABLE_SNPE=on
@@ -164,6 +150,9 @@ You need some extra steps if you use the frameworks listed below
     cmake .. -INFERENCE_HELPER_ENABLE_PRE_PROCESS_BY_OPENCV=off
     ```
 
+# Structure
+![Class Diagram](00_doc/class_diagram.png) 
+
 # APIs
 ## InferenceHelper
 ### Enumeration
@@ -178,6 +167,7 @@ typedef enum {
     kTensorflowLiteNnapi,
     kTensorrt,
     kNcnn,
+    kNcnnVulkan,
     kMnn,
     kSnpe,
     kArmnn,
