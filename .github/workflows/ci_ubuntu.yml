@@ -42,7 +42,7 @@ jobs:
         export VULKAN_SDK=$(pwd)/1.2.198.1/x86_64
 
         # Build and Run
-        cd InferenceHelper_Sample
+        # cd InferenceHelper_Sample
         echo "inference time" > time_inference_linux.txt
         sh ./01_script/build_run_linux.sh TFLITE
         # sh ./01_script/build_run_linux.sh TFLITE_DELEGATE_XNNPACK
@@ -57,4 +57,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: time_inference_linux.txt
-        path: ./InferenceHelper_Sample/time_inference_linux.txt
+        path: ../time_inference_linux.txt
