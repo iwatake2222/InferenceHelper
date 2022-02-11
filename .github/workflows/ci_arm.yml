@@ -53,7 +53,6 @@ jobs:
         run: |
           cd /InferenceHelper_Sample
           echo "inference time" > time_inference_linux.txt
-
           case "${{ matrix.arch }}" in
             armv7)
               sh ./01_script/build_run_linux.sh TFLITE
@@ -62,7 +61,6 @@ jobs:
               # sh ./01_script/build_run_linux.sh OPENCV
               # sh ./01_script/build_run_linux.sh NCNN
               # sh ./01_script/build_run_linux.sh MNN
-              mv ./time_inference_linux.txt "${{ matrix.artifact_name }}"
               ;;
             aarch64)
               sh ./01_script/build_run_linux.sh TFLITE
@@ -73,10 +71,9 @@ jobs:
               sh ./01_script/build_run_linux.sh MNN
               sh ./01_script/build_run_linux.sh ARMNN
               # sh ./01_script/build_run_linux.sh NNABLA
-              mv ./time_inference_linux.txt "${{ matrix.artifact_name }}"
               ;;
           esac
-
+          mv ./time_inference_linux.txt "${{ matrix.artifact_name }}"
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
