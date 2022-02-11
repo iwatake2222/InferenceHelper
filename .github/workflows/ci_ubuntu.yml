@@ -32,8 +32,8 @@ jobs:
         cd InferenceHelper_Sample
         rm -rf InferenceHelper
         mv * ../../.
-        cd ../
-        sh ./third_party/download_prebuilt_libraries.sh
+        cd ../../
+        sh ./InferenceHelper/third_party/download_prebuilt_libraries.sh
         sh ./download_resource.sh
 
     - name: Build and Run
@@ -45,12 +45,12 @@ jobs:
         cd InferenceHelper_Sample
         echo "inference time" > time_inference_linux.txt
         sh ./01_script/build_run_linux.sh TFLITE
-        sh ./01_script/build_run_linux.sh TFLITE_DELEGATE_XNNPACK
-        sh ./01_script/build_run_linux.sh TFLITE_DELEGATE_EDGETPU 1
-        sh ./01_script/build_run_linux.sh OPENCV
-        sh ./01_script/build_run_linux.sh NCNN
-        sh ./01_script/build_run_linux.sh MNN
-        sh ./01_script/build_run_linux.sh ARMNN
+        # sh ./01_script/build_run_linux.sh TFLITE_DELEGATE_XNNPACK
+        # sh ./01_script/build_run_linux.sh TFLITE_DELEGATE_EDGETPU 1
+        # sh ./01_script/build_run_linux.sh OPENCV
+        # sh ./01_script/build_run_linux.sh NCNN
+        # sh ./01_script/build_run_linux.sh MNN
+        # sh ./01_script/build_run_linux.sh ARMNN
         # sh ./01_script/build_run_linux.sh NNABLA
 
     - name: Upload Artifacts
