@@ -28,25 +28,25 @@
 - Android (armeabi-v7a, arm64-v8a)
 
 ## CI Status
-| Framework                 | Windows (x64)       | Linux (x64)         | Linux (armv7)       | Linux (aarch64)     | Android (aarch64)   |
-|---------------------------|---------------------|---------------------|---------------------|---------------------|---------------------|
-| CI Status                 | badge               | badge               | badge               | badge               | Not yet             |
-| TensorFlow Lite           | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [ ] Build, [ ] Test |
-| TensorFlow Lite + XNNPACK | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [ ] Build, [ ] Test |
-| TensorFlow Lite + EdgeTPU | [x] Build, [ ] Test | [x] Build, [ ] Test | [x] Build, [ ] Test | [x] Build, [ ] Test | not supported       |
-| TensorFlow Lite + GPU     | not supported       | not supported       | not supported       | not supported       | [ ] Build, [ ] Test |
-| TensorFlow Lite + NNAPI   | not supported       | not supported       | not supported       | not supported       | [ ] Build, [ ] Test |
-| TensorRT                  | [ ] Build, [ ] Test | [ ] Build, [ ] Test | [ ] Build, [ ] Test | [ ] Build, [ ] Test | not supported       |
-| OpenCV(dnn)               | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [ ] Build, [ ] Test |
-| OpenVINO with OpenCV      | [ ] Build, [ ] Test | [ ] Build, [ ] Test | [ ] Build, [ ] Test | [ ] Build, [ ] Test | not supported       |
-| ncnn                      | [x] Build, [ ] Test | [x] Build, [x] Test | [ ] Build, [ ] Test | [ ] Build, [ ] Test | [ ] Build, [ ] Test |
-| MNN                       | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [x] Build, [x] Test | [ ] Build, [ ] Test |
-| SNPE                      | not supported       | not supported       | [ ] Build, [ ] Test | [ ] Build, [ ] Test | [ ] Build, [ ] Test |
-| Arm NN                    | not supported       | [x] Build, [x] Test | not supported       | [x] Build, [x] Test | not supported       |
-| NNabla                    | [x] Build, [x] Test | [ ] Build, [ ] Test | not supported       | [x] Build, [x] Test | not supported       |
-| NNabla + CUDA             | [ ] Build, [ ] Test | [ ] Build, [ ] Test | not supported       | [ ] Build, [ ] Test | not supported       |
+| Framework                 | Windows (x64)                                 | Linux (x64)                                   | Linux (armv7)                                 | Linux (aarch64)                               | Android (aarch64)                              |
+|---------------------------|-----------------------------------------------|-----------------------------------------------|-----------------------------------------------|-----------------------------------------------|------------------------------------------------|
+| CI Status                 | [![CI Windows](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_windows.yml/badge.svg)](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_windows.yml) | [![CI Ubuntu](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_ubuntu.yml/badge.svg)](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_ubuntu.yml) | [![CI Arm](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_arm.yml/badge.svg)](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_arm.yml) | [![CI Arm](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_arm.yml/badge.svg)](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_arm.yml) | todo                                           |
+| TensorFlow Lite           | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul> |
+| TensorFlow Lite + XNNPACK | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul> |
+| TensorFlow Lite + EdgeTPU | <ul><li> [x] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
+| TensorFlow Lite + GPU     | Unsupported                                   | Unsupported                                   | Unsupported                                   | Unsupported                                   | <ul><li> [ ] Build</li><li>[ ] Test </li></ul> |
+| TensorFlow Lite + NNAPI   | Unsupported                                   | Unsupported                                   | Unsupported                                   | Unsupported                                   | <ul><li> [ ] Build</li><li>[ ] Test </li></ul> |
+| TensorRT                  | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
+| OpenCV(dnn)               | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul> |
+| OpenVINO with OpenCV      | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
+| ncnn                      | <ul><li> [x] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul> |
+| MNN                       | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul> |
+| SNPE                      | Unsupported                                   | Unsupported                                   | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul> |
+| Arm NN                    | Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                    |
+| NNabla                    | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                   | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
+| NNabla + CUDA             | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                   | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
 
-* Blank doesn't mean that the framework is unsupported. Blank just means the framework is not tested in CI. For instance, TensorRT in Windows/Linux works and I confirmed it in my PC, but can't run it in CI. Also, some build/test (e.g. ncnn + Arm) are skipped because pre-built libraries are not provided. It may work if you build a library by yourself.
+* Unchedked(blank) doesn't mean that the framework is unsupported. Unchecked just means the framework is not tested in CI. For instance, TensorRT on Windows/Linux works and I confirmed it in my PC, but can't run it in CI. Also, some build/test (e.g. ncnn + Linux+ARM) are skipped because pre-built libraries are not provided. It may work if you build a library by yourself.
 
 ## Sample projects
 - https://github.com/iwatake2222/InferenceHelper_Sample

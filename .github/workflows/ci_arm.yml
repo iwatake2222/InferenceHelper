@@ -1,0 +1,84 @@
+name: CI Arm
+
+on:
+  push:
+    tags: 'v*'
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        include:
+          - arch: armv7
+            distro: ubuntu18.04
+            artifact_name: time_inference_armv7.txt
+          - arch: aarch64
+            distro: ubuntu20.04
+            artifact_name: time_inference_aarch64.txt
+
+    steps:
+    - name: Get source code
+      run: |
+        git clone https://github.com/iwatake2222/InferenceHelper_Sample
+        cd InferenceHelper_Sample
+        git submodule update --init
+        cd InferenceHelper
+        echo  "Current branch:  ${{github.ref}}"
+        git fetch --all
+        git checkout ${{ github.ref }}
+        git pull origin ${{ github.ref }}
+        cd ..
+        sh InferenceHelper/third_party/download_prebuilt_libraries.sh
+        sh ./download_resource.sh
+
+    - name: Build and Run
+      uses: uraimo/run-on-arch-action@v2.0.5
+      with:
+        arch: ${{ matrix.arch }}
+        distro: ${{ matrix.distro }}
+        githubToken: ${{ github.token }}
+        shell: /bin/sh
+        dockerRunArgs: |
+          --volume ${PWD}/InferenceHelper_Sample:/InferenceHelper_Sample
+        install: |
+          apt-get update -q -y
+          apt-get install -q -y git g++ cmake
+          apt-get install -q -y libopencv-dev
+          apt-get install -q -y vulkan-utils libvulkan1 libvulkan-dev
+        run: |
+          cd /InferenceHelper_Sample
+          echo "inference time" > time_inference_linux.txt
+
+          case "${{ matrix.arch }}" in
+            armv7)
+              sh ./01_script/build_run_linux.sh TFLITE
+              # sh ./01_script/build_run_linux.sh TFLITE_DELEGATE_XNNPACK
+              sh ./01_script/build_run_linux.sh TFLITE_DELEGATE_EDGETPU 1
+              # sh ./01_script/build_run_linux.sh OPENCV
+              # sh ./01_script/build_run_linux.sh NCNN
+              # sh ./01_script/build_run_linux.sh MNN
+              mv ./time_inference_linux.txt "${{ matrix.artifact_name }}"
+              ;;
+            aarch64)
+              sh ./01_script/build_run_linux.sh TFLITE
+              sh ./01_script/build_run_linux.sh TFLITE_DELEGATE_XNNPACK
+              sh ./01_script/build_run_linux.sh TFLITE_DELEGATE_EDGETPU 1
+              sh ./01_script/build_run_linux.sh OPENCV
+              # sh ./01_script/build_run_linux.sh NCNN
+              sh ./01_script/build_run_linux.sh MNN
+              sh ./01_script/build_run_linux.sh ARMNN
+              # sh ./01_script/build_run_linux.sh NNABLA
+              # mv ./time_inference_linux.txt "${{ matrix.artifact_name }}"
+              ;;
+          esac
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: ./InferenceHelper_Sample/${{ matrix.artifact_name }}

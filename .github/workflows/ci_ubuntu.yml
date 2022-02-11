@@ -1,0 +1,63 @@
+name: CI Ubuntu
+
+on:
+  push:
+    tags: 'v*'
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Install Requirements
+      run: |
+        sudo apt update
+        sudo apt install -y g++ git cmake wget unzip vulkan-utils libvulkan1 libvulkan-dev
+
+        # OpenCV for INFERENCE_HELPER_ENABLE_OPENCV
+        sudo apt install -y libopencv-dev
+
+        # Vulkan for INFERENCE_HELPER_ENABLE_NCNN
+        wget https://sdk.lunarg.com/sdk/download/latest/linux/vulkan-sdk.tar.gz
+        tar xzvf vulkan-sdk.tar.gz
+        export VULKAN_SDK=$(pwd)/1.2.198.1/x86_64
+
+    - name: Get source code
+      run: |
+        git clone https://github.com/iwatake2222/InferenceHelper_Sample
+        cd InferenceHelper_Sample
+        git submodule update --init
+        cd InferenceHelper
+        echo  "Current branch:  ${{github.ref}}"
+        git fetch --all
+        git checkout ${{ github.ref }}
+        git pull origin ${{ github.ref }}
+        cd ..
+        sh InferenceHelper/third_party/download_prebuilt_libraries.sh
+        sh ./download_resource.sh
+
+    - name: Build and Run
+      run: |
+        export VULKAN_SDK=$(pwd)/1.2.198.1/x86_64
+
+        # Build and Run
+        cd InferenceHelper_Sample
+        echo "inference time" > time_inference_linux.txt
+        sh ./01_script/build_run_linux.sh TFLITE
+        sh ./01_script/build_run_linux.sh TFLITE_DELEGATE_XNNPACK
+        sh ./01_script/build_run_linux.sh TFLITE_DELEGATE_EDGETPU 1
+        sh ./01_script/build_run_linux.sh OPENCV
+        sh ./01_script/build_run_linux.sh NCNN
+        sh ./01_script/build_run_linux.sh MNN
+        sh ./01_script/build_run_linux.sh ARMNN
+        # sh ./01_script/build_run_linux.sh NNABLA
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: time_inference_linux.txt
+        path: ./InferenceHelper_Sample/time_inference_linux.txt

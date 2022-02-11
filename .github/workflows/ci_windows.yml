@@ -1,0 +1,72 @@
+name: CI Windows
+
+on:
+  push:
+    tags: 'v*'
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2019
+
+    steps:
+    - name: setup-msbuild
+      uses: microsoft/setup-msbuild@v1.1
+      with:
+        vs-version: '[16.0,16.20)'  # Make sure to use Visual Studio 2019
+
+    - name: Install Requirements
+      run: |
+        # OpenCV for INFERENCE_HELPER_ENABLE_OPENCV
+        choco  install opencv -Version 4.5.4
+
+        # Vulkan for INFERENCE_HELPER_ENABLE_NCNN
+        Invoke-WebRequest -Uri https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe?Human=true -OutFile VulkanSDK.exe
+        $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
+        $installer.WaitForExit();
+
+    - name: Get source code
+      run: |
+        git clone https://github.com/iwatake2222/InferenceHelper_Sample
+        cd InferenceHelper_Sample
+        git submodule update --init
+        cd InferenceHelper
+        echo  "Current branch:  ${{github.ref}}"
+        git fetch --all
+        git checkout ${{ github.ref }}
+        git pull origin ${{ github.ref }}
+        cd ..
+        sh InferenceHelper/third_party/download_prebuilt_libraries.sh
+        sh ./download_resource.sh
+
+    - name: Build and Run
+      shell: powershell
+      run: |
+        # Setup OpenCV for INFERENCE_HELPER_ENABLE_OPENCV
+        $env:OPENCV_DIR="C:/tools/opencv/build/x64/vc15/lib"
+        $env:Path+=";C:/tools/opencv/build/x64/vc15/bin"
+
+        # Setup Vulkan for INFERENCE_HELPER_ENABLE_NCNN
+        $env:VULKAN_SDK="C:/VulkanSDK/1.2.189.0"
+        $env:Path+=";C:/VulkanSDK/1.2.189.0/Bin"
+
+        # Build and Run
+        cd InferenceHelper_Sample
+        if($?) { echo "inference time" > time_inference_windows.txt }
+        if($?) { ./01_script/build_run_windows.ps1 TFLITE }
+        if($?) { ./01_script/build_run_windows.ps1 TFLITE_DELEGATE_XNNPACK }
+        if($?) { ./01_script/build_run_windows.ps1 TFLITE_DELEGATE_EDGETPU -BUILD_ONLY }
+        if($?) { ./01_script/build_run_windows.ps1 OPENCV }
+        if($?) { ./01_script/build_run_windows.ps1 NCNN -BUILD_ONLY }
+        if($?) { ./01_script/build_run_windows.ps1 MNN }
+        if($?) { ./01_script/build_run_windows.ps1 NNABLA }
+        exit $LASTEXITCODE
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: time_inference_windows.txt
+        path: ./InferenceHelper_Sample/time_inference_windows.txt
