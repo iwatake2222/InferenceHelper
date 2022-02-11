@@ -13,6 +13,17 @@ jobs:
     runs-on: windows-2019
 
     steps:
+    - uses: actions/checkout@v2
+    - name: Get project source code
+      run: |
+        git clone https://github.com/iwatake2222/InferenceHelper_Sample
+        cd InferenceHelper_Sample
+        Remove-Item -Recurse -Force InferenceHelper
+        mv * ../../.
+        cd ../../
+        sh ./InferenceHelper/third_party/download_prebuilt_libraries.sh
+        sh ./download_resource.sh
+
     - name: setup-msbuild
       uses: microsoft/setup-msbuild@v1.1
       with:
@@ -28,20 +39,6 @@ jobs:
         $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S");
         $installer.WaitForExit();
 
-    - name: Get source code
-      run: |
-        git clone https://github.com/iwatake2222/InferenceHelper_Sample
-        cd InferenceHelper_Sample
-        git submodule update --init
-        cd InferenceHelper
-        echo  "Current branch:  ${{github.ref}}"
-        git fetch --all
-        git checkout ${{ github.ref }}
-        git pull origin ${{ github.ref }}
-        cd ..
-        sh InferenceHelper/third_party/download_prebuilt_libraries.sh
-        sh ./download_resource.sh
-
     - name: Build and Run
       shell: powershell
       run: |
@@ -54,7 +51,7 @@ jobs:
         $env:Path+=";C:/VulkanSDK/1.2.189.0/Bin"
 
         # Build and Run
-        cd InferenceHelper_Sample
+        cd ../
         if($?) { echo "inference time" > time_inference_windows.txt }
         if($?) { ./01_script/build_run_windows.ps1 TFLITE }
         if($?) { ./01_script/build_run_windows.ps1 TFLITE_DELEGATE_XNNPACK }
@@ -63,10 +60,11 @@ jobs:
         if($?) { ./01_script/build_run_windows.ps1 NCNN -BUILD_ONLY }
         if($?) { ./01_script/build_run_windows.ps1 MNN }
         if($?) { ./01_script/build_run_windows.ps1 NNABLA }
+        mv time_inference_windows.txt InferenceHelper/.
         exit $LASTEXITCODE
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
         name: time_inference_windows.txt
-        path: ./InferenceHelper_Sample/time_inference_windows.txt
+        path: time_inference_windows.txt

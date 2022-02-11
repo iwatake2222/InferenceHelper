@@ -22,18 +22,15 @@ jobs:
             artifact_name: time_inference_aarch64.txt
 
     steps:
-    - name: Get source code
+    - uses: actions/checkout@v2
+    - name: Get project source code
       run: |
         git clone https://github.com/iwatake2222/InferenceHelper_Sample
         cd InferenceHelper_Sample
-        git submodule update --init
-        cd InferenceHelper
-        echo  "Current branch:  ${{github.ref}}"
-        git fetch --all
-        git checkout ${{ github.ref }}
-        git pull origin ${{ github.ref }}
-        cd ..
-        sh InferenceHelper/third_party/download_prebuilt_libraries.sh
+        rm -rf InferenceHelper
+        mv * ../../.
+        cd ../../
+        sh ./InferenceHelper/third_party/download_prebuilt_libraries.sh
         sh ./download_resource.sh
 
     - name: Build and Run
@@ -44,7 +41,7 @@ jobs:
         githubToken: ${{ github.token }}
         shell: /bin/sh
         dockerRunArgs: |
-          --volume ${PWD}/InferenceHelper_Sample:/InferenceHelper_Sample
+          --volume ${PWD}/../:/InferenceHelper_Sample
         install: |
           apt-get update -q -y
           apt-get install -q -y git g++ cmake
@@ -74,8 +71,10 @@ jobs:
               ;;
           esac
           mv ./time_inference_linux.txt "${{ matrix.artifact_name }}"
+    - name: Move artifacts (because relative paths seems not allowed)
+      run: mv ../"${{ matrix.artifact_name }}" "${{ matrix.artifact_name }}"
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
         name: ${{ matrix.artifact_name }}
-        path: ./InferenceHelper_Sample/${{ matrix.artifact_name }}
+        path: ${{ matrix.artifact_name }}
