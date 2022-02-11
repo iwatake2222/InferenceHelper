@@ -32,8 +32,8 @@ public:
         kTensorTypeFp32,
         kTensorTypeInt32,
         kTensorTypeInt64,
-    };
-
+    };feafea
+eag
 public:
     TensorInfo()
         : name("")
