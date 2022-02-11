@@ -13,35 +13,32 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-    - name: Install Requirements
-      run: |
-        sudo apt update
-        sudo apt install -y g++ git cmake wget unzip vulkan-utils libvulkan1 libvulkan-dev
+    # - name: Install Requirements
+    #   run: |
+    #     sudo apt update
+    #     sudo apt install -y g++ git cmake wget unzip vulkan-utils libvulkan1 libvulkan-dev
 
-        # OpenCV for INFERENCE_HELPER_ENABLE_OPENCV
-        sudo apt install -y libopencv-dev
+    #     # OpenCV for INFERENCE_HELPER_ENABLE_OPENCV
+    #     sudo apt install -y libopencv-dev
 
-        # Vulkan for INFERENCE_HELPER_ENABLE_NCNN
-        wget https://sdk.lunarg.com/sdk/download/latest/linux/vulkan-sdk.tar.gz
-        tar xzvf vulkan-sdk.tar.gz
-        export VULKAN_SDK=$(pwd)/1.2.198.1/x86_64
-
-    - name: Get source code
+    #     # Vulkan for INFERENCE_HELPER_ENABLE_NCNN
+    #     wget https://sdk.lunarg.com/sdk/download/latest/linux/vulkan-sdk.tar.gz
+    #     tar xzvf vulkan-sdk.tar.gz
+    #     export VULKAN_SDK=$(pwd)/1.2.198.1/x86_64
+    - uses: actions/checkout@v2
+    - name: Get project source code
       run: |
         git clone https://github.com/iwatake2222/InferenceHelper_Sample
         cd InferenceHelper_Sample
-        git submodule update --init
-        cd InferenceHelper
-        echo  "Current branch:  ${{github.ref}}"
-        git fetch --all
-        git checkout ${{ github.ref }}
-        git pull origin ${{ github.ref }}
-        cd ..
-        sh InferenceHelper/third_party/download_prebuilt_libraries.sh
+        rm -rf InferenceHelper
+        mv * ../../.
+        cd ../
+        sh ./third_party/download_prebuilt_libraries.sh
         sh ./download_resource.sh
 
     - name: Build and Run
       run: |
+        cd ../
         export VULKAN_SDK=$(pwd)/1.2.198.1/x86_64
 
         # Build and Run
