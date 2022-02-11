@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 #ifndef INFERENCE_HELPER_
 #define INFERENCE_HELPER_
-aaa
+
 /* for general */
 #include <cstdint>
 #include <cmath>
