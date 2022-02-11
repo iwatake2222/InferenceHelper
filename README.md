@@ -1,11 +1,10 @@
-# Inference Helper
 <p align="center">
   <img src="00_doc/logo.png" />
 </p>
 
+# Inference Helper
 - This is a helper class for deep learning frameworks especially for inference
 - This class provides an interface to use various deep learnig frameworks, so that you can use the same application code
-
 
 ## Supported frameworks
 - TensorFlow Lite
@@ -30,7 +29,7 @@
 ## CI Status
 | Framework                 | Windows (x64)                                 | Linux (x64)                                   | Linux (armv7)                                 | Linux (aarch64)                               | Android (aarch64)                              |
 |---------------------------|-----------------------------------------------|-----------------------------------------------|-----------------------------------------------|-----------------------------------------------|------------------------------------------------|
-| CI Status                 | [![CI Windows](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_windows.yml/badge.svg)](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_windows.yml) | [![CI Ubuntu](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_ubuntu.yml/badge.svg)](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_ubuntu.yml) | [![CI Arm](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_arm.yml/badge.svg)](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_arm.yml) | [![CI Arm](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_arm.yml/badge.svg)](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_arm.yml) | todo                                           |
+|                           | [![CI Windows](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_windows.yml/badge.svg)](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_windows.yml) | [![CI Ubuntu](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_ubuntu.yml/badge.svg)](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_ubuntu.yml) | [![CI Arm](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_arm.yml/badge.svg)](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_arm.yml) | [![CI Arm](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_arm.yml/badge.svg)](https://github.com/iwatake2222/InferenceHelper/actions/workflows/ci_arm.yml) | todo                                           |
 | TensorFlow Lite           | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul> |
 | TensorFlow Lite + XNNPACK | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul> |
 | TensorFlow Lite + EdgeTPU | <ul><li> [x] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
@@ -46,7 +45,7 @@
 | NNabla                    | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                   | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
 | NNabla + CUDA             | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                   | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
 
-* Unchedked(blank) doesn't mean that the framework is unsupported. Unchecked just means the framework is not tested in CI. For instance, TensorRT on Windows/Linux works and I confirmed it in my PC, but can't run it in CI. Also, some build/test (e.g. ncnn + Linux+ARM) are skipped because pre-built libraries are not provided. It may work if you build a library by yourself.
+* Unchedked(blank) doesn't mean that the framework is unsupported. Unchecked just means that the framework is not tested in CI. For instance, TensorRT on Windows/Linux works and I confirmed it in my PC, but can't run it in CI. Also, some build/test (e.g. ncnn + Linux+ARM) are skipped because pre-built libraries are not provided. It should work if you build a library by yourself.
 
 ## Sample projects
 - https://github.com/iwatake2222/InferenceHelper_Sample
@@ -80,7 +79,7 @@ You need some extra steps if you use the frameworks listed below
 
 ### Extra steps: ncnn
 - Install Vulkan
-    - You need Vulkan even if you don't use it because the pre-built libraries require it. Otherwise you need to build libraries by yourself without VULKAN
+    - You need Vulkan even if you don't use it because the pre-built libraries require it. Otherwise you need to build libraries by yourself disabling Vulkan
     - https://vulkan.lunarg.com/sdk/home
     - Windows
         - https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-sdk.exe
@@ -98,7 +97,7 @@ You need some extra steps if you use the frameworks listed below
 - Extract `snpe-1.51.0.zip` , then place `lib` and `include` folders to `third_party/snpe_prebuilt`
 
 ### Note:
-- `Debug` mode in Visual Studio doesn't work with ncnn and NNabla because debuggable libraries are not provided
+- `Debug` mode in Visual Studio doesn't work for ncnn and NNabla because debuggable libraries are not provided
 - See `third_party/download_prebuilt_libraries.sh` and `third_party/cmakes/*` to check which libraries are being used. For instance, libraries without GPU(CUDA/Vulkan) are used to be safe. So, if you want to use GPU, modify these files.
 
 ## Project settings in CMake

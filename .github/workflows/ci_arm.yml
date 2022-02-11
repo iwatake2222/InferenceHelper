@@ -73,7 +73,7 @@ jobs:
               sh ./01_script/build_run_linux.sh MNN
               sh ./01_script/build_run_linux.sh ARMNN
               # sh ./01_script/build_run_linux.sh NNABLA
-              # mv ./time_inference_linux.txt "${{ matrix.artifact_name }}"
+              mv ./time_inference_linux.txt "${{ matrix.artifact_name }}"
               ;;
           esac
 
