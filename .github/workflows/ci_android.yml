@@ -1,0 +1,67 @@
+name: CI Android
+
+on:
+  push:
+    tags: 'v*'
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Get project source code
+      run: |
+        git clone https://github.com/iwatake2222/InferenceHelper_Sample
+        cd InferenceHelper_Sample
+        rm -rf InferenceHelper
+        mv * ../../.
+        cd ../../
+        sh ./InferenceHelper/third_party/download_prebuilt_libraries.sh
+
+    - name: Install Requirements
+      run: |
+        cd ../
+        sudo apt update
+        sudo apt install -y g++ git cmake wget unzip vulkan-utils libvulkan1 libvulkan-dev
+
+        ### Android NDK ###
+        wget https://dl.google.com/android/repository/android-ndk-r23b-linux.zip
+        unzip android-ndk-r23b-linux.zip
+        export ANDROID_NDK_HOME=`pwd`/android-ndk-r23b
+
+        ### Prepare OpenCV For Android, and don't use rtti to avoid build error in ncnn ###
+        wget https://github.com/opencv/opencv/releases/download/4.5.4/opencv-4.5.4-android-sdk.zip
+        unzip opencv-4.5.4-android-sdk.zip
+        mv  OpenCV-android-sdk/sdk ViewAndroid/.
+        sed -i s/"#define HAVE_OPENCV_FLANN"//g ViewAndroid/sdk/native/jni/include/opencv2/opencv_modules.hpp
+
+        ### Delete setting to specify Inference Helper Type ###
+        sed -i "/INFERENCE_HELPER_ENABLE/d" ViewAndroid/app/src/main/cpp/CMakeLists.txt
+
+
+    - name: Build
+      run: |
+        cd ../
+        export ANDROID_NDK_HOME=`pwd`/android-ndk-r23b
+
+        cd ViewAndroid/app/src/main/cpp
+        mkdir -p build && cd build
+        echo "[CI Building] INFERENCE_HELPER_ENABLE_OPENCV"
+        cmake ..  -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=android-24 -DINFERENCE_HELPER_ENABLE_OPENCV=ON && make -j4 && rm -rf *
+        echo "[CI Building] INFERENCE_HELPER_ENABLE_TFLITE"
+        cmake ..  -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=android-24 -DINFERENCE_HELPER_ENABLE_TFLITE=ON && make -j4 && rm -rf *
+        echo "[CI Building] INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK"
+        cmake ..  -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=android-24 -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_XNNPACK=ON && make -j4 && rm -rf *
+        echo "[CI Building] INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU"
+        cmake ..  -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=android-24 -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_GPU=ON && make -j4 && rm -rf *
+        echo "[CI Building] INFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI"
+        cmake ..  -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=android-24 -DINFERENCE_HELPER_ENABLE_TFLITE_DELEGATE_NNAPI=ON && make -j4 && rm -rf *
+        echo "[CI Building] INFERENCE_HELPER_ENABLE_NCNN"
+        cmake ..  -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=android-24 -DINFERENCE_HELPER_ENABLE_NCNN=ON && make -j4 && rm -rf *
+        echo "[CI Building] INFERENCE_HELPER_ENABLE_MNN"
+        cmake ..  -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=android-24 -DINFERENCE_HELPER_ENABLE_MNN=ON && make -j4 && rm -rf *
