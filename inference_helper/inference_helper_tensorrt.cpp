@@ -114,6 +114,7 @@ int32_t InferenceHelperTensorRt::Initialize(const std::string& model_filename, s
     }
 
     /*** create runtime ***/
+    (void)initLibNvInferPlugins(nullptr, "");
     runtime_ = std::unique_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(sample::gLogger.getTRTLogger()));
     if (!runtime_) {
         PRINT_E("Failed to create runtime (%s)\n", model_filename.c_str());
