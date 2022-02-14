@@ -61,22 +61,26 @@ Please refer to https://github.com/iwatake2222/InferenceHelper_Sample
 - Download prebuilt libraries
     - `sh third_party/download_prebuilt_libraries.sh`
 
-## Extra steps
-You need some extra steps if you use the frameworks listed below
+## Additional steps
+You need some additional steps if you use the frameworks listed below
 
-### Extra steps: OpenCV / OpenVINO
+### Additional steps: OpenCV / OpenVINO
 - Install OpenCV or OpenVINO
     - You may need to set/modify `OpenCV_DIR` and `PATH` environment variable
     - To use OpenVINO, you may need to run `C:\Program Files (x86)\Intel\openvino_2021\bin\setupvars.bat` or `source /opt/intel/openvino_2021/bin/setupvars.sh`
 
-### Extra steps: Tensorflow Lite (EdgeTPU)
+### Additional steps: TensorRT
+- Install CUDA + cuDNN
+- Install TensorRT 8.x
+
+### Additional steps: Tensorflow Lite (EdgeTPU)
 - Install the following library
     - Linux: https://github.com/google-coral/libedgetpu/releases/download/release-grouper/edgetpu_runtime_20210726.zip
     - Windows: https://github.com/google-coral/libedgetpu/releases/download/release-frogfish/edgetpu_runtime_20210119.zip
         - the latest version doesn't work
         - it may be better to delete `C:\Windows\System32\edgetpu.dll` to ensure the program uses our pre-built library
 
-### Extra steps: ncnn
+### Additional steps: ncnn
 - Install Vulkan
     - You need Vulkan even if you don't use it because the pre-built libraries require it. Otherwise you need to build libraries by yourself disabling Vulkan
     - https://vulkan.lunarg.com/sdk/home
@@ -91,7 +95,7 @@ You need some extra steps if you use the frameworks listed below
         sudo apt install -y vulkan-utils libvulkan1 libvulkan-dev
         ```
 
-### Extra steps: SNPE
+### Additional steps: SNPE
 - Download library from https://developer.qualcomm.com/software/qualcomm-neural-processing-sdk/tools
 - Extract `snpe-1.51.0.zip` , then place `lib` and `include` folders to `third_party/snpe_prebuilt`
 
