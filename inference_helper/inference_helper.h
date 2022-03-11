@@ -238,6 +238,8 @@ public:
         kArmnn,
         kNnabla,
         kNnablaCuda,
+        kOnnxRuntime,
+        kOnnxRuntimeCuda,
     } HelperType;
 
 public:
