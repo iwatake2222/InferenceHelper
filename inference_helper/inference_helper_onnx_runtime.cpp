@@ -16,6 +16,7 @@ limitations under the License.
 /* for general */
 #include <cstdint>
 #include <cstdlib>
+#include <cinttypes>
 #include <cmath>
 #include <cstring>
 #include <string>
@@ -76,7 +77,7 @@ static void PrintTensorInfo(const Ort::TypeInfo& info, size_t index, const char*
     PRINT("    info[%zu]->element_type: %s\n", index, element_type_str);
     PRINT("    info[%zu]->element_count: %zu\n", index, element_count);
     for (size_t j = 0; j < shape.size(); j++) {
-        PRINT("    info[%zu]->shape[%zu]: %lld\n", index, j, shape[j]);
+        PRINT("    info[%zu]->shape[%zu]: %" PRId64 "\n", index, j, shape[j]);
     }
 }
 
@@ -145,12 +146,12 @@ int32_t InferenceHelperOnnxRuntime::Initialize(const std::string& model_filename
     CStringW model_filename_cstringw(model_filename.c_str());
     auto onnx_model_filename_pcxstr = model_filename_cstringw.GetString();
 #else
-    auto onnx_model_filename = model_filename.c_str();
+    auto onnx_model_filename_pcxstr = model_filename.c_str();
 #endif
     try {
         session_ = Ort::Session(env_, onnx_model_filename_pcxstr, session_options);
     } catch (std::exception& e) {
-        PRINT_E("[ERROR] Unable to create session: %s\n", e.what());
+        PRINT_E("[ERROR] Unable to create session for %s: %s\n", model_filename.c_str(), e.what());
         return kRetErr;
     }
 
@@ -279,9 +280,10 @@ int32_t InferenceHelperOnnxRuntime::AllocateTensor(bool is_input, size_t index, 
     ort_alloc.Free(name_from_model);
 
     /* Find corresponding configure */
-    size_t matched_index = -1;
+    static constexpr size_t kInvalid = 99999;
+    size_t matched_index = kInvalid;
     if (is_input) {
-        for (int32_t i = 0; i < input_tensor_info_list.size(); i++) {
+        for (size_t i = 0; i < input_tensor_info_list.size(); i++) {
             auto& tensor_info = input_tensor_info_list[i];
             if (name_from_model_str == tensor_info.name) {
                 tensor_info.id = static_cast<int32_t>(index);
@@ -289,7 +291,7 @@ int32_t InferenceHelperOnnxRuntime::AllocateTensor(bool is_input, size_t index, 
             }
         }
     } else {
-        for (int32_t i = 0; i < output_tensor_info_list.size(); i++) {
+        for (size_t i = 0; i < output_tensor_info_list.size(); i++) {
             auto& tensor_info = output_tensor_info_list[i];
             if (name_from_model_str == tensor_info.name) {
                 tensor_info.id = static_cast<int32_t>(index);
@@ -298,7 +300,7 @@ int32_t InferenceHelperOnnxRuntime::AllocateTensor(bool is_input, size_t index, 
         }
     }
 
-    if (matched_index == -1) {
+    if (matched_index == kInvalid) {
         PRINT_E("tensor[%s] is not configured\n", name_from_model_str.c_str());
         return kRetErr;
     }
@@ -320,7 +322,7 @@ int32_t InferenceHelperOnnxRuntime::AllocateTensor(bool is_input, size_t index, 
         }
         for (size_t i = 0; i < shape.size(); i++) {
             if (shape[i] != tensor_info->tensor_dims[i]) {
-                PRINT_E("%s: dim[%zu] doesn't match. %lld != %d\n", name_from_model_str.c_str(), i, shape[i], tensor_info->tensor_dims[i]);
+                PRINT_E("%s: dim[%zu] doesn't match. %" PRId64 " != %d\n", name_from_model_str.c_str(), i, shape[i], tensor_info->tensor_dims[i]);
                 return kRetErr;
             }
         }
