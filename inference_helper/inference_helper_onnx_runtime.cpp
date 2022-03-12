@@ -30,6 +30,9 @@ limitations under the License.
 
 /* for ONNX Runtime */
 #include <onnxruntime_cxx_api.h>
+//#ifdef INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA
+//#include <cuda_provider_factory.h>
+//#endif
 
 /* for My modules */
 #include "inference_helper_log.h"
@@ -123,9 +126,19 @@ int32_t InferenceHelperOnnxRuntime::SetCustomOps(const std::vector<std::pair<con
 int32_t InferenceHelperOnnxRuntime::Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
     /*** Create session ***/
-    Ort::SessionOptions session_options(nullptr);
-#ifdef USE_CUDA
-    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(session_options, 0));
+    Ort::SessionOptions session_options;
+    session_options.SetInterOpNumThreads(1);            /* todo: need to check documents */
+    session_options.SetIntraOpNumThreads(num_threads_);
+    
+#ifdef INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA
+    if (helper_type_ == kOnnxRuntimeCuda) {
+        try {
+            Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(session_options, 0));
+        } catch (std::exception& e) {
+            PRINT_E("[ERROR] OrtSessionOptionsAppendExecutionProvider_CUDA: %s\n", e.what());
+            return kRetErr;
+        }
+    }
 #endif
 
 #ifdef _WIN32
@@ -169,6 +182,14 @@ int32_t InferenceHelperOnnxRuntime::Initialize(const std::string& model_filename
 
 int32_t InferenceHelperOnnxRuntime::Finalize(void)
 {
+    for (auto& tensor : input_tensor_list_) {
+        Ort::OrtRelease(tensor.release());
+    }
+    for (auto& tensor : output_tensor_list_) {
+        Ort::OrtRelease(tensor.release());
+    }
+    Ort::OrtRelease(session_.release());
+
     return kRetOk;
 }
 
@@ -316,15 +337,13 @@ int32_t InferenceHelperOnnxRuntime::AllocateTensor(bool is_input, size_t index, 
     switch (element_type) {
     default:
         PRINT_E("%s: Unsupported element_type: %s\n", name_from_model_str.c_str(), DATA_TYPE_ID_TO_NAME_MAP[element_type]);
-        break;
+        return kRetErr;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:
         if (tensor_info->tensor_type != TensorInfo::kTensorTypeFp32) {
             PRINT_E("%s: tensor_type doesn't match. %s != %d\n", name_from_model_str.c_str(), DATA_TYPE_ID_TO_NAME_MAP[element_type], tensor_info->tensor_type);
             return kRetErr;
         }
         byte_count *= sizeof(float);
-        buffer = std::make_unique<uint8_t[]>(byte_count);
-        tensor = Ort::Value::CreateTensor(memory_info, buffer.get(), byte_count, shape.data(), shape.size(), element_type);
         break;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:
         if (tensor_info->tensor_type != TensorInfo::kTensorTypeUint8) {
@@ -332,8 +351,6 @@ int32_t InferenceHelperOnnxRuntime::AllocateTensor(bool is_input, size_t index, 
             return kRetErr;
         }
         byte_count *= sizeof(uint8_t);
-        buffer = std::make_unique<uint8_t[]>(byte_count);
-        tensor = Ort::Value::CreateTensor(memory_info, buffer.get(), byte_count, shape.data(), shape.size(), element_type);
         break;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8:
         if (tensor_info->tensor_type != TensorInfo::kTensorTypeInt8) {
@@ -341,8 +358,6 @@ int32_t InferenceHelperOnnxRuntime::AllocateTensor(bool is_input, size_t index, 
             return kRetErr;
         }
         byte_count *= sizeof(int8_t);
-        buffer = std::make_unique<uint8_t[]>(byte_count);
-        tensor = Ort::Value::CreateTensor(memory_info, buffer.get(), byte_count, shape.data(), shape.size(), element_type);
         break;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:
         if (tensor_info->tensor_type != TensorInfo::kTensorTypeInt32) {
@@ -350,8 +365,6 @@ int32_t InferenceHelperOnnxRuntime::AllocateTensor(bool is_input, size_t index, 
             return kRetErr;
         }
         byte_count *= sizeof(int32_t);
-        buffer = std::make_unique<uint8_t[]>(byte_count);
-        tensor = Ort::Value::CreateTensor(memory_info, buffer.get(), byte_count, shape.data(), shape.size(), element_type);
         break;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:
         if (tensor_info->tensor_type != TensorInfo::kTensorTypeInt64) {
@@ -359,10 +372,10 @@ int32_t InferenceHelperOnnxRuntime::AllocateTensor(bool is_input, size_t index, 
             return kRetErr;
         }
         byte_count *= sizeof(int64_t);
-        buffer = std::make_unique<uint8_t[]>(byte_count);
-        tensor = Ort::Value::CreateTensor(memory_info, buffer.get(), byte_count, shape.data(), shape.size(), element_type);
         break;
     }
+    buffer = std::make_unique<uint8_t[]>(byte_count);
+    tensor = Ort::Value::CreateTensor(memory_info, buffer.get(), byte_count, shape.data(), shape.size(), element_type);
 
     /* Store tensor info */
     if (is_input) {

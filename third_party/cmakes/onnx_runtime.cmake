@@ -1,7 +1,12 @@
 if(DEFINED ANDROID_ABI)
     
 elseif(MSVC_VERSION)
-    set(ONNX_RUNTIME_ROOTDIR "${CMAKE_CURRENT_LIST_DIR}/../onnxruntime_prebuilt/windows-x64")
+    if(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA)
+        set(ONNX_RUNTIME_ROOTDIR "${CMAKE_CURRENT_LIST_DIR}/../onnxruntime_prebuilt/windows-x64-gpu")
+    else()
+        set(ONNX_RUNTIME_ROOTDIR "${CMAKE_CURRENT_LIST_DIR}/../onnxruntime_prebuilt/windows-x64")
+    endif()
+    
 else()
     if(${BUILD_SYSTEM} STREQUAL "armv7")
         
@@ -14,17 +19,17 @@ endif()
 
 
 if(MSVC_VERSION)
-    set(ONNX_RUNTIME_LIB
-        $<$<CONFIG:Debug>:${ONNX_RUNTIME_ROOTDIR}/lib/onnxruntime.lib>
-        $<$<CONFIG:RelWithDebInfo>:${ONNX_RUNTIME_ROOTDIR}/lib/onnxruntime.lib>
-        $<$<CONFIG:Release>:${ONNX_RUNTIME_ROOTDIR}/lib/onnxruntime.lib>
-        $<$<CONFIG:MinSizeRel>:${ONNX_RUNTIME_ROOTDIR}/lib/onnxruntime.lib>
-    )
+    set(ONNX_RUNTIME_LIB ${ONNX_RUNTIME_ROOTDIR}/lib/onnxruntime.lib)
+    if(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA)
+        set(ONNX_RUNTIME_LIB ${ONNX_RUNTIME_LIB} ${ONNX_RUNTIME_ROOTDIR}/lib/onnxruntime_providers_cuda.lib)
+    endif()
+    # Copy dll files into the binary directory
+    file(GLOB DLL_FILES files "${ONNX_RUNTIME_ROOTDIR}/lib/*.dll")
+    file(COPY ${DLL_FILES} DESTINATION ${CMAKE_BINARY_DIR})
     # Ensure to use pre-built onnxruntime.dll rather than that in system folder
-    file(COPY ${ONNX_RUNTIME_ROOTDIR}/lib/onnxruntime.dll DESTINATION ${CMAKE_BINARY_DIR})
-    file(COPY ${ONNX_RUNTIME_ROOTDIR}/lib/onnxruntime.dll DESTINATION ${CMAKE_BINARY_DIR}/Debug)
-    file(COPY ${ONNX_RUNTIME_ROOTDIR}/lib/onnxruntime.dll DESTINATION ${CMAKE_BINARY_DIR}/RelWithDebInfo)
-    file(COPY ${ONNX_RUNTIME_ROOTDIR}/lib/onnxruntime.dll DESTINATION ${CMAKE_BINARY_DIR}/Release)
+    file(COPY ${DLL_FILES} DESTINATION ${CMAKE_BINARY_DIR}/Debug)
+    file(COPY ${DLL_FILES} DESTINATION ${CMAKE_BINARY_DIR}/RelWithDebInfo)
+    file(COPY ${DLL_FILES} DESTINATION ${CMAKE_BINARY_DIR}/Release)
 else()
 
 endif()
