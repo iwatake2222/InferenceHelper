@@ -61,14 +61,14 @@ static constexpr const char* DATA_TYPE_ID_TO_NAME_MAP[] = {
 };
 
 
-
+/*** Function ***/
 static void PrintTensorInfo(const Ort::TypeInfo& info, size_t index, const char* name)
 {
-    auto tensor_info = info.GetTensorTypeAndShapeInfo();
-    ONNXTensorElementDataType element_type = tensor_info.GetElementType();
+    auto shape_info = info.GetTensorTypeAndShapeInfo();
+    ONNXTensorElementDataType element_type = shape_info.GetElementType();
     const char* element_type_str = DATA_TYPE_ID_TO_NAME_MAP[element_type];
-    size_t element_count = tensor_info.GetElementCount();
-    std::vector<int64_t> shape = tensor_info.GetShape();
+    size_t element_count = shape_info.GetElementCount();
+    std::vector<int64_t> shape = shape_info.GetShape();
     PRINT("    info[%zu]->name: %s\n", index, name);
     PRINT("    info[%zu]->element_type: %s\n", index, element_type_str);
     PRINT("    info[%zu]->element_count: %zu\n", index, element_count);
@@ -97,10 +97,8 @@ static void DisplayModelInfo(const Ort::Session& session)
         PrintTensorInfo(info, i, name);
         ort_alloc.Free(name);
     }
-
 }
 
-/*** Function ***/
 InferenceHelperOnnxRuntime::InferenceHelperOnnxRuntime()
 {
     num_threads_ = 1;
@@ -124,8 +122,8 @@ int32_t InferenceHelperOnnxRuntime::SetCustomOps(const std::vector<std::pair<con
 
 int32_t InferenceHelperOnnxRuntime::Initialize(const std::string& model_filename, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
-    Ort::Env env_(ORT_LOGGING_LEVEL_WARNING, "Default");
-    Ort::SessionOptions session_options;
+    /*** Create session ***/
+    Ort::SessionOptions session_options(nullptr);
 #ifdef USE_CUDA
     Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(session_options, 0));
 #endif
@@ -140,14 +138,34 @@ int32_t InferenceHelperOnnxRuntime::Initialize(const std::string& model_filename
         session_ = Ort::Session(env_, onnx_model_filename_pcxstr, session_options);
     } catch (std::exception& e) {
         PRINT_E("[ERROR] Unable to create session: %s\n", e.what());
+        return kRetErr;
     }
 
     DisplayModelInfo(session_);
 
+    /*** Allocate Tensors ***/
+    size_t input_num = session_.GetInputCount();
+    for (size_t i = 0; i < input_num; i++) {
+        if (AllocateTensor(true, i, input_tensor_info_list, output_tensor_info_list)) {
+            PRINT_E("Input tensor %zu is not allocated\n", i);
+            return kRetErr;
+        }
+    }
+    size_t output_num = session_.GetOutputCount();
+    for (size_t i = 0; i < output_num; i++) {
+        if (AllocateTensor(false, i, input_tensor_info_list, output_tensor_info_list)) {
+            PRINT_E("Output tensor %zu is not allocated\n", i);
+            return kRetErr;
+        }
+    }
 
-    return kRetErr;
+    /*** Convert normalize parameter to speed up ***/
+    for (auto& input_tensor_info : input_tensor_info_list) {
+        ConvertNormalizeParameters(input_tensor_info);
+    }
+
+    return kRetOk;
 };
-
 
 int32_t InferenceHelperOnnxRuntime::Finalize(void)
 {
@@ -156,10 +174,217 @@ int32_t InferenceHelperOnnxRuntime::Finalize(void)
 
 int32_t InferenceHelperOnnxRuntime::PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list)
 {
+    for (const auto& input_tensor_info : input_tensor_info_list) {
+        const int32_t img_width = input_tensor_info.GetWidth();
+        const int32_t img_height = input_tensor_info.GetHeight();
+        const int32_t img_channel = input_tensor_info.GetChannel();
+        if (input_tensor_info.data_type == InputTensorInfo::kDataTypeImage) {
+            if ((input_tensor_info.image_info.width != input_tensor_info.image_info.crop_width) || (input_tensor_info.image_info.height != input_tensor_info.image_info.crop_height)) {
+                PRINT_E("Crop is not supported\n");
+                return  kRetErr;
+            }
+            if ((input_tensor_info.image_info.crop_width != img_width) || (input_tensor_info.image_info.crop_height != img_height)) {
+                PRINT_E("Resize is not supported\n");
+                return  kRetErr;
+            }
+            if (input_tensor_info.image_info.channel != img_channel) {
+                PRINT_E("Color conversion is not supported\n");
+                return  kRetErr;
+            }
+
+            /* Normalize image */
+            if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
+                float* dst = (float*)(input_buffer_list_[input_tensor_info.id].get());
+                PreProcessImage(num_threads_, input_tensor_info, dst);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
+                uint8_t* dst = (uint8_t*)(input_buffer_list_[input_tensor_info.id].get());
+                PreProcessImage(num_threads_, input_tensor_info, dst);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
+                int8_t* dst = (int8_t*)(input_buffer_list_[input_tensor_info.id].get());
+                PreProcessImage(num_threads_, input_tensor_info, dst);
+            } else {
+                PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
+                return kRetErr;
+            }
+        } else if ((input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw)) {
+            if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
+                float* dst = (float*)(input_buffer_list_[input_tensor_info.id].get());
+                PreProcessBlob<float>(num_threads_, input_tensor_info, dst);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8 || input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
+                uint8_t* dst = (uint8_t*)(input_buffer_list_[input_tensor_info.id].get());
+                PreProcessBlob<uint8_t>(num_threads_, input_tensor_info, dst);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt32) {
+                int32_t* dst = (int32_t*)(input_buffer_list_[input_tensor_info.id].get());
+                PreProcessBlob<int32_t>(num_threads_, input_tensor_info, dst);
+            } else {
+                PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
+                return kRetErr;
+            }
+        } else {
+            PRINT_E("Unsupported data_type (%d)\n", input_tensor_info.data_type);
+            return kRetErr;
+        }
+    }
     return kRetOk;
 }
 
 int32_t InferenceHelperOnnxRuntime::Process(std::vector<OutputTensorInfo>& output_tensor_info_list)
 {
+    std::vector<const char*> input_name_char_list;
+    std::vector<const char*> output_name_char_list;
+    for (const auto& str : input_name_list_) {
+        input_name_char_list.emplace_back(str.c_str());
+    }
+    for (const auto& str : output_name_list_) {
+        output_name_char_list.emplace_back(str.c_str());
+    }
+
+    try {
+        session_.Run(Ort::RunOptions{ nullptr }, input_name_char_list.data(), input_tensor_list_.data(), input_tensor_list_.size(), output_name_char_list.data(), output_tensor_list_.data(), output_tensor_list_.size());
+    } catch (std::exception& e) {
+        PRINT_E("[ERROR] Unable to run session: %s\n", e.what());
+        return kRetErr;
+    }
+
+    return kRetOk;
+}
+
+int32_t InferenceHelperOnnxRuntime::AllocateTensor(bool is_input, size_t index, std::vector<InputTensorInfo>& input_tensor_info_list, std::vector<OutputTensorInfo>& output_tensor_info_list)
+{
+    /* Get tensor name from model */
+    Ort::AllocatorWithDefaultOptions ort_alloc;
+    char* name_from_model = is_input ? session_.GetInputName(index, ort_alloc) : session_.GetOutputName(index, ort_alloc);
+    std::string name_from_model_str = name_from_model;
+    ort_alloc.Free(name_from_model);
+
+    /* Find corresponding configure */
+    size_t matched_index = -1;
+    if (is_input) {
+        for (int32_t i = 0; i < input_tensor_info_list.size(); i++) {
+            auto& tensor_info = input_tensor_info_list[i];
+            if (name_from_model_str == tensor_info.name) {
+                tensor_info.id = static_cast<int32_t>(index);
+                matched_index = i;
+            }
+        }
+    } else {
+        for (int32_t i = 0; i < output_tensor_info_list.size(); i++) {
+            auto& tensor_info = output_tensor_info_list[i];
+            if (name_from_model_str == tensor_info.name) {
+                tensor_info.id = static_cast<int32_t>(index);
+                matched_index = i;
+            }
+        }
+    }
+
+    if (matched_index == -1) {
+        PRINT_E("tensor[%s] is not configured\n", name_from_model_str.c_str());
+        return kRetErr;
+    }
+    TensorInfo* tensor_info = nullptr;
+    if (is_input) {
+        tensor_info = &input_tensor_info_list[matched_index];
+    } else {
+        tensor_info = &output_tensor_info_list[matched_index];
+    }
+
+    /* Check tensor shape (input only) */
+    Ort::TypeInfo info = is_input ? session_.GetInputTypeInfo(index) : session_.GetOutputTypeInfo(index);
+    auto shape_info = info.GetTensorTypeAndShapeInfo();
+    std::vector<int64_t> shape = shape_info.GetShape();
+    if (is_input) {
+        if (shape.size() != tensor_info->tensor_dims.size()) {
+            PRINT_E("%s: element_dim doesn't match. %zu != %zu\n", name_from_model_str.c_str(), shape.size(), tensor_info->tensor_dims.size());
+            return kRetErr;
+        }
+        for (size_t i = 0; i < shape.size(); i++) {
+            if (shape[i] != tensor_info->tensor_dims[i]) {
+                PRINT_E("%s: dim[%zu] doesn't match. %lld != %d\n", name_from_model_str.c_str(), i, shape[i], tensor_info->tensor_dims[i]);
+                return kRetErr;
+            }
+        }
+    }
+
+    /* Create tensor mem */
+    std::unique_ptr<uint8_t[]> buffer;
+    Ort::Value tensor(nullptr);
+    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU);
+    //auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    ONNXTensorElementDataType element_type = shape_info.GetElementType();
+    size_t element_count = shape_info.GetElementCount();
+    size_t byte_count = element_count;
+    switch (element_type) {
+    default:
+        PRINT_E("%s: Unsupported element_type: %s\n", name_from_model_str.c_str(), DATA_TYPE_ID_TO_NAME_MAP[element_type]);
+        break;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:
+        if (tensor_info->tensor_type != TensorInfo::kTensorTypeFp32) {
+            PRINT_E("%s: tensor_type doesn't match. %s != %d\n", name_from_model_str.c_str(), DATA_TYPE_ID_TO_NAME_MAP[element_type], tensor_info->tensor_type);
+            return kRetErr;
+        }
+        byte_count *= sizeof(float);
+        buffer = std::make_unique<uint8_t[]>(byte_count);
+        tensor = Ort::Value::CreateTensor(memory_info, buffer.get(), byte_count, shape.data(), shape.size(), element_type);
+        break;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:
+        if (tensor_info->tensor_type != TensorInfo::kTensorTypeUint8) {
+            PRINT_E("%s: tensor_type doesn't match. %s != %d\n", name_from_model_str.c_str(), DATA_TYPE_ID_TO_NAME_MAP[element_type], tensor_info->tensor_type);
+            return kRetErr;
+        }
+        byte_count *= sizeof(uint8_t);
+        buffer = std::make_unique<uint8_t[]>(byte_count);
+        tensor = Ort::Value::CreateTensor(memory_info, buffer.get(), byte_count, shape.data(), shape.size(), element_type);
+        break;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8:
+        if (tensor_info->tensor_type != TensorInfo::kTensorTypeInt8) {
+            PRINT_E("%s: tensor_type doesn't match. %s != %d\n", name_from_model_str.c_str(), DATA_TYPE_ID_TO_NAME_MAP[element_type], tensor_info->tensor_type);
+            return kRetErr;
+        }
+        byte_count *= sizeof(int8_t);
+        buffer = std::make_unique<uint8_t[]>(byte_count);
+        tensor = Ort::Value::CreateTensor(memory_info, buffer.get(), byte_count, shape.data(), shape.size(), element_type);
+        break;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:
+        if (tensor_info->tensor_type != TensorInfo::kTensorTypeInt32) {
+            PRINT_E("%s: tensor_type doesn't match. %s != %d\n", name_from_model_str.c_str(), DATA_TYPE_ID_TO_NAME_MAP[element_type], tensor_info->tensor_type);
+            return kRetErr;
+        }
+        byte_count *= sizeof(int32_t);
+        buffer = std::make_unique<uint8_t[]>(byte_count);
+        tensor = Ort::Value::CreateTensor(memory_info, buffer.get(), byte_count, shape.data(), shape.size(), element_type);
+        break;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:
+        if (tensor_info->tensor_type != TensorInfo::kTensorTypeInt64) {
+            PRINT_E("%s: tensor_type doesn't match. %s != %d\n", name_from_model_str.c_str(), DATA_TYPE_ID_TO_NAME_MAP[element_type], tensor_info->tensor_type);
+            return kRetErr;
+        }
+        byte_count *= sizeof(int64_t);
+        buffer = std::make_unique<uint8_t[]>(byte_count);
+        tensor = Ort::Value::CreateTensor(memory_info, buffer.get(), byte_count, shape.data(), shape.size(), element_type);
+        break;
+    }
+
+    /* Store tensor info */
+    if (is_input) {
+        input_name_list_.emplace_back(name_from_model_str);
+        input_tensor_list_.emplace_back(std::move(tensor));
+        input_buffer_list_.emplace_back(std::move(buffer));
+    } else {
+        output_name_list_.emplace_back(name_from_model_str);
+        output_tensor_list_.emplace_back(std::move(tensor));
+        output_buffer_list_.emplace_back(std::move(buffer));
+    }
+
+    /* Set buffer index and shape (output only) */
+    if (is_input) {
+        //input_tensor_info_list[matched_index].data = input_buffer_list_.back().get();
+    } else {
+        output_tensor_info_list[matched_index].data = output_buffer_list_.back().get();
+        output_tensor_info_list[matched_index].tensor_dims.clear();
+        for (auto shape_val : shape) {
+            output_tensor_info_list[matched_index].tensor_dims.push_back(static_cast<int32_t>(shape_val));
+        }
+    }
+
     return kRetOk;
 }
