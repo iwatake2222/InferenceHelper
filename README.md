@@ -20,6 +20,9 @@
 - Arm NN
 - NNabla
 - NNabla with CUDA
+- ONNX Runtime
+- ONNX Runtime with CUDA
+- [todo] LibTorch
 
 ![Overview](00_doc/overview.jpg) 
 
@@ -45,6 +48,7 @@
 | SNPE                      | Unsupported                                   | Unsupported                                   | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul> |
 | Arm NN                    | Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                    |
 | NNabla                    | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                   | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
+| ONNX Runtime              | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
 
 * Unchedked(blank) doesn't mean that the framework is unsupported. Unchecked just means that the framework is not tested in CI. For instance, TensorRT on Windows/Linux works and I confirmed it in my PC, but can't run it in CI. Also, some build/test (e.g. ncnn + Linux+ARM) are skipped because pre-built libraries are not provided. It should work if you build a library by yourself.
 
@@ -145,6 +149,10 @@ You need some additional steps if you use the frameworks listed below
     cmake .. -DINFERENCE_HELPER_ENABLE_NNABLA=on
     # NNabla with CUDA
     cmake .. -DINFERENCE_HELPER_ENABLE_NNABLA_CUDA=on
+    # ONNX Runtime
+    cmake .. -DINFERENCE_HELPER_ENABLE_ONNX_RUNTIME=on
+    # ONNX Runtime with CUDA
+    cmake .. -DINFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA=on
     ```
 
 - Enable/Disable preprocess using OpenCV:
@@ -176,6 +184,8 @@ typedef enum {
     kArmnn,
     kNnabla,
     kNnablaCuda,
+    kOnnxRuntime,
+    kOnnxRuntimeCuda,
 } HelperType;
 ```
 
