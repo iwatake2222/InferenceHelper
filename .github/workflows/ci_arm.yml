@@ -58,6 +58,7 @@ jobs:
               # sh ./01_script/build_run_linux.sh OPENCV
               # sh ./01_script/build_run_linux.sh NCNN
               # sh ./01_script/build_run_linux.sh MNN
+              # sh ./01_script/build_run_linux.sh ONNX_RUNTIME
               ;;
             aarch64)
               sh ./01_script/build_run_linux.sh TFLITE
@@ -68,6 +69,7 @@ jobs:
               sh ./01_script/build_run_linux.sh MNN
               sh ./01_script/build_run_linux.sh ARMNN
               # sh ./01_script/build_run_linux.sh NNABLA
+              sh ./01_script/build_run_linux.sh ONNX_RUNTIME
               ;;
           esac
           mv ./time_inference_linux.txt "${{ matrix.artifact_name }}"

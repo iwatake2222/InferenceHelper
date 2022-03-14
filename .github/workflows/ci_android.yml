@@ -65,3 +65,5 @@ jobs:
         cmake ..  -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=android-24 -DINFERENCE_HELPER_ENABLE_NCNN=ON && make -j4 && rm -rf *
         echo "[CI Building] INFERENCE_HELPER_ENABLE_MNN"
         cmake ..  -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=android-24 -DINFERENCE_HELPER_ENABLE_MNN=ON && make -j4 && rm -rf *
+        echo "[CI Building] INFERENCE_HELPER_ENABLE_ONNX_RUNTIME"
+        cmake ..  -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=android-24 -DINFERENCE_HELPER_ENABLE_ONNX_RUNTIME=ON && make -j4 && rm -rf *
