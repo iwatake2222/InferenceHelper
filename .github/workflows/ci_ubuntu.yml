@@ -52,6 +52,7 @@ jobs:
         sh ./01_script/build_run_linux.sh MNN
         sh ./01_script/build_run_linux.sh ARMNN
         # sh ./01_script/build_run_linux.sh NNABLA
+        sh ./01_script/build_run_linux.sh ONNX_RUNTIME
         mv time_inference_linux.txt InferenceHelper/.
 
     - name: Upload Artifacts

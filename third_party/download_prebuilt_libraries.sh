@@ -30,6 +30,39 @@ download_and_extract() {
         rm temp.tgz
     fi
 }
+
+download_and_extract_onnxruntime() {
+    local url_base="https://github.com/microsoft/onnxruntime/releases/download/"
+    local tag="v1.10.0"
+    local prefix="onnxruntime-"
+    local suffix="-1.10.0"
+    local name=$1
+    local ext=$2
+    local url="${url_base}${tag}/${prefix}${name}${suffix}.${ext}"
+    echo "Downloading ${url}"
+    if [ `echo ${ext} | grep zip` ]; then
+        curl -Lo temp.zip ${url}
+        unzip -o temp.zip
+        rm temp.zip
+    else
+        curl -Lo temp.tgz ${url}
+        tar xzvf temp.tgz
+        rm temp.tgz
+    fi
+    rm -rf ${name}
+    mv ${prefix}${name}${suffix} ${name}
+}
+
+download_and_extract_onnxruntime_andriod() {
+    # https://search.maven.org/artifact/com.microsoft.onnxruntime/onnxruntime-mobile/1.10.0/aar
+    local url="https://search.maven.org/remotecontent?filepath=com/microsoft/onnxruntime/onnxruntime-mobile/1.10.0/onnxruntime-mobile-1.10.0.aar"
+    echo "Downloading ${url}"
+    mkdir -p android && cd android
+    curl -Lo temp.zip ${url}
+    unzip -o temp.zip
+    rm temp.zip
+    cd ..
+}
 ########################################################################
 
 ### cd to the same directory as this shell file ###
@@ -62,7 +95,7 @@ download_and_extract_ncnn "windows-vs2019"
 cd ..
 
 
-### Download NNabla pre-built libraries from https://github.com/iwatake2222/InferenceHelper
+### Download NNabla pre-built libraries from https://nnabla.org/cpplib
 mkdir -p nnabla_prebuilt/windows-vs2019 && mkdir -p nnabla_prebuilt/aarch64 && cd nnabla_prebuilt
 curl -L https://nnabla.org/cpplib/1.25.0/nnabla-cpplib-1.25.0-win64.zip -o temp.zip
 unzip -o temp.zip
@@ -82,3 +115,15 @@ curl -L https://nnabla.org/cpplib/1.25.0/nnabla-cpplib-1.25.0-Linux_aarch64.zip 
 unzip -o temp.zip
 rm temp.zip
 mv nnabla-cpplib-1.25.0-Linux_aarch64/* aarch64/.
+cd ..
+
+
+### Download ONNX Runtime pre-built libraries from https://github.com/microsoft/onnxruntime ###
+mkdir -p onnxruntime_prebuilt && cd onnxruntime_prebuilt
+download_and_extract_onnxruntime "win-x64" "zip"
+download_and_extract_onnxruntime "win-x64-gpu" "zip"
+download_and_extract_onnxruntime "linux-x64" "tgz"
+download_and_extract_onnxruntime "linux-x64-gpu" "tgz"
+download_and_extract_onnxruntime "linux-aarch64" "tgz"
+download_and_extract_onnxruntime_andriod
+cd ..

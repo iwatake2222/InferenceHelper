@@ -17,6 +17,8 @@ set(INFERENCE_HELPER_ENABLE_SNPE off CACHE BOOL "With SNPE? [on/off]")
 set(INFERENCE_HELPER_ENABLE_ARMNN off CACHE BOOL "With ARMNN? [on/off]")
 set(INFERENCE_HELPER_ENABLE_NNABLA off CACHE BOOL "With NNabla? [on/off]")
 set(INFERENCE_HELPER_ENABLE_NNABLA_CUDA off CACHE BOOL "With NNabla_CUDA? [on/off]")
+set(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME off CACHE BOOL "With ONNX Runtime? [on/off]")
+set(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA off CACHE BOOL "With ONNX Runtime_CUDA? [on/off]")
 
 # Create library
 set(SRC inference_helper.h inference_helper.cpp inference_helper_log.h)
@@ -53,6 +55,10 @@ endif()
 
 if(INFERENCE_HELPER_ENABLE_NNABLA OR INFERENCE_HELPER_ENABLE_NNABLA_CUDA)
     set(SRC ${SRC} inference_helper_nnabla.h inference_helper_nnabla.cpp)
+endif()
+
+if(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME OR INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA)
+    set(SRC ${SRC} inference_helper_onnx_runtime.h inference_helper_onnx_runtime.cpp)
 endif()
 
 add_library(${LibraryName} ${SRC})
@@ -201,3 +207,20 @@ if(INFERENCE_HELPER_ENABLE_NNABLA OR INFERENCE_HELPER_ENABLE_NNABLA_CUDA)
         add_definitions(-DINFERENCE_HELPER_ENABLE_NNABLA_CUDA)
     endif()
 endif()
+
+# For ONNX Runtime 
+if(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME OR INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA)
+    include(${THIRD_PARTY_DIR}/cmakes/onnx_runtime.cmake)
+    target_include_directories(${LibraryName} PUBLIC ${ONNX_RUNTIME_INC})
+    target_link_libraries(${LibraryName} ${ONNX_RUNTIME_LIB})
+    if (INFERENCE_HELPER_ENABLE_ONNX_RUNTIME)
+        add_definitions(-DINFERENCE_HELPER_ENABLE_ONNX_RUNTIME)
+    endif()
+    if (INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA)
+        find_package(CUDA)
+        target_link_libraries(${LibraryName} ${CUDA_LIBRARIES})
+        target_include_directories(${LibraryName} PUBLIC ${CUDA_INCLUDE_DIRS})
+        add_definitions(-DINFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA)
+    endif()
+endif()
+

@@ -60,6 +60,7 @@ jobs:
         if($?) { ./01_script/build_run_windows.ps1 NCNN -BUILD_ONLY }
         if($?) { ./01_script/build_run_windows.ps1 MNN }
         if($?) { ./01_script/build_run_windows.ps1 NNABLA }
+        if($?) { ./01_script/build_run_windows.ps1 ONNX_RUNTIME }
         mv time_inference_windows.txt InferenceHelper/.
         exit $LASTEXITCODE
 
