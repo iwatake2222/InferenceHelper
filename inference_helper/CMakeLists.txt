@@ -19,6 +19,7 @@ set(INFERENCE_HELPER_ENABLE_NNABLA off CACHE BOOL "With NNabla? [on/off]")
 set(INFERENCE_HELPER_ENABLE_NNABLA_CUDA off CACHE BOOL "With NNabla_CUDA? [on/off]")
 set(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME off CACHE BOOL "With ONNX Runtime? [on/off]")
 set(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA off CACHE BOOL "With ONNX Runtime_CUDA? [on/off]")
+set(INFERENCE_HELPER_ENABLE_SAMPLE off CACHE BOOL "With Sample? [on/off]")
 
 # Create library
 set(SRC inference_helper.h inference_helper.cpp inference_helper_log.h)
@@ -59,6 +60,10 @@ endif()
 
 if(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME OR INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA)
     set(SRC ${SRC} inference_helper_onnx_runtime.h inference_helper_onnx_runtime.cpp)
+endif()
+
+if(INFERENCE_HELPER_ENABLE_SAMPLE)
+    set(SRC ${SRC} inference_helper_sample.h inference_helper_sample.cpp)
 endif()
 
 add_library(${LibraryName} ${SRC})
@@ -224,3 +229,10 @@ if(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME OR INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_
     endif()
 endif()
 
+# For Sample (template code to implement a new framework)
+if(INFERENCE_HELPER_ENABLE_SAMPLE)
+    include(${THIRD_PARTY_DIR}/cmakes/sample.cmake)
+    target_include_directories(${LibraryName} PUBLIC ${SAMPLE_INC})
+    target_link_libraries(${LibraryName} ${SAMPLE_LIB})
+    add_definitions(-DINFERENCE_HELPER_ENABLE_SAMPLE)
+endif()

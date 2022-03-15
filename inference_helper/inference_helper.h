@@ -240,6 +240,7 @@ public:
         kNnablaCuda,
         kOnnxRuntime,
         kOnnxRuntimeCuda,
+        kSample,
     } HelperType;
 
 public:
