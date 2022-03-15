@@ -23,6 +23,10 @@ limitations under the License.
 #include <array>
 #include <memory>
 
+/* for LibTorch */
+//#include <torch/torch.h>
+#include <torch/script.h> // One-stop header.
+
 /* for My modules */
 #include "inference_helper.h"
 
@@ -39,6 +43,12 @@ public:
 
 private:
     int32_t num_threads_;
+
+    torch::jit::script::Module module_;
+    
+    std::vector<torch::jit::IValue> input_tensor_list_;
+    std::vector<torch::Tensor> output_tensor_list_;
+    
 };
 
 #endif
