@@ -240,6 +240,8 @@ public:
         kNnablaCuda,
         kOnnxRuntime,
         kOnnxRuntimeCuda,
+        kLibtorch,
+        kLibtorchCuda,
         kSample,
     } HelperType;
 

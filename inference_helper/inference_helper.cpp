@@ -55,6 +55,9 @@ limitations under the License.
 #if defined(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME) || defined(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA)
 #include "inference_helper_onnx_runtime.h"
 #endif
+#if defined(INFERENCE_HELPER_ENABLE_LIBTORCH) || defined(INFERENCE_HELPER_ENABLE_LIBTORCH_CUDA)
+#include "inference_helper_libtorch.h"
+#endif
 #ifdef INFERENCE_HELPER_ENABLE_SAMPLE
 #include "inference_helper_sample.h"
 #endif
@@ -159,6 +162,18 @@ InferenceHelper* InferenceHelper::Create(const InferenceHelper::HelperType helpe
     case kOnnxRuntimeCuda:
         PRINT("Use ONNX Runtime_CUDA\n");
         p = new InferenceHelperOnnxRuntime();
+        break;
+#endif
+#ifdef INFERENCE_HELPER_ENABLE_LIBTORCH
+    case kLibtorch:
+        PRINT("Use LibTorch\n");
+        p = new InferenceHelperLibtorch();
+        break;
+#endif
+#ifdef INFERENCE_HELPER_ENABLE_LIBTORCH_CUDA
+    case kLibtorchCuda:
+        PRINT("Use LibTorch CUDA\n");
+        p = new InferenceHelperLibtorch();
         break;
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_SAMPLE
