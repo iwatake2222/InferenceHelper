@@ -32,6 +32,7 @@ limitations under the License.
 /* for LibTorch */
 //#include <torch/torch.h>
 #include <torch/script.h> // One-stop header.
+#include <torch/cuda.h>
 #include <ATen/Parallel.h>
 
 /* for My modules */
@@ -74,6 +75,24 @@ int32_t InferenceHelperLibtorch::Initialize(const std::string& model_filename, s
     * The order of model inputs/ontputs must be the same as that of input_tensor_info_list/output_tensor_info_list
     */
 
+    /*** Check CUDA ***/
+    if (torch::cuda::is_available()) {
+        PRINT("CUDA is available\n");
+        if (helper_type_ == InferenceHelper::kLibtorchCuda) {
+            device_type_ = torch::kCUDA;
+        } else {
+            device_type_ = torch::kCPU;
+        }
+    } else {
+        PRINT("CUDA is not available\n");
+        if (helper_type_ == InferenceHelper::kLibtorchCuda) {
+            PRINT("[WARNING] kLibtorchCuda is selected, but CUDA is not available\n");
+            device_type_ = torch::kCPU;
+        } else {
+            device_type_ = torch::kCPU;
+        }
+    }
+
     /*** Load model ***/
     try {
         module_ = torch::jit::load(model_filename);
@@ -82,21 +101,8 @@ int32_t InferenceHelperLibtorch::Initialize(const std::string& model_filename, s
         PRINT_E("[ERROR] Unable to load model %s: %s\n", model_filename.c_str(), e.what());
         return kRetErr;
     }
+    module_.to(device_type_);
     module_.eval();
-
-    /*** Allocate input tensor buffer ***/
-    for (const auto& input_tensor_info : input_tensor_info_list) {
-        torch::TensorOptions tensor_options;
-        if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
-            tensor_options = torch::TensorOptions().dtype(torch::kFloat32).requires_grad(false);
-        }
-        std::vector<int64_t> sizes;
-        for (auto v : input_tensor_info.tensor_dims) {
-            sizes.push_back(v);
-        }
-        torch::Tensor input_tensor = torch::zeros(sizes, tensor_options);
-        input_tensor_list_.push_back(input_tensor);
-    }
 
     /*** Convert normalize parameter to speed up ***/
     for (auto& input_tensor_info : input_tensor_info_list) {
@@ -114,12 +120,29 @@ int32_t InferenceHelperLibtorch::Finalize(void)
 
 int32_t InferenceHelperLibtorch::PreProcess(const std::vector<InputTensorInfo>& input_tensor_info_list)
 {
+    /*** Allocate input tensor every frame ***/
+    /* We need this only for the first time for kCPU, but tensor device changes for kCUDA. So, We need to reallocate it */
+    /* Todo: there may be a way to reuse allocated GPU memory */
+    input_tensor_list_.clear();
+
     /*** Normalize input data and store the converted data into the input tensor buffer ***/
     for (int32_t input_tensor_index = 0; input_tensor_index < input_tensor_info_list.size(); input_tensor_index++) {
         const auto& input_tensor_info = input_tensor_info_list[input_tensor_index];
         const int32_t img_width = input_tensor_info.GetWidth();
         const int32_t img_height = input_tensor_info.GetHeight();
         const int32_t img_channel = input_tensor_info.GetChannel();
+
+        torch::TensorOptions tensor_options;
+        if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
+            tensor_options = torch::TensorOptions().dtype(torch::kFloat32).requires_grad(false);
+        }
+        std::vector<int64_t> sizes;
+        for (auto v : input_tensor_info.tensor_dims) {
+            sizes.push_back(v);
+        }
+        torch::Tensor input_tensor = torch::zeros(sizes, tensor_options);
+
+
         if (input_tensor_info.data_type == InputTensorInfo::kDataTypeImage) {
             if ((input_tensor_info.image_info.width != input_tensor_info.image_info.crop_width) || (input_tensor_info.image_info.height != input_tensor_info.image_info.crop_height)) {
                 PRINT_E("Crop is not supported\n");
@@ -136,7 +159,7 @@ int32_t InferenceHelperLibtorch::PreProcess(const std::vector<InputTensorInfo>& 
             
             /* Normalize image */
             if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
-                float* dst = (float*)(input_tensor_list_[input_tensor_index].toTensor().data_ptr());
+                float* dst = (float*)(input_tensor.data_ptr());
                 PreProcessImage(num_threads_, input_tensor_info, dst);
             //} else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
             //    uint8_t* dst = (uint8_t*)(input_buffer_list_[input_tensor_info.id].get());
@@ -166,6 +189,8 @@ int32_t InferenceHelperLibtorch::PreProcess(const std::vector<InputTensorInfo>& 
             PRINT_E("Unsupported data_type (%d)\n", input_tensor_info.data_type);
             return kRetErr;
         }
+
+        input_tensor_list_.push_back(input_tensor.to(device_type_));
     }
     
     return kRetOk;
@@ -180,7 +205,7 @@ int32_t InferenceHelperLibtorch::Process(std::vector<OutputTensorInfo>& output_t
     } catch (std::exception& e) {
         PRINT("Error at forward: %s\n", e.what());
     }
-    
+
     /*** Extract output tensor data and save them to output_tensor_list_ ***/
     output_tensor_list_.clear();
     if (outputs.isTensor()) {
@@ -202,6 +227,9 @@ int32_t InferenceHelperLibtorch::Process(std::vector<OutputTensorInfo>& output_t
             output_tensor = output_tensor.to(torch::kCPU);
             output_tensor_list_.emplace_back(output_tensor);
         }
+    } else {
+        PRINT_E("Invalid output format\n");
+        return kRetErr;
     }
 
     /*** Set output data for caller ***/

@@ -45,7 +45,7 @@ private:
     int32_t num_threads_;
 
     torch::jit::script::Module module_;
-    
+    torch::DeviceType device_type_;
     std::vector<torch::jit::IValue> input_tensor_list_;
     std::vector<torch::Tensor> output_tensor_list_;
     
