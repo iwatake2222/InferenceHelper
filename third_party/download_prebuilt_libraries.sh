@@ -112,10 +112,10 @@ unzip -o temp.zip
 rm temp.zip
 mv nnabla-cpplib-1.25.0-win64/* windows-vs2019/.
 
-# curl -L https://nnabla.org/cpplib/1.25.0/nnabla-cpplib-cuda_110_8-1.25.0-win64.zip -o temp.zip
-# unzip -o temp.zip
-# rm temp.zip
-# mv nnabla-cpplib-cuda_110_8-1.25.0-win64/* windows-vs2019/.
+curl -L https://nnabla.org/cpplib/1.25.0/nnabla-cpplib-cuda_110_8-1.25.0-win64.zip -o temp.zip
+unzip -o temp.zip
+rm temp.zip
+cp -r nnabla-cpplib-cuda_110_8-1.25.0-win64/* windows-vs2019/.
 
 curl -L https://github.com/libarchive/libarchive/releases/download/v3.5.2/libarchive-v3.5.2-win64.zip -o temp.zip
 unzip -o temp.zip

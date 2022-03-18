@@ -162,30 +162,30 @@ int32_t InferenceHelperLibtorch::PreProcess(const std::vector<InputTensorInfo>& 
             if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
                 float* dst = (float*)(input_tensor.data_ptr());
                 PreProcessImage(num_threads_, input_tensor_info, dst);
-            //} else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
-            //    uint8_t* dst = (uint8_t*)(input_buffer_list_[input_tensor_info.id].get());
-            //    PreProcessImage(num_threads_, input_tensor_info, dst);
-            //} else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
-            //    int8_t* dst = (int8_t*)(input_buffer_list_[input_tensor_info.id].get());
-            //    PreProcessImage(num_threads_, input_tensor_info, dst);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8) {
+                uint8_t* dst = (uint8_t*)(input_tensor.data_ptr());
+                PreProcessImage(num_threads_, input_tensor_info, dst);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
+                int8_t* dst = (int8_t*)(input_tensor.data_ptr());
+                PreProcessImage(num_threads_, input_tensor_info, dst);
             } else {
                 PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
                 return kRetErr;
             }
         } else if ((input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNhwc) || (input_tensor_info.data_type == InputTensorInfo::kDataTypeBlobNchw)) {
-            //if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
-            //    float* dst = (float*)(input_buffer_list_[input_tensor_info.id].get());
-            //    PreProcessBlob<float>(num_threads_, input_tensor_info, dst);
-            //} else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8 || input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
-            //    uint8_t* dst = (uint8_t*)(input_buffer_list_[input_tensor_info.id].get());
-            //    PreProcessBlob<uint8_t>(num_threads_, input_tensor_info, dst);
-            //} else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt32) {
-            //    int32_t* dst = (int32_t*)(input_buffer_list_[input_tensor_info.id].get());
-            //    PreProcessBlob<int32_t>(num_threads_, input_tensor_info, dst);
-            //} else {
-            //    PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
-            //    return kRetErr;
-            //}
+            if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeFp32) {
+                float* dst = (float*)(input_tensor.data_ptr());
+                PreProcessBlob<float>(num_threads_, input_tensor_info, dst);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeUint8 || input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt8) {
+                uint8_t* dst = (uint8_t*)(input_tensor.data_ptr());
+                PreProcessBlob<uint8_t>(num_threads_, input_tensor_info, dst);
+            } else if (input_tensor_info.tensor_type == TensorInfo::kTensorTypeInt32) {
+                int32_t* dst = (int32_t*)(input_tensor.data_ptr());
+                PreProcessBlob<int32_t>(num_threads_, input_tensor_info, dst);
+            } else {
+                PRINT_E("Unsupported tensor_type (%d)\n", input_tensor_info.tensor_type);
+                return kRetErr;
+            }
         } else {
             PRINT_E("Unsupported data_type (%d)\n", input_tensor_info.data_type);
             return kRetErr;
