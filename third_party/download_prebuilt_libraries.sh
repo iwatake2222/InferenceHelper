@@ -63,6 +63,16 @@ download_and_extract_onnxruntime_andriod() {
     rm temp.zip
     cd ..
 }
+
+download_and_extract_libtorch_andriod() {
+    local url="https://repo1.maven.org/maven2/org/pytorch/pytorch_android_torchvision/1.12/pytorch_android_torchvision-1.12.aar"
+    echo "Downloading ${url}"
+    mkdir -p android && cd android
+    curl -Lo temp.zip ${url}
+    unzip -o temp.zip
+    rm temp.zip
+    cd ..
+}
 ########################################################################
 
 ### cd to the same directory as this shell file ###
@@ -126,4 +136,20 @@ download_and_extract_onnxruntime "linux-x64" "tgz"
 download_and_extract_onnxruntime "linux-x64-gpu" "tgz"
 download_and_extract_onnxruntime "linux-aarch64" "tgz"
 download_and_extract_onnxruntime_andriod
+cd ..
+
+
+### Download Libtorch pre-built libraries from https://pytorch.org/get-started/locally/ ###
+mkdir -p libtorch_prebuilt && cd libtorch_prebuilt
+download_and_extract https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-1.11.0%2Bcpu.zip
+# download_and_extract https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-debug-1.11.0%2Bcpu.zip
+mv libtorch win-x64
+download_and_extract https://download.pytorch.org/libtorch/cu113/libtorch-win-shared-with-deps-1.11.0%2Bcu113.zip
+# download_and_extract https://download.pytorch.org/libtorch/cu113/libtorch-win-shared-with-deps-debug-1.11.0%2Bcu113.zip
+mv libtorch win-x64-gpu
+download_and_extract https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcpu.zip
+mv libtorch linux-x64
+download_and_extract https://download.pytorch.org/libtorch/cu113/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcu113.zip
+mv libtorch linux-x64-gpu
+download_and_extract_libtorch_andriod
 cd ..

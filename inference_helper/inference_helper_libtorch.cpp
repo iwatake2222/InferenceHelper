@@ -34,6 +34,7 @@ limitations under the License.
 #include <torch/script.h> // One-stop header.
 #include <torch/cuda.h>
 #include <ATen/Parallel.h>
+#include <ATen/core/ivalue.h>
 
 /* for My modules */
 #include "inference_helper_log.h"
@@ -126,7 +127,7 @@ int32_t InferenceHelperLibtorch::PreProcess(const std::vector<InputTensorInfo>& 
     input_tensor_list_.clear();
 
     /*** Normalize input data and store the converted data into the input tensor buffer ***/
-    for (int32_t input_tensor_index = 0; input_tensor_index < input_tensor_info_list.size(); input_tensor_index++) {
+    for (size_t input_tensor_index = 0; input_tensor_index < input_tensor_info_list.size(); input_tensor_index++) {
         const auto& input_tensor_info = input_tensor_info_list[input_tensor_index];
         const int32_t img_width = input_tensor_info.GetWidth();
         const int32_t img_height = input_tensor_info.GetHeight();
@@ -216,17 +217,17 @@ int32_t InferenceHelperLibtorch::Process(std::vector<OutputTensorInfo>& output_t
         PRINT("Multiple output is not tested\n");
         const auto& output_tuple = outputs.toTuple()->elements();
         for (const auto& o : output_tuple) {
-            torch::Tensor output_tensor = outputs.toTensor().to(torch::kCPU);
+            torch::Tensor output_tensor = o.toTensor().to(torch::kCPU);
             output_tensor_list_.emplace_back(output_tensor);
         }
-    } else if (outputs.isTensorList()) {
-        PRINT("Multiple output is not tested\n");
-        const auto& output_list = outputs.toTensorList();
-        for (const auto& o : output_list) {
-            torch::Tensor output_tensor = o;
-            output_tensor = output_tensor.to(torch::kCPU);
-            output_tensor_list_.emplace_back(output_tensor);
-        }
+    // } else if (outputs.isTensorList()) {
+    //     PRINT("Multiple output is not tested\n");
+    //     const auto& output_list = outputs.toTensorList();
+    //     for (const auto& o : output_list) {
+    //         torch::Tensor output_tensor = o;
+    //         output_tensor = output_tensor.to(torch::kCPU);
+    //         output_tensor_list_.emplace_back(output_tensor);
+    //     }
     } else {
         PRINT_E("Invalid output format\n");
         return kRetErr;
