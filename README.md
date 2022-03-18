@@ -3,8 +3,8 @@
 </p>
 
 # Inference Helper
-- This is a helper class for deep learning frameworks especially for inference
-- This class provides an interface to use various deep learnig frameworks, so that you can use the same application code
+- This is a wrapper of deep learning frameworks especially for inference
+- This class provides a common interface to use various deep learnig frameworks, so that you can use the same application code
 
 ## Supported frameworks
 - TensorFlow Lite
@@ -22,7 +22,7 @@
 - NNabla with CUDA
 - ONNX Runtime
 - ONNX Runtime with CUDA
-- [todo] LibTorch
+- LibTorch
 
 ![Overview](00_doc/overview.jpg) 
 
@@ -48,7 +48,8 @@
 | SNPE                      | Unsupported                                   | Unsupported                                   | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul> |
 | Arm NN                    | Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                    |
 | NNabla                    | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                   | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
-| ONNX Runtime              | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
+| ONNX Runtime              | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
+| Libtorch                  | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                   | Unsupported                                   | Unsupported                                    |
 
 * Unchedked(blank) doesn't mean that the framework is unsupported. Unchecked just means that the framework is not tested in CI. For instance, TensorRT on Windows/Linux works and I confirmed it in my PC, but can't run it in CI. Also, some build/test (e.g. ncnn + Linux+ARM) are skipped because pre-built libraries are not provided. It should work if you build a library by yourself.
 
@@ -106,7 +107,8 @@ You need some additional steps if you use the frameworks listed below
 - Extract `snpe-1.51.0.zip` , then place `lib` and `include` folders to `third_party/snpe_prebuilt`
 
 ### Note:
-- `Debug` mode in Visual Studio doesn't work for ncnn and NNabla because debuggable libraries are not provided
+- `Debug` mode in Visual Studio doesn't work for ncnn, NNabla and LibTorch because debuggable libraries are not provided
+    - `Debug` will cause unexpected bahavior, so use `Release` or `RelWithDebInfo`
 - See `third_party/download_prebuilt_libraries.sh` and `third_party/cmakes/*` to check which libraries are being used. For instance, libraries without GPU(CUDA/Vulkan) are used to be safe. So, if you want to use GPU, modify these files.
 
 ## Project settings in CMake

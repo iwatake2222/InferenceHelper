@@ -16,9 +16,12 @@ set(INFERENCE_HELPER_ENABLE_MNN off CACHE BOOL "With Mnn? [on/off]")
 set(INFERENCE_HELPER_ENABLE_SNPE off CACHE BOOL "With SNPE? [on/off]")
 set(INFERENCE_HELPER_ENABLE_ARMNN off CACHE BOOL "With ARMNN? [on/off]")
 set(INFERENCE_HELPER_ENABLE_NNABLA off CACHE BOOL "With NNabla? [on/off]")
-set(INFERENCE_HELPER_ENABLE_NNABLA_CUDA off CACHE BOOL "With NNabla_CUDA? [on/off]")
+set(INFERENCE_HELPER_ENABLE_NNABLA_CUDA off CACHE BOOL "With NNabla + CUDA? [on/off]")
 set(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME off CACHE BOOL "With ONNX Runtime? [on/off]")
-set(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA off CACHE BOOL "With ONNX Runtime_CUDA? [on/off]")
+set(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA off CACHE BOOL "With ONNX Runtime + CUDA? [on/off]")
+set(INFERENCE_HELPER_ENABLE_LIBTORCH off CACHE BOOL "With LibTorch? [on/off]")
+set(INFERENCE_HELPER_ENABLE_LIBTORCH_CUDA off CACHE BOOL "With LibTorch + CUDA? [on/off]")
+set(INFERENCE_HELPER_ENABLE_SAMPLE off CACHE BOOL "With Sample? [on/off]")
 
 # Create library
 set(SRC inference_helper.h inference_helper.cpp inference_helper_log.h)
@@ -59,6 +62,14 @@ endif()
 
 if(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME OR INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA)
     set(SRC ${SRC} inference_helper_onnx_runtime.h inference_helper_onnx_runtime.cpp)
+endif()
+
+if(INFERENCE_HELPER_ENABLE_LIBTORCH OR INFERENCE_HELPER_ENABLE_LIBTORCH_CUDA)
+    set(SRC ${SRC} inference_helper_libtorch.h inference_helper_libtorch.cpp)
+endif()
+
+if(INFERENCE_HELPER_ENABLE_SAMPLE)
+    set(SRC ${SRC} inference_helper_sample.h inference_helper_sample.cpp)
 endif()
 
 add_library(${LibraryName} ${SRC})
@@ -224,3 +235,26 @@ if(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME OR INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_
     endif()
 endif()
 
+# For Libtorch
+if(INFERENCE_HELPER_ENABLE_LIBTORCH OR INFERENCE_HELPER_ENABLE_LIBTORCH_CUDA)
+    include(${THIRD_PARTY_DIR}/cmakes/libtorch.cmake)
+    target_include_directories(${LibraryName} PUBLIC ${LIBTORCH_INC})
+    target_link_libraries(${LibraryName} PRIVATE  ${LIBTORCH_LIB})  # Use PRIVATE to avoid `Target "torch_cpu" not found.` error when cmake configure
+    if (INFERENCE_HELPER_ENABLE_LIBTORCH)
+        add_definitions(-DINFERENCE_HELPER_ENABLE_LIBTORCH)
+    endif()
+    if (INFERENCE_HELPER_ENABLE_LIBTORCH_CUDA)
+        find_package(CUDA)
+        target_link_libraries(${LibraryName} PRIVATE ${CUDA_LIBRARIES})
+        target_include_directories(${LibraryName} PUBLIC ${CUDA_INCLUDE_DIRS})
+        add_definitions(-DINFERENCE_HELPER_ENABLE_LIBTORCH_CUDA)
+    endif()
+endif()
+
+# For Sample (template code to implement a new framework)
+if(INFERENCE_HELPER_ENABLE_SAMPLE)
+    include(${THIRD_PARTY_DIR}/cmakes/sample.cmake)
+    target_include_directories(${LibraryName} PUBLIC ${SAMPLE_INC})
+    target_link_libraries(${LibraryName} ${SAMPLE_LIB})
+    add_definitions(-DINFERENCE_HELPER_ENABLE_SAMPLE)
+endif()
