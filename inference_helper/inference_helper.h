@@ -242,6 +242,8 @@ public:
         kOnnxRuntimeCuda,
         kLibtorch,
         kLibtorchCuda,
+        kTensorflow,
+        kTensorflowGpu,
         kSample,
     } HelperType;
 
