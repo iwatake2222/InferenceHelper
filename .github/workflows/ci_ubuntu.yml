@@ -21,7 +21,7 @@ jobs:
         rm -rf InferenceHelper
         mv * ../../.
         cd ../../
-        sh ./InferenceHelper/third_party/download_prebuilt_libraries.sh
+        sh ./InferenceHelper/third_party/download_prebuilt_libraries.sh 1
         sh ./download_resource.sh
 
     - name: Install Requirements

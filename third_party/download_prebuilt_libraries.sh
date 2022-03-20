@@ -1,3 +1,5 @@
+IGNORE_GPU=${1:-0}
+
 move_dir_to_shell_file() {
     dir_shell_file=`dirname "$0"`
     cd ${dir_shell_file}
@@ -112,10 +114,12 @@ unzip -o temp.zip
 rm temp.zip
 mv nnabla-cpplib-1.25.0-win64/* windows-vs2019/.
 
-curl -L https://nnabla.org/cpplib/1.25.0/nnabla-cpplib-cuda_110_8-1.25.0-win64.zip -o temp.zip
-unzip -o temp.zip
-rm temp.zip
-cp -r nnabla-cpplib-cuda_110_8-1.25.0-win64/* windows-vs2019/.
+if [ ${IGNORE_GPU} -eq 0 ]; then
+    curl -L https://nnabla.org/cpplib/1.25.0/nnabla-cpplib-cuda_110_8-1.25.0-win64.zip -o temp.zip
+    unzip -o temp.zip
+    rm temp.zip
+    cp -r nnabla-cpplib-cuda_110_8-1.25.0-win64/* windows-vs2019/.
+fi
 
 curl -L https://github.com/libarchive/libarchive/releases/download/v3.5.2/libarchive-v3.5.2-win64.zip -o temp.zip
 unzip -o temp.zip
@@ -131,11 +135,13 @@ cd ..
 ### Download ONNX Runtime pre-built libraries from https://github.com/microsoft/onnxruntime ###
 mkdir -p onnxruntime_prebuilt && cd onnxruntime_prebuilt
 download_and_extract_onnxruntime "win-x64" "zip"
-download_and_extract_onnxruntime "win-x64-gpu" "zip"
 download_and_extract_onnxruntime "linux-x64" "tgz"
-download_and_extract_onnxruntime "linux-x64-gpu" "tgz"
 download_and_extract_onnxruntime "linux-aarch64" "tgz"
 download_and_extract_onnxruntime_andriod
+if [ ${IGNORE_GPU} -eq 0 ]; then
+    download_and_extract_onnxruntime "win-x64-gpu" "zip"
+    download_and_extract_onnxruntime "linux-x64-gpu" "tgz"
+fi
 cd ..
 
 
@@ -144,14 +150,16 @@ mkdir -p libtorch_prebuilt && cd libtorch_prebuilt
 download_and_extract https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-1.11.0%2Bcpu.zip
 # download_and_extract https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-debug-1.11.0%2Bcpu.zip
 mv libtorch win-x64
-download_and_extract https://download.pytorch.org/libtorch/cu113/libtorch-win-shared-with-deps-1.11.0%2Bcu113.zip
-# download_and_extract https://download.pytorch.org/libtorch/cu113/libtorch-win-shared-with-deps-debug-1.11.0%2Bcu113.zip
-mv libtorch win-x64-gpu
 download_and_extract https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcpu.zip
 mv libtorch linux-x64
-download_and_extract https://download.pytorch.org/libtorch/cu113/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcu113.zip
-mv libtorch linux-x64-gpu
 download_and_extract_libtorch_andriod
+if [ ${IGNORE_GPU} -eq 0 ]; then
+    download_and_extract https://download.pytorch.org/libtorch/cu113/libtorch-win-shared-with-deps-1.11.0%2Bcu113.zip
+    # download_and_extract https://download.pytorch.org/libtorch/cu113/libtorch-win-shared-with-deps-debug-1.11.0%2Bcu113.zip
+    mv libtorch win-x64-gpu
+    download_and_extract https://download.pytorch.org/libtorch/cu113/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcu113.zip
+    mv libtorch linux-x64-gpu
+fi
 cd ..
 
 
@@ -159,10 +167,12 @@ cd ..
 mkdir -p tensorflow_prebuilt && cd tensorflow_prebuilt
 mkdir win-x64 && cd win-x64
 download_and_extract https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-windows-x86_64-2.7.0.zip
-cd .. && mkdir win-x64-gpu && cd win-x64-gpu
-download_and_extract https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-windows-x86_64-2.7.0.zip
 cd .. && mkdir linux-x64 && cd linux-x64
 download_and_extract https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-linux-x86_64-2.7.0.tar.gz
-cd .. && mkdir linux-x64-gpu && cd linux-x64-gpu
-download_and_extract https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.7.0.tar.gz
+if [ ${IGNORE_GPU} -eq 0 ]; then
+    cd .. && mkdir win-x64-gpu && cd win-x64-gpu
+    download_and_extract https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-windows-x86_64-2.7.0.zip
+    cd .. && mkdir linux-x64-gpu && cd linux-x64-gpu
+    download_and_extract https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.7.0.tar.gz
+fi
 cd ..
