@@ -139,7 +139,7 @@ download_and_extract_onnxruntime_andriod
 cd ..
 
 
-### Download Libtorch pre-built libraries from https://pytorch.org/get-started/locally/ ###
+### Download LibTorch pre-built libraries from https://pytorch.org/get-started/locally/ ###
 mkdir -p libtorch_prebuilt && cd libtorch_prebuilt
 download_and_extract https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-1.11.0%2Bcpu.zip
 # download_and_extract https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-debug-1.11.0%2Bcpu.zip
@@ -152,4 +152,17 @@ mv libtorch linux-x64
 download_and_extract https://download.pytorch.org/libtorch/cu113/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcu113.zip
 mv libtorch linux-x64-gpu
 download_and_extract_libtorch_andriod
+cd ..
+
+
+### Download TensorFlow pre-built libraries from https://www.tensorflow.org/install/lang_c ###
+mkdir -p tensorflow_prebuilt && cd tensorflow_prebuilt
+mkdir win-x64 && cd win-x64
+download_and_extract https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-windows-x86_64-2.7.0.zip
+cd .. && mkdir win-x64-gpu && cd win-x64-gpu
+download_and_extract https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-windows-x86_64-2.7.0.zip
+cd .. && mkdir linux-x64 && cd linux-x64
+download_and_extract https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-linux-x86_64-2.7.0.tar.gz
+cd .. && mkdir linux-x64-gpu && cd linux-x64-gpu
+download_and_extract https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.7.0.tar.gz
 cd ..

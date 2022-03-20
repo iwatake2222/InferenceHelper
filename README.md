@@ -10,19 +10,16 @@
 - TensorFlow Lite
 - TensorFlow Lite with delegate (XNNPACK, GPU, EdgeTPU, NNAPI)
 - TensorRT (GPU, DLA)
-- OpenCV(dnn)
-- OpenCV(dnn) with GPU
+- OpenCV(dnn) (with GPU)
 - OpenVINO with OpenCV (xml+bin)
-- ncnn
-- ncnn with Vulkan
+- ncnn (with Vulkan)
 - MNN (with Vulkan)
 - SNPE (Snapdragon Neural Processing Engine SDK (Qualcomm Neural Processing SDK for AI v1.51.0))
 - Arm NN
-- NNabla
-- NNabla with CUDA
-- ONNX Runtime
-- ONNX Runtime with CUDA
-- LibTorch
+- NNabla (with CUDA)
+- ONNX Runtime (with CUDA)
+- LibTorch (with CUDA)
+- TensorFlow (with GPU)
 
 ![Overview](00_doc/overview.jpg) 
 
@@ -49,7 +46,8 @@
 | Arm NN                    | Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                    |
 | NNabla                    | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                   | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
 | ONNX Runtime              | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
-| Libtorch                  | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                   | Unsupported                                   | Unsupported                                    |
+| LibTorch                  | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                   | Unsupported                                   | Unsupported                                    |
+| TensorFlow                | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                   | Unsupported                                   | Unsupported                                    |
 
 * Unchedked(blank) doesn't mean that the framework is unsupported. Unchecked just means that the framework is not tested in CI. For instance, TensorRT on Windows/Linux works and I confirmed it in my PC, but can't run it in CI. Also, some build/test (e.g. ncnn + Linux+ARM) are skipped because pre-built libraries are not provided. It should work if you build a library by yourself.
 
@@ -155,6 +153,14 @@ You need some additional steps if you use the frameworks listed below
     cmake .. -DINFERENCE_HELPER_ENABLE_ONNX_RUNTIME=on
     # ONNX Runtime with CUDA
     cmake .. -DINFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA=on
+    # LibTorch
+    cmake .. -DINFERENCE_HELPER_ENABLE_LIBTORCH=on
+    # LibTorch with CUDA
+    cmake .. -DINFERENCE_HELPER_ENABLE_LIBTORCH_CUDA=on
+    # TensorFlow
+    cmake .. -DINFERENCE_HELPER_ENABLE_TENSORFLOW=on
+    # TensorFlow with GPU
+    cmake .. -DINFERENCE_HELPER_ENABLE_TENSORFLOW_GPU=on
     ```
 
 - Enable/Disable preprocess using OpenCV:
@@ -188,6 +194,10 @@ typedef enum {
     kNnablaCuda,
     kOnnxRuntime,
     kOnnxRuntimeCuda,
+    kLibtorch,
+    kLibtorchCuda,
+    kTensorflow,
+    kTensorflowGpu,
 } HelperType;
 ```
 

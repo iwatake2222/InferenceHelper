@@ -21,6 +21,8 @@ set(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME off CACHE BOOL "With ONNX Runtime? [on/
 set(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_CUDA off CACHE BOOL "With ONNX Runtime + CUDA? [on/off]")
 set(INFERENCE_HELPER_ENABLE_LIBTORCH off CACHE BOOL "With LibTorch? [on/off]")
 set(INFERENCE_HELPER_ENABLE_LIBTORCH_CUDA off CACHE BOOL "With LibTorch + CUDA? [on/off]")
+set(INFERENCE_HELPER_ENABLE_TENSORFLOW off CACHE BOOL "With TensorFlow? [on/off]")
+set(INFERENCE_HELPER_ENABLE_TENSORFLOW_GPU off CACHE BOOL "With TensorFlow + GPU? [on/off]")
 set(INFERENCE_HELPER_ENABLE_SAMPLE off CACHE BOOL "With Sample? [on/off]")
 
 # Create library
@@ -66,6 +68,10 @@ endif()
 
 if(INFERENCE_HELPER_ENABLE_LIBTORCH OR INFERENCE_HELPER_ENABLE_LIBTORCH_CUDA)
     set(SRC ${SRC} inference_helper_libtorch.h inference_helper_libtorch.cpp)
+endif()
+
+if(INFERENCE_HELPER_ENABLE_TENSORFLOW OR INFERENCE_HELPER_ENABLE_TENSORFLOW_GPU)
+    set(SRC ${SRC} inference_helper_tensorflow.h inference_helper_tensorflow.cpp)
 endif()
 
 if(INFERENCE_HELPER_ENABLE_SAMPLE)
@@ -235,7 +241,7 @@ if(INFERENCE_HELPER_ENABLE_ONNX_RUNTIME OR INFERENCE_HELPER_ENABLE_ONNX_RUNTIME_
     endif()
 endif()
 
-# For Libtorch
+# For LibTorch
 if(INFERENCE_HELPER_ENABLE_LIBTORCH OR INFERENCE_HELPER_ENABLE_LIBTORCH_CUDA)
     include(${THIRD_PARTY_DIR}/cmakes/libtorch.cmake)
     target_include_directories(${LibraryName} PUBLIC ${LIBTORCH_INC})
@@ -248,6 +254,22 @@ if(INFERENCE_HELPER_ENABLE_LIBTORCH OR INFERENCE_HELPER_ENABLE_LIBTORCH_CUDA)
         target_link_libraries(${LibraryName} PRIVATE ${CUDA_LIBRARIES})
         target_include_directories(${LibraryName} PUBLIC ${CUDA_INCLUDE_DIRS})
         add_definitions(-DINFERENCE_HELPER_ENABLE_LIBTORCH_CUDA)
+    endif()
+endif()
+
+# For TensorFlow
+if(INFERENCE_HELPER_ENABLE_TENSORFLOW OR INFERENCE_HELPER_ENABLE_TENSORFLOW_GPU)
+    include(${THIRD_PARTY_DIR}/cmakes/tensorflow.cmake)
+    target_include_directories(${LibraryName} PUBLIC ${TENSORFLOW_INC})
+    target_link_libraries(${LibraryName} PRIVATE  ${TENSORFLOW_LIB})
+    if (INFERENCE_HELPER_ENABLE_TENSORFLOW)
+        add_definitions(-DINFERENCE_HELPER_ENABLE_TENSORFLOW)
+    endif()
+    if (INFERENCE_HELPER_ENABLE_TENSORFLOW_GPU)
+        find_package(CUDA)
+        target_link_libraries(${LibraryName} PRIVATE ${CUDA_LIBRARIES})
+        target_include_directories(${LibraryName} PUBLIC ${CUDA_INCLUDE_DIRS})
+        add_definitions(-DINFERENCE_HELPER_ENABLE_TENSORFLOW_GPU)
     endif()
 endif()
 

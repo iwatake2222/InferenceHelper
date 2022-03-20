@@ -58,6 +58,9 @@ limitations under the License.
 #if defined(INFERENCE_HELPER_ENABLE_LIBTORCH) || defined(INFERENCE_HELPER_ENABLE_LIBTORCH_CUDA)
 #include "inference_helper_libtorch.h"
 #endif
+#if defined(INFERENCE_HELPER_ENABLE_TENSORFLOW) || defined(INFERENCE_HELPER_ENABLE_TENSORFLOW_GPU)
+#include "inference_helper_tensorflow.h"
+#endif
 #ifdef INFERENCE_HELPER_ENABLE_SAMPLE
 #include "inference_helper_sample.h"
 #endif
@@ -174,6 +177,18 @@ InferenceHelper* InferenceHelper::Create(const InferenceHelper::HelperType helpe
     case kLibtorchCuda:
         PRINT("Use LibTorch CUDA\n");
         p = new InferenceHelperLibtorch();
+        break;
+#endif
+#ifdef INFERENCE_HELPER_ENABLE_TENSORFLOW
+    case kTensorflow:
+        PRINT("Use TensorFlow\n");
+        p = new InferenceHelperTensorflow();
+        break;
+#endif
+#ifdef INFERENCE_HELPER_ENABLE_TENSORFLOW_GPU
+    case kTensorflowGpu:
+        PRINT("Use TensorFlow GPU\n");
+        p = new InferenceHelperTensorflow();
         break;
 #endif
 #ifdef INFERENCE_HELPER_ENABLE_SAMPLE
