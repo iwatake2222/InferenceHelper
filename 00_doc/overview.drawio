@@ -1,41 +1,41 @@
 <mxfile host="65bd71144e">
     <diagram id="JPNIT-02786Kn8pz1yPU" name="Page-1">
-        <mxGraphModel dx="1145" dy="665" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+        <mxGraphModel dx="844" dy="665" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
                 <mxCell id="30" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008a00;fontColor=#ffffff;strokeColor=#005700;fontSize=16;" parent="1" vertex="1">
-                    <mxGeometry x="80" y="510" width="600" height="130" as="geometry"/>
+                    <mxGeometry x="80" y="510" width="600" height="180" as="geometry"/>
                 </mxCell>
                 <mxCell id="17" value="TensorFlow Lite" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;" parent="1" vertex="1">
-                    <mxGeometry x="100" y="540" width="130" height="40" as="geometry"/>
+                    <mxGeometry x="256.7" y="540" width="130" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="18" value="OpenCV" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;" parent="1" vertex="1">
-                    <mxGeometry x="470" y="540" width="80" height="40" as="geometry"/>
+                    <mxGeometry x="106.7" y="590" width="90" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="19" value="OpenVINO" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;" parent="1" vertex="1">
-                    <mxGeometry x="560" y="540" width="100" height="40" as="geometry"/>
+                    <mxGeometry x="216.7" y="590" width="100" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="20" value="ncnn" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;" parent="1" vertex="1">
-                    <mxGeometry x="190" y="590" width="80" height="40" as="geometry"/>
+                    <mxGeometry x="446.7" y="590" width="80" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="21" value="MNN" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;" parent="1" vertex="1">
-                    <mxGeometry x="280" y="590" width="80" height="40" as="geometry"/>
+                    <mxGeometry x="546.7" y="590" width="80" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="22" value="SNPE" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;" parent="1" vertex="1">
-                    <mxGeometry x="370" y="590" width="80" height="40" as="geometry"/>
+                    <mxGeometry x="106.7" y="640" width="80" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="23" value="Arm NN" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;" parent="1" vertex="1">
-                    <mxGeometry x="460" y="590" width="80" height="40" as="geometry"/>
+                    <mxGeometry x="206.7" y="640" width="80" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="24" value="NNabla" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;" parent="1" vertex="1">
-                    <mxGeometry x="550" y="590" width="80" height="40" as="geometry"/>
+                    <mxGeometry x="306.7" y="640" width="80" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="25" value="User Application" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0050ef;fontColor=#ffffff;strokeColor=#001DBC;fontStyle=1;fontSize=18;" parent="1" vertex="1">
                     <mxGeometry x="80" y="350" width="600" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="26" value="TensorRT" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;" parent="1" vertex="1">
-                    <mxGeometry x="100" y="590" width="80" height="40" as="geometry"/>
+                    <mxGeometry x="336.7" y="590" width="90" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="31" value="DL Frameworks" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=18;" parent="1" vertex="1">
                     <mxGeometry x="80" y="510" width="150" height="30" as="geometry"/>
@@ -49,11 +49,14 @@
                 <mxCell id="51" value="INFERENCE HELPER" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=50;fontFamily=Jura;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DJura;" parent="1" vertex="1">
                     <mxGeometry x="210" y="423" width="460" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="52" value="LibTorch" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;" vertex="1" parent="1">
-                    <mxGeometry x="380" y="540" width="80" height="40" as="geometry"/>
+                <mxCell id="52" value="LibTorch" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;" parent="1" vertex="1">
+                    <mxGeometry x="406.7" y="540" width="80" height="40" as="geometry"/>
                 </mxCell>
-                <mxCell id="53" value="ONNX Runtime" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;" vertex="1" parent="1">
-                    <mxGeometry x="240" y="540" width="130" height="40" as="geometry"/>
+                <mxCell id="53" value="ONNX Runtime" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;" parent="1" vertex="1">
+                    <mxGeometry x="506.7" y="540" width="130" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="54" value="TensorFlow" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;" parent="1" vertex="1">
+                    <mxGeometry x="106.7" y="540" width="130" height="40" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

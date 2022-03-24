@@ -21,7 +21,7 @@
 - LibTorch (with CUDA)
 - TensorFlow (with GPU)
 
-![Overview](00_doc/overview.jpg) 
+![Overview](00_doc/overview.png) 
 
 ## Supported targets
 - Windows 10 (Visual Studio 2019 x64)
@@ -35,21 +35,22 @@
 | TensorFlow Lite           | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
 | TensorFlow Lite + XNNPACK | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
 | TensorFlow Lite + EdgeTPU | <ul><li> [x] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
-| TensorFlow Lite + GPU     | Unsupported                                   | Unsupported                                   | Unsupported                                   | Unsupported                                   | <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
+| TensorFlow Lite + GPU     | No library                                    | No library                                    | No library                                    | No library                                    | <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
 | TensorFlow Lite + NNAPI   | Unsupported                                   | Unsupported                                   | Unsupported                                   | Unsupported                                   | <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
 | TensorRT                  | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
 | OpenCV(dnn)               | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
 | OpenVINO with OpenCV      | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
-| ncnn                      | <ul><li> [x] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
-| MNN                       | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
+| ncnn                      | <ul><li> [x] Build</li><li>[ ] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| No library                                    | No library                                    | <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
+| MNN                       | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| No library                                    | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
 | SNPE                      | Unsupported                                   | Unsupported                                   | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul> |
-| Arm NN                    | Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                    |
-| NNabla                    | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                   | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                    |
+| Arm NN                    | Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| No library                                     |
+| NNabla                    | <ul><li> [x] Build</li><li>[x] Test </li></ul>| No library                                    | Unsupported                                   | No library                                    | No library                                     |
 | ONNX Runtime              | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| Unsupported                                   | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[ ] Test </li></ul> |
-| LibTorch                  | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                   | Unsupported                                   | Unsupported                                    |
-| TensorFlow                | <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| <ul><li> [ ] Build</li><li>[ ] Test </li></ul>| Unsupported                                   | Unsupported                                   | Unsupported                                    |
+| LibTorch                  | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| No library                                    | No library                                    | No library                                     |
+| TensorFlow                | <ul><li> [x] Build</li><li>[x] Test </li></ul>| <ul><li> [x] Build</li><li>[x] Test </li></ul>| No library                                    | No library                                    | No library                                     |
 
-* Unchedked(blank) doesn't mean that the framework is unsupported. Unchecked just means that the framework is not tested in CI. For instance, TensorRT on Windows/Linux works and I confirmed it in my PC, but can't run it in CI. Also, some build/test (e.g. ncnn + Linux+ARM) are skipped because pre-built libraries are not provided. It should work if you build a library by yourself.
+* Unchedked(blank) doesn't mean that the framework is unsupported. Unchecked just means that the framework is not tested in CI. For instance, TensorRT on Windows/Linux works and I confirmed it in my PC, but can't run it in CI.
+* `No Library` means a pre-built library is not provided so that I cannot confirm it in CI. It may work if you build a library by yourself.
 
 ## Sample projects
 - https://github.com/iwatake2222/InferenceHelper_Sample
