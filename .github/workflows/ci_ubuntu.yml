@@ -53,6 +53,8 @@ jobs:
         sh ./01_script/build_run_linux.sh ARMNN
         # sh ./01_script/build_run_linux.sh NNABLA
         sh ./01_script/build_run_linux.sh ONNX_RUNTIME
+        sh ./01_script/build_run_linux.sh LIBTORCH
+        sh ./01_script/build_run_linux.sh TENSORFLOW
         mv time_inference_linux.txt InferenceHelper/.
 
     - name: Upload Artifacts

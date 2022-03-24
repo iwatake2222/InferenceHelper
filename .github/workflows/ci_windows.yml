@@ -61,6 +61,8 @@ jobs:
         if($?) { ./01_script/build_run_windows.ps1 MNN }
         if($?) { ./01_script/build_run_windows.ps1 NNABLA }
         if($?) { ./01_script/build_run_windows.ps1 ONNX_RUNTIME }
+        if($?) { ./01_script/build_run_windows.ps1 LIBTORCH }
+        if($?) { ./01_script/build_run_windows.ps1 TENSORFLOW }
         mv time_inference_windows.txt InferenceHelper/.
         exit $LASTEXITCODE
 
