@@ -165,14 +165,14 @@ cd ..
 
 ### Download TensorFlow pre-built libraries from https://www.tensorflow.org/install/lang_c ###
 mkdir -p tensorflow_prebuilt && cd tensorflow_prebuilt
-mkdir win-x64 && cd win-x64
+mkdir -p win-x64 && cd win-x64
 download_and_extract https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-windows-x86_64-2.7.0.zip
-cd .. && mkdir linux-x64 && cd linux-x64
+cd .. && mkdir -p linux-x64 && cd linux-x64
 download_and_extract https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-linux-x86_64-2.7.0.tar.gz
 if [ ${IGNORE_GPU} -eq 0 ]; then
-    cd .. && mkdir win-x64-gpu && cd win-x64-gpu
+    cd .. && mkdir -p win-x64-gpu && cd win-x64-gpu
     download_and_extract https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-windows-x86_64-2.7.0.zip
-    cd .. && mkdir linux-x64-gpu && cd linux-x64-gpu
+    cd .. && mkdir -p linux-x64-gpu && cd linux-x64-gpu
     download_and_extract https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.7.0.tar.gz
 fi
 cd ..
